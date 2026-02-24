@@ -1,0 +1,105 @@
+.horario-table th, .horario-table td {
+  vertical-align: middle;
+}
+
+.horario-table td {
+  height: 100px;
+  transition: all 0.2s;
+}
+
+.horario-table td:hover {
+  transform: scale(1.02);
+  z-index: 10;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.badge {
+  font-weight: normal;
+}
+
+.edit-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.clase-container:hover .edit-btn {
+  opacity: 1;
+}
+
+.empty-slot {
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.empty-slot:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.empty-slot .add-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.empty-slot:hover .add-btn {
+  opacity: 1;
+}
+
+.color-preset-item {
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.color-preset-item:hover {
+  transform: scale(1.2);
+}
+
+.dropdown-menu {
+  min-width: 8rem;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+}
+
+/* Agregar estos estilos para el botón de crear horario */
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+.btn-outline-success {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-outline-success:hover {
+  color: #fff;
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+/* Para los mensajes de éxito */
+.bg-success {
+  background-color: #28a745 !important;
+}
+
+.text-success {
+  color: #28a745 !important;
+}
+
+/* Animación para resaltar nuevos elementos */
+@keyframes highlight {
+  0% { background-color: rgba(40, 167, 69, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.highlight-new {
+  animation: highlight 2s ease-out;
+} 

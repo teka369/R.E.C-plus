@@ -1,0 +1,387 @@
+/* Estilos para el registro de profesores */
+.registro-profesores {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.registro-profesores .card {
+  border: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.registro-profesores .card-header {
+  background-color: #dc3545;
+  color: white;
+  padding: 15px 20px;
+  border-bottom: none;
+}
+
+.registro-profesores .card-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.registro-profesores .card-body {
+  padding: 20px;
+}
+
+/* Estilos para las pestañas */
+.registro-profesores .nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 20px;
+}
+
+.registro-profesores .nav-tabs .nav-link {
+  border: none;
+  color: #6c757d;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.registro-profesores .nav-tabs .nav-link:hover {
+  border: none;
+  color: #dc3545;
+}
+
+.registro-profesores .nav-tabs .nav-link.active {
+  border: none;
+  color: #dc3545;
+  border-bottom: 2px solid #dc3545;
+}
+
+/* Estilos para los formularios */
+.registro-profesores .form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.registro-profesores .form-control {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 10px;
+  transition: border-color 0.3s ease;
+}
+
+.registro-profesores .form-control:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Estilos para los botones */
+.registro-profesores .btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.registro-profesores .btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.registro-profesores .btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.registro-profesores .btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Estilos para la tabla */
+.registro-profesores .table {
+  margin-top: 20px;
+}
+
+.registro-profesores .table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.registro-profesores .table td {
+  vertical-align: middle;
+}
+
+/* Estilos para las alertas */
+.registro-profesores .alert {
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.registro-profesores .alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.registro-profesores .alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+/* Estilos para el área de texto */
+textarea.registro-profesores .form-control {
+  min-height: 150px;
+  resize: vertical;
+}
+
+/* Estilos para el botón de navegación */
+.registro-profesores .btn-light {
+  background-color: white;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  transition: all 0.3s ease;
+}
+
+.registro-profesores .btn-light:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Estilos para el ícono de descarga */
+.registro-profesores .me-2 {
+  margin-right: 8px;
+}
+
+/* Estilos para el pre */
+pre {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+/* Estilos para los checkboxes de grados */
+.registro-profesores .form-check {
+  margin-right: 15px;
+  margin-bottom: 10px;
+}
+
+.registro-profesores .form-check-input {
+  cursor: pointer;
+}
+
+.registro-profesores .form-check-input:checked {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.registro-profesores .form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Estilos para los badges */
+.registro-profesores .badge {
+  padding: 6px 10px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.registro-profesores .badge.bg-primary {
+  background-color: #007bff !important;
+}
+
+.registro-profesores .badge.bg-info {
+  background-color: #17a2b8 !important;
+}
+
+.registro-profesores .badge.bg-success {
+  background-color: #28a745 !important;
+}
+
+.registro-profesores .badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.registro-profesores .badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529;
+}
+
+/* Estilos para los grados y grupos */
+.registro-profesores .grados-grupos-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  background-color: #fff;
+}
+
+.registro-profesores .grado-card {
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  height: 100%;
+  transition: all 0.3s ease;
+  border: 1px solid #dee2e6;
+}
+
+.registro-profesores .grado-card.grado-selected {
+  background-color: #e8f4ff;
+  border-color: #0d6efd;
+}
+
+.registro-profesores .grado-card:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.registro-profesores .grado-card.grado-selected:hover {
+  background-color: #d1e7ff;
+}
+
+.registro-profesores .grado-title {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.registro-profesores .grupos-count {
+  font-size: 0.8rem;
+  color: #0d6efd;
+  font-weight: normal;
+}
+
+.registro-profesores .grupos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.registro-profesores .grupos-list .form-check {
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.registro-profesores .grupos-list .form-check-input {
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+.registro-profesores .grupos-list .form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.registro-profesores .grupos-list .form-check-label {
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.registro-profesores .grupos-list .form-check-label.selected {
+  color: #0d6efd;
+  font-weight: 500;
+}
+
+.registro-profesores .grados-grupos-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.registro-profesores .grados-grupos-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.registro-profesores .grados-grupos-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.registro-profesores .grados-grupos-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Estilos para la tabla de grados y grupos */
+.registro-profesores .table td .mb-1 {
+  margin-bottom: 0.5rem;
+}
+
+.registro-profesores .table td .badge {
+  margin-right: 0.25rem;
+}
+
+.materias-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  background-color: #fff;
+}
+
+.materias-container .form-check {
+  margin-bottom: 0.5rem;
+}
+
+.materias-container .form-check:last-child {
+  margin-bottom: 0;
+}
+
+.materias-container .form-check-input {
+  margin-right: 0.5rem;
+}
+
+.materias-container .form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.materias-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.materias-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.materias-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.materias-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animación suave para el buscador visual */
+.search-anim {
+  opacity: 0;
+  transform: translateX(30px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+.search-anim.open {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.fade-slide {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s, transform 0.3s;
+} 

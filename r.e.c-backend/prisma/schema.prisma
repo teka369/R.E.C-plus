@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SECRETARIA
+  PROFESOR
+  ESTUDIANTE
+}
+
+// Tipos de notificación
+enum NotificationType {
+  GENERAL
+  MATERIAL
+  PERFORMANCE
+  SCHEDULE
+  MESSAGE
+  FEEDBACK
+}
+
+// Visibilidad de materiales
+enum Visibility {
+  GROUP
+  GRADE
+}
+
+// Tipo de material
+enum MaterialType {
+  PDF
+  VIDEO
+  LINK
+  DOC
+  OTHER
+}
+
+model User {
+  id                 Int      @id @default(autoincrement())
+  nombres            String
+  apellidos          String
+  email              String   @unique
+  documento_identidad String  @unique
+  telefono           String?  // Solo para profesores
+  password           String
+  role               Role     @default(ESTUDIANTE)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  // Relaciones académicas
+  studentGroups      StudentGroup[]
+  teacherAssignments TeacherAssignment[]
+  materials          StudyMaterial[]
+  syllabi            Syllabus[]
+  directedGroups     Group[]  @relation("GroupDirector")
+  // Relaciones de comunicación
+  feedbacksGiven     Feedback[] @relation("FeedbackTeacher")
+  feedbacksReceived  Feedback[] @relation("FeedbackStudent")
+  sentMessages       Message[]  @relation("MessageSender")
+  receivedMessages   Message[]  @relation("MessageRecipient")
+  notifications      Notification[]
+  // Schedule
+  scheduleEntries    WeeklyScheduleEntry[] @relation("ScheduleEntryTeacher")
+  scheduleNotes      ScheduleNote[] @relation("ScheduleNoteTeacher")
+  scheduleEvents     ScheduleEvent[] @relation("ScheduleEventTeacher")
+}
+
+// Modelos académicos
+
+model Grade {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
+  groups    Group[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Group {
+  id                 Int      @id @default(autoincrement())
+  nombre             String
+  gradeId            Int
+  grade              Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  directorId         Int?
+  director           User?    @relation("GroupDirector", fields: [directorId], references: [id], onDelete: SetNull)
+  students           StudentGroup[]
+  subjects           GroupSubject[]
+  teacherAssignments TeacherAssignment[]
+  info               GroupInfo?
+  studyMaterials     StudyMaterial[]
+  syllabi            Syllabus[]
+  feedbacks          Feedback[]
+  // Schedule relations
+  scheduleEntries    WeeklyScheduleEntry[]
+  scheduleNotes      ScheduleNote[]
+  events             ScheduleEvent[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([nombre, gradeId])
+}
+
+model Subject {
+  id                 Int      @id @default(autoincrement())
+  nombre             String   @unique
+  codigo             String?
+  groupSubjects      GroupSubject[]
+  teacherAssignments TeacherAssignment[]
+  studyMaterials     StudyMaterial[]
+  syllabi            Syllabus[]
+  // Schedule
+  scheduleEntries    WeeklyScheduleEntry[]
+  feedbacks          Feedback[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// Asignación de estudiante a grupo
+model StudentGroup {
+  id         Int      @id @default(autoincrement())
+  studentId  Int
+  groupId    Int
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([studentId, groupId])
+}
+
+// Materias que tiene un grupo
+model GroupSubject {
+  id         Int      @id @default(autoincrement())
+  groupId    Int
+  subjectId  Int
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([groupId, subjectId])
+}
+
+// Asignaciones de profesor: qué grupos y materias enseña
+model TeacherAssignment {
+  id         Int      @id @default(autoincrement())
+  teacherId  Int
+  groupId    Int
+  subjectId  Int
+  teacher    User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([teacherId, groupId, subjectId])
+}
+
+// Materiales de estudio
+model StudyMaterial {
+  id          Int           @id @default(autoincrement())
+  subjectId   Int
+  groupId     Int
+  teacherId   Int
+  title       String
+  description String?
+  type        MaterialType  @default(LINK)
+  resourceUrl String?
+  imageUrl    String?
+  filePath    String?
+  visibility  Visibility    @default(GROUP)
+  createdAt   DateTime      @default(now())
+
+  subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  group       Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher     User          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([subjectId])
+  @@index([teacherId])
+}
+
+// Temarios
+model Syllabus {
+  id          Int      @id @default(autoincrement())
+  subjectId   Int
+  groupId     Int
+  teacherId   Int
+  title       String
+  content     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher     User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([subjectId])
+  @@index([teacherId])
+}
+
+// Información general del grupo (ligas)
+model GroupInfo {
+  groupId    Int      @id
+  summary    String?
+  highlights Json?
+  metrics    Json?
+  links      Json?
+  updatedAt  DateTime @updatedAt
+
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+// Observaciones/Feedback del profesor al estudiante
+model Feedback {
+  id         Int      @id @default(autoincrement())
+  teacherId  Int
+  studentId  Int
+  groupId    Int
+  subjectId  Int?
+  title      String
+  content    String
+  strengths  Json?
+  improvements Json?
+  createdAt  DateTime @default(now())
+
+  teacher    User     @relation("FeedbackTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  student    User     @relation("FeedbackStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject    Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([groupId])
+}
+
+// Mensajería directa entre usuarios
+model Message {
+  id          Int      @id @default(autoincrement())
+  senderId    Int
+  recipientId Int
+  content     String
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User     @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([senderId])
+}
+
+// Notificaciones para usuarios
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  title     String
+  body      String
+  type      NotificationType @default(GENERAL)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+}
+
+// Horario semanal por grupo (plantilla semanal)
+model WeeklyScheduleEntry {
+  id           Int      @id @default(autoincrement())
+  groupId      Int
+  teacherId    Int
+  dayOfWeek    Int      // 1=Lunes .. 7=Domingo
+  startMinutes Int      // minutos desde medianoche
+  endMinutes   Int      // minutos desde medianoche, debe ser > startMinutes (validación a nivel app)
+  title        String?
+  subjectId    Int?
+  location     String?
+  createdAt    DateTime @default(now())
+
+  group        Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher      User     @relation("ScheduleEntryTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject      Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([groupId, dayOfWeek])
+}
+
+// Notas importantes visibles en la página de horario
+model ScheduleNote {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  teacherId Int
+  content   String
+  createdAt DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher   User     @relation("ScheduleNoteTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+// Eventos asociados al módulo de horarios
+model ScheduleEvent {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  teacherId Int
+  title     String
+  description String?
+  startAt   DateTime
+  endAt     DateTime
+  location  String?
+  createdAt DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher   User     @relation("ScheduleEventTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([startAt])
+}
