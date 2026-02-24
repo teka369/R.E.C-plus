@@ -1,0 +1,10 @@
+[
+  {
+    "nombres": "Nueva",
+    "apellidos": "Secretaria",
+    "email": "secretaria2@iejavieralondonobarriosevilla.edu.co",
+    "documento_identidad": "88888888",
+    "role": "SECRETARIA",
+    "password": "admin12345"
+  }
+]

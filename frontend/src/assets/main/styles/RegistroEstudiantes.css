@@ -1,0 +1,403 @@
+.registro-estudiantes {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.registro-estudiantes .card {
+  border: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.registro-estudiantes .card-header {
+  background-color: #dc3545;
+  color: white;
+  padding: 15px 20px;
+  border-bottom: none;
+}
+
+.registro-estudiantes .card-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.registro-estudiantes .card-body {
+  padding: 20px;
+}
+
+/* Estilos para los formularios */
+.registro-estudiantes .form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.registro-estudiantes .form-control {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 10px;
+  transition: border-color 0.3s ease;
+}
+
+.registro-estudiantes .form-control:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Estilos para los botones */
+.registro-estudiantes .btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.registro-estudiantes .btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.registro-estudiantes .btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.registro-estudiantes .btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Estilos para la tabla */
+.registro-estudiantes .table {
+  margin-top: 20px;
+}
+
+.registro-estudiantes .table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.registro-estudiantes .table td {
+  vertical-align: middle;
+}
+
+/* Estilos para las alertas */
+.registro-estudiantes .alert {
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.registro-estudiantes .alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.registro-estudiantes .alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+/* Estilos para el botón de navegación */
+.registro-estudiantes .btn-light {
+  background-color: white;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  transition: all 0.3s ease;
+}
+
+.registro-estudiantes .btn-light:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Estilos para los checkboxes */
+.registro-estudiantes .form-check {
+  margin-right: 15px;
+  margin-bottom: 10px;
+}
+
+.registro-estudiantes .form-check-input {
+  cursor: pointer;
+}
+
+.registro-estudiantes .form-check-input:checked {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.registro-estudiantes .form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Estilos para los badges */
+.registro-estudiantes .badge {
+  padding: 6px 10px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.registro-estudiantes .badge.bg-primary {
+  background-color: #007bff !important;
+}
+
+.registro-estudiantes .badge.bg-info {
+  background-color: #17a2b8 !important;
+}
+
+.registro-estudiantes .badge.bg-success {
+  background-color: #28a745 !important;
+}
+
+.registro-estudiantes .badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.registro-estudiantes .badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529;
+}
+
+/* Estilos para los grados y grupos */
+.registro-estudiantes .grados-grupos-container {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.registro-estudiantes .grado-container {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 15px;
+}
+
+.registro-estudiantes .grado-container:last-child {
+  border-bottom: none;
+}
+
+.registro-estudiantes .grado-title {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.registro-estudiantes .grupos-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-left: 10px;
+}
+
+/* Estilos para la tabla de grados y grupos */
+.registro-estudiantes .table td .mb-1 {
+  margin-bottom: 0.5rem;
+}
+
+.registro-estudiantes .table td .badge {
+  margin-right: 0.25rem;
+}
+
+/* Estilos generales */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Estilos de las tarjetas */
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Estilos de los formularios */
+.form-control:focus,
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Estilos de los botones */
+.btn {
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.btn-success:hover {
+  background-color: #157347;
+  border-color: #146c43;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-danger:hover {
+  background-color: #bb2d3b;
+  border-color: #b02a37;
+}
+
+/* Estilos de la tabla */
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+/* Estilos de las pestañas */
+.nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 0.75rem 1.25rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-tabs .nav-link:hover {
+  border: none;
+  color: #0d6efd;
+}
+
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
+  border: none;
+  border-bottom: 2px solid #0d6efd;
+  background: none;
+}
+
+/* Estilos de las alertas */
+.alert {
+  border: none;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.alert-info {
+  background-color: #cff4fc;
+  color: #055160;
+}
+
+/* Estilos de la barra de progreso */
+.progress {
+  height: 0.5rem;
+  background-color: #e9ecef;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background-color: #0d6efd;
+  transition: width 0.3s ease;
+}
+
+/* Estilos de los badges */
+.badge {
+  padding: 0.5em 0.75em;
+  font-weight: 500;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .table-responsive {
+    margin: 0 -1rem;
+  }
+}
+
+/* Animaciones */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms ease-in;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in;
+}
+
+.list-group-item-action:hover {
+  background-color: #dc3545; /* Color rojo */
+  color: white; /* Texto blanco para contraste */
+}
+
+.list-group-item-action.active,
+.list-group-item-action.active:hover {
+  background-color: #dc3545; /* También para el estado activo */
+  border-color: #dc3545;
+  color: white;
+} 

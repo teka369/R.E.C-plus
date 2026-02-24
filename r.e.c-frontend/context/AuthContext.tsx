@@ -1,0 +1,113 @@
+"use client";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { usersApi } from "@/lib/usersApi";
+
+type Role = "SECRETARIA" | "PROFESOR" | "ESTUDIANTE";
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+};
+
+type AuthContextType = {
+  user: AuthUser | null;
+  token: string | null;
+  login: (user: AuthUser, token: string) => Promise<void>;
+  logout: () => void;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  // Hidratar estado de autenticación desde cookies (httpOnly) en el servidor
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/auth/session", { method: "GET" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!mounted) return;
+        if (data?.ok) {
+          // Hidratar token y usuario mínimo (id + role) para cargar asignaciones
+          setToken((prev) => prev ?? "cookie");
+          if (!user && data?.userId && data?.role) {
+            setUser({ id: String(data.userId), role: data.role as Role, name: "", email: "" });
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        // noop
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Completar datos del usuario (name/email) tras hidratar sesión
+  useEffect(() => {
+    let abort = false;
+    (async () => {
+      if (!user || !token) return;
+      const needsProfile = !user.name || !user.email;
+      if (!needsProfile) return;
+      const idNum = Number(user.id);
+      if (!Number.isFinite(idNum)) return;
+      try {
+        const dto = await usersApi.get(idNum);
+        if (abort) return;
+        const name = [dto.nombres, dto.apellidos].filter(Boolean).join(" ").trim();
+        const email = dto.email || user.email || "";
+        setUser((prev) => (prev ? { ...prev, name, email } : prev));
+      } catch {
+        // Ignorar errores de perfil para no romper navegación
+      }
+    })();
+    return () => {
+      abort = true;
+    };
+  }, [user, token]);
+
+  const login = async (u: AuthUser, t: string) => {
+    setUser(u);
+    setToken(t);
+    // Setear cookies HttpOnly vía API para soporte de middleware en servidor
+    try {
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: t, role: u.role, userId: u.id }),
+      });
+    } catch {
+      // Ignorar errores de red; el middleware depende de cookies, pero el contexto mantiene estado en memoria para esta sesión
+    }
+  };
+
+  const logout = () => {
+    const prevRole = user?.role;
+    setUser(null);
+    setToken(null);
+    const target = prevRole === "SECRETARIA" ? "/acceso-secretaria" : "/login";
+    // Borrar cookies de sesión y forzar navegación completa para que el middleware actúe
+    fetch("/api/auth/session", { method: "DELETE" })
+      .catch(() => {})
+      .finally(() => {
+        if (typeof window !== "undefined") {
+          window.location.assign(target);
+        }
+      });
+  };
+
+  const value = useMemo(() => ({ user, token, login, logout }), [user, token]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuthContext() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuthContext must be used within AuthProvider");
+  return ctx;
+}
