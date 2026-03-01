@@ -1,4 +1,12 @@
-import { IsEmail, IsOptional, IsString, Length, IsEnum, Matches, ValidateIf } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Length,
+  IsEnum,
+  Matches,
+  ValidateIf,
+} from 'class-validator';
 import { UserRole } from './user-role.enum';
 
 export class CreateUserDto {
@@ -12,7 +20,8 @@ export class CreateUserDto {
 
   @IsEmail()
   @Matches(/@iejavieralondonobarriosevilla\.edu\.co$/, {
-    message: 'El email debe ser del dominio institucional @iejavieralondonobarriosevilla.edu.co'
+    message:
+      'El email debe ser del dominio institucional @iejavieralondonobarriosevilla.edu.co',
   })
   email: string;
 
@@ -21,7 +30,7 @@ export class CreateUserDto {
   documento_identidad: string;
 
   // Teléfono es requerido solo para profesores
-  @ValidateIf(o => o.role === UserRole.PROFESOR)
+  @ValidateIf((o: CreateUserDto) => o.role === UserRole.PROFESOR)
   @IsString()
   @Length(10, 15)
   telefono?: string;

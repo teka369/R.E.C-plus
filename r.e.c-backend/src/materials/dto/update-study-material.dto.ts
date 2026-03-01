@@ -1,4 +1,8 @@
-import { IsEnum, IsInt, IsOptional, IsString, Length, IsUrl } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Length, IsUrl } from 'class-validator';
+import {
+  StudyMaterialType,
+  StudyMaterialVisibility,
+} from './create-study-material.dto';
 
 export class UpdateStudyMaterialDto {
   @IsOptional()
@@ -12,8 +16,8 @@ export class UpdateStudyMaterialDto {
   description?: string;
 
   @IsOptional()
-  @IsEnum(['PDF', 'VIDEO', 'LINK', 'DOC', 'OTHER'] as any)
-  type?: 'PDF' | 'VIDEO' | 'LINK' | 'DOC' | 'OTHER';
+  @IsEnum(StudyMaterialType)
+  type?: StudyMaterialType;
 
   @IsOptional()
   @IsUrl({ require_tld: false })
@@ -28,6 +32,6 @@ export class UpdateStudyMaterialDto {
   filePath?: string;
 
   @IsOptional()
-  @IsEnum(['GROUP', 'GRADE'] as any)
-  visibility?: 'GROUP' | 'GRADE';
+  @IsEnum(StudyMaterialVisibility)
+  visibility?: StudyMaterialVisibility;
 }

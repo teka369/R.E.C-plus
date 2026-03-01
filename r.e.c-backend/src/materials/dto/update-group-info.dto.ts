@@ -1,4 +1,12 @@
-import { IsArray, IsOptional, IsString, IsNumber, ValidateNested, Min, Max } from 'class-validator';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  IsNumber,
+  ValidateNested,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class MetricsDto {

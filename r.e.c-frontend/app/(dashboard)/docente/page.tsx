@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { academicApi, type TeacherAssignment } from "@/lib/academicApi";
-import { FiBook, FiClock, FiMessageSquare, FiFileText, FiLink } from "react-icons/fi";
+import { FiBook, FiClock, FiMessageSquare, FiFileText, FiTrendingUp } from "react-icons/fi";
 import Link from "next/link";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function DocentePanel() {
   const { user } = useAuth();
@@ -14,13 +15,20 @@ export default function DocentePanel() {
   useEffect(() => {
     const idNum = Number(user?.id);
     if (!idNum) return;
-    
-    setLoading(true);
-    academicApi
-      .listTeacherAssignments(idNum)
-      .then(setAssignments)
-      .catch((err) => setError(err?.message || "Error al cargar asignaciones"))
-      .finally(() => setLoading(false));
+
+    const loadAssignments = async () => {
+      setLoading(true);
+      try {
+        const data = await academicApi.listTeacherAssignments(idNum);
+        setAssignments(data);
+      } catch (error: unknown) {
+        setError(getErrorMessage(error, "Error al cargar asignaciones"));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadAssignments();
   }, [user?.id]);
 
   const totalAsignaciones = assignments.length;
@@ -58,6 +66,12 @@ export default function DocentePanel() {
           label="Feedback"
           href="/docente/feedback"
           color="orange"
+        />
+        <StatCard
+          icon={<FiTrendingUp className="h-6 w-6" />}
+          label="Rendimiento"
+          href="/docente/performance"
+          color="blue"
         />
       </div>
 
@@ -152,6 +166,12 @@ export default function DocentePanel() {
           description="Define el contenido de la materia"
           icon={<FiFileText className="h-6 w-6" />}
           href="/docente/temarios"
+        />
+        <QuickAccessCard
+          title="Rendimiento"
+          description="Actualiza métricas por grupo"
+          icon={<FiTrendingUp className="h-6 w-6" />}
+          href="/docente/performance"
         />
       </div>
     </div>

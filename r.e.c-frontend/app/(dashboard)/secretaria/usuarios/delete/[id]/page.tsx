@@ -3,44 +3,43 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { usersApi, type UserDTO } from "@/lib/usersApi";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function DeleteUsuarioPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
+  const idNum = Number(id);
+  const invalidId = Number.isNaN(idNum);
   const [user, setUser] = useState<UserDTO | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!invalidId);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const idNum = Number(id);
-    if (Number.isNaN(idNum)) {
-      setError("ID inválido");
-      setLoading(false);
-      return;
-    }
+    if (invalidId) return;
+
     usersApi
       .get(idNum)
       .then((u) => setUser(u))
-      .catch((err: any) => {
-        setError(err?.response?.data?.message || "Error al cargar usuario");
+      .catch((error: unknown) => {
+        setError(getErrorMessage(error, "Error al cargar usuario"));
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [idNum, invalidId]);
 
   const onDelete = async () => {
-    const idNum = Number(id);
     try {
       await usersApi.remove(idNum);
       const target = user?.role === "ESTUDIANTE" ? "/secretaria/estudiantes" : user?.role === "PROFESOR" ? "/secretaria/docentes" : "/secretaria/secretaria";
       router.push(target);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al eliminar usuario");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al eliminar usuario"));
     }
   };
 
   return (
     <section className="p-4 space-y-4">
       <h2 className="text-lg font-semibold">Eliminar usuario #{id}</h2>
+      {invalidId && <p className="text-sm text-red-600">ID inválido</p>}
       {loading && <p className="text-sm text-gray-600">Cargando usuario...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!loading && !error && !user ? (

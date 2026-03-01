@@ -86,6 +86,31 @@ export default function Sidebar({ role }: { role: Role }) {
             </svg>
           ),
         },
+        {
+          href: "/secretaria/recuperaciones",
+          label: "Recuperaciones",
+          description: "Periodo y horario oficial",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 6h18" />
+              <path d="M8 6V4h8v2" />
+              <path d="M6 6l1 14h10l1-14" />
+              <path d="M9 11h6" />
+              <path d="M9 15h4" />
+            </svg>
+          ),
+        },
+        {
+          href: "/secretaria/performance",
+          label: "Rendimiento",
+          description: "Estadísticas por grupo",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l3-3 3 2 4-5" />
+            </svg>
+          ),
+        },
       ],
       PROFESOR: [
         {
@@ -146,6 +171,31 @@ export default function Sidebar({ role }: { role: Role }) {
             </svg>
           ),
         },
+        {
+          href: "/docente/recuperaciones",
+          label: "Recuperaciones",
+          description: "Solicitudes y actividades",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 6h18" />
+              <path d="M8 6V4h8v2" />
+              <path d="M6 6l1 14h10l1-14" />
+              <path d="M9 11h6" />
+              <path d="M9 15h4" />
+            </svg>
+          ),
+        },
+        {
+          href: "/docente/performance",
+          label: "Rendimiento",
+          description: "Métricas por grupo",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l3-3 3 2 4-5" />
+            </svg>
+          ),
+        },
       ],
       ESTUDIANTE: [
         {
@@ -203,6 +253,20 @@ export default function Sidebar({ role }: { role: Role }) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M21 15a4 4 0 01-4 4H7l-4 4V5a4 4 0 014-4h10a4 4 0 014 4v10z" />
               <path d="M8 9h8M8 13h6" />
+            </svg>
+          ),
+        },
+        {
+          href: "/estudiante/recuperaciones",
+          label: "Recuperaciones",
+          description: "Solicitudes y seguimiento",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 6h18" />
+              <path d="M8 6V4h8v2" />
+              <path d="M6 6l1 14h10l1-14" />
+              <path d="M9 11h6" />
+              <path d="M9 15h4" />
             </svg>
           ),
         },

@@ -41,7 +41,7 @@ export default function SecretariaAcademicoPage() {
     academicApi.listGrades().then((gs) => setGrades(gs.map((g) => ({ id: g.id, nombre: g.nombre }))));
     academicApi.listGroups().then((gs) => setGroups(gs));
     academicApi.listSubjects().then(setSubjects);
-    usersApi.list("PROFESOR" as any).then(setTeachers);
+    usersApi.list("PROFESOR").then(setTeachers);
   }, []);
 
   const gradeOptions = useMemo(() => grades.map((g) => ({ label: g.nombre, value: String(g.id) })), [grades]);

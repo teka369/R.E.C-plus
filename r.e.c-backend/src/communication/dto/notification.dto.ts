@@ -1,5 +1,20 @@
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { NotificationType } from '@prisma/client';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+
+export enum NotificationTypeDto {
+  GENERAL = 'GENERAL',
+  MATERIAL = 'MATERIAL',
+  PERFORMANCE = 'PERFORMANCE',
+  SCHEDULE = 'SCHEDULE',
+  MESSAGE = 'MESSAGE',
+  FEEDBACK = 'FEEDBACK',
+}
 
 export class CreateNotificationDto {
   @IsInt()
@@ -16,8 +31,8 @@ export class CreateNotificationDto {
   body: string;
 
   @IsOptional()
-  @IsEnum(NotificationType)
-  type?: NotificationType;
+  @IsEnum(NotificationTypeDto)
+  type?: NotificationTypeDto;
 }
 
 export class ReadNotificationDto {

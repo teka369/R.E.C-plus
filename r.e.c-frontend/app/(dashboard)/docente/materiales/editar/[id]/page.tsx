@@ -1,9 +1,11 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { materialsApi, type StudyMaterial, type UpdateStudyMaterialInput } from "@/lib/materialsApi";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function EditarMaterialPage() {
   const params = useParams();
@@ -28,8 +30,8 @@ export default function EditarMaterialPage() {
           setItem(data);
           setForm({ title: data.title, description: data.description ?? undefined, resourceUrl: data.resourceUrl ?? undefined, imageUrl: data.imageUrl ?? undefined, filePath: data.filePath ?? undefined, type: data.type, visibility: data.visibility });
         }
-      } catch (e: any) {
-        if (!abort) setError(e?.message || "Error cargando material");
+      } catch (error: unknown) {
+        if (!abort) setError(getErrorMessage(error, "Error cargando material"));
       } finally {
         if (!abort) setLoading(false);
       }
@@ -47,8 +49,8 @@ export default function EditarMaterialPage() {
       const updated = await materialsApi.updateStudy(idNum, form);
       setItem(updated);
       setOk("Material actualizado");
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Error al actualizar");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al actualizar"));
     } finally {
       setSaving(false);
     }
@@ -59,8 +61,8 @@ export default function EditarMaterialPage() {
     try {
       await materialsApi.deleteStudy(idNum);
       setOk("Material eliminado");
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Error al eliminar");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al eliminar"));
     } finally {
       setConfirmDelete(false);
     }
@@ -91,7 +93,16 @@ export default function EditarMaterialPage() {
             </div>
             <div>
               <label className="block text-xs text-gray-600">Tipo</label>
-              <select className="mt-1 w-full border rounded p-2 text-sm" value={form.type ?? item.type} onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as any }))}>
+              <select
+                className="mt-1 w-full border rounded p-2 text-sm"
+                value={form.type ?? item.type}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    type: e.target.value as StudyMaterial["type"],
+                  }))
+                }
+              >
                 {(["PDF", "VIDEO", "LINK", "DOC", "OTHER"] as const).map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
@@ -120,7 +131,16 @@ export default function EditarMaterialPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-600">Visibilidad</label>
-              <select className="mt-1 w-full border rounded p-2 text-sm" value={form.visibility ?? item.visibility} onChange={(e) => setForm((prev) => ({ ...prev, visibility: e.target.value as any }))}>
+              <select
+                className="mt-1 w-full border rounded p-2 text-sm"
+                value={form.visibility ?? item.visibility}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    visibility: e.target.value as StudyMaterial["visibility"],
+                  }))
+                }
+              >
                 {(["GROUP", "GRADE"] as const).map((v) => (
                   <option key={v} value={v}>{v}</option>
                 ))}

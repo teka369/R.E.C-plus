@@ -1,12 +1,34 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { academicApi, type Grade, type Group, type Subject } from "@/lib/academicApi";
 import { materialsApi, type StudyMaterial } from "@/lib/materialsApi";
 
-export default function EstudianteMaterialesPage() {
+function getErrorMessage(error: unknown, fallback: string) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof (error as { response?: { data?: { message?: unknown } } }).response?.data?.message === "string"
+  ) {
+    return (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? fallback;
+  }
+  if (typeof error === "object" && error !== null && "message" in error && typeof (error as { message?: unknown }).message === "string") {
+    return (error as { message?: string }).message ?? fallback;
+  }
+  return fallback;
+}
+
+function isGroupSubject(
+  value: unknown,
+): value is { subject?: Subject | null } {
+  return typeof value === "object" && value !== null;
+}
+
+function EstudianteMaterialesContent() {
   const { user } = useAuth();
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -59,7 +81,10 @@ export default function EstudianteMaterialesPage() {
         if (idNum) {
           try {
             const groupSubjects = await academicApi.listStudentSubjects(idNum);
-            assignedSubjects = groupSubjects.map((gs: any) => gs.subject).filter(Boolean);
+            assignedSubjects = groupSubjects
+              .filter(isGroupSubject)
+              .map((groupSubject) => groupSubject.subject)
+              .filter((subject): subject is Subject => Boolean(subject));
           } catch (err) {
             console.error("Error cargando materias del estudiante:", err);
           }
@@ -72,8 +97,8 @@ export default function EstudianteMaterialesPage() {
         } else {
           setStudentGroup(null);
         }
-      } catch (e: any) {
-        if (!abort) setError(e?.message || "Error cargando materiales del estudiante");
+      } catch (error: unknown) {
+        if (!abort) setError(getErrorMessage(error, "Error cargando materiales del estudiante"));
       } finally {
         if (!abort) setLoading(false);
       }
@@ -130,7 +155,7 @@ export default function EstudianteMaterialesPage() {
       if (!Number.isNaN(psn)) setPageSize(psn);
     }
     initializedFromUrl.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   // Inicializar desde localStorage si la URL no tiene parámetros
@@ -155,7 +180,7 @@ export default function EstudianteMaterialesPage() {
       }
     } catch {}
     initializedFromStorage.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   // Actualizar la URL cuando cambian filtros o paginación
@@ -310,7 +335,7 @@ export default function EstudianteMaterialesPage() {
             <label className="block text-xs text-gray-700">Tipo</label>
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
+              onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
               className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm"
             >
               <option value="ALL">Todos</option>
@@ -325,7 +350,7 @@ export default function EstudianteMaterialesPage() {
             <label className="block text-xs text-gray-700">Visibilidad</label>
             <select
               value={visibilityFilter}
-              onChange={(e) => setVisibilityFilter(e.target.value as any)}
+              onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
               className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm"
             >
               <option value="ALL">Todas</option>
@@ -431,8 +456,21 @@ export default function EstudianteMaterialesPage() {
                 <img src={m.resourceUrl!} alt="Imagen del material" className="mt-2 h-32 w-auto rounded border" />
               ))}
               {m.description && <p className="text-xs text-gray-700 mt-1">{m.description}</p>}
+              <p className="text-[11px] text-gray-600 mt-1">
+                Vistas: {m.views ?? 0} · Descargas: {m.downloads ?? 0}
+              </p>
               {m.resourceUrl && (
-                <a href={m.resourceUrl} target="_blank" rel="noreferrer" className="text-xs text-emerald-700 hover:underline">Abrir recurso</a>
+                <a
+                  href={m.resourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => {
+                    void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
+                  }}
+                  className="text-xs text-emerald-700 hover:underline"
+                >
+                  Abrir recurso
+                </a>
               )}
               <div className="mt-2">
                 <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
@@ -458,5 +496,13 @@ export default function EstudianteMaterialesPage() {
         </div>
       )}
     </section>
+  );
+}
+
+export default function EstudianteMaterialesPage() {
+  return (
+    <Suspense fallback={<section className="p-4"><h2 className="text-lg font-semibold">Cargando…</h2></section>}>
+      <EstudianteMaterialesContent />
+    </Suspense>
   );
 }

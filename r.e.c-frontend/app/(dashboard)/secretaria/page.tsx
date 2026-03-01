@@ -27,6 +27,14 @@ export default function SecretariaDashboardPage() {
           <h2 className="font-medium">Registro Masivo</h2>
           <p className="text-xs text-gray-600">Subir CSV/JSON para crear usuarios en lote</p>
         </Link>
+        <Link href="/secretaria/recuperaciones" prefetch={false} className="block border rounded p-4 hover:bg-gray-50">
+          <h2 className="font-medium">Recuperaciones</h2>
+          <p className="text-xs text-gray-600">Configurar periodo y horario de recuperación</p>
+        </Link>
+        <Link href="/secretaria/performance" prefetch={false} className="block border rounded p-4 hover:bg-gray-50">
+          <h2 className="font-medium">Rendimiento</h2>
+          <p className="text-xs text-gray-600">Gestionar estadísticas académicas por grupo</p>
+        </Link>
         <Link href="/secretaria/secretaria" prefetch={false} className="block border rounded p-4 hover:bg-gray-50">
           <h2 className="font-medium">Secretaría</h2>
           <p className="text-xs text-gray-600">Listar y administrar personal de secretaría</p>

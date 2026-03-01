@@ -68,8 +68,8 @@ export default function Navbar() {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  // Obtener primer nombre de forma segura desde `user.name` (o `nombres` si existiera)
-  const fullName: string = ((user as any)?.name || (user as any)?.nombres || "").toString().trim();
+  // Obtener primer nombre de forma segura desde `user.name`
+  const fullName: string = (user?.name ?? "").trim();
   const firstName: string = fullName
     ? fullName.split(/\s+/)[0]
     : (user?.email ? user.email.split("@")[0] : "Usuario");

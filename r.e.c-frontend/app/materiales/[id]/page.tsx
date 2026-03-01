@@ -1,10 +1,26 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { materialsApi, type StudyMaterial } from "@/lib/materialsApi";
 import { academicApi, type Grade } from "@/lib/academicApi";
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof (error as { response?: { data?: { message?: unknown } } }).response?.data?.message === "string"
+  ) {
+    return (error as { response?: { data?: { message?: string } } }).response?.data?.message ?? fallback;
+  }
+  if (typeof error === "object" && error !== null && "message" in error && typeof (error as { message?: unknown }).message === "string") {
+    return (error as { message?: string }).message ?? fallback;
+  }
+  return fallback;
+}
 
 export default function VerMaterialPage() {
   const params = useParams();
@@ -30,9 +46,10 @@ export default function VerMaterialPage() {
         if (!abort) {
           setItem(data);
           setGrades(allGrades);
+          void materialsApi.trackStudyView(idNum).catch(() => undefined);
         }
-      } catch (e: any) {
-        if (!abort) setError(e?.message || "Error cargando material");
+      } catch (error: unknown) {
+        if (!abort) setError(getErrorMessage(error, "Error cargando material"));
       } finally {
         if (!abort) setLoading(false);
       }
@@ -46,8 +63,8 @@ export default function VerMaterialPage() {
       await materialsApi.deleteStudy(idNum);
       setStatus("Material eliminado");
       setItem(null);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Error al eliminar");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al eliminar"));
     } finally {
       setConfirmDelete(false);
     }
@@ -152,10 +169,21 @@ export default function VerMaterialPage() {
                 )}
               </div>
               {item.description && <p className="text-sm text-gray-700">{item.description}</p>}
+              <p className="text-xs text-gray-600">Vistas: {item.views ?? 0} · Descargas: {item.downloads ?? 0}</p>
             </div>
           </div>
           {item.resourceUrl && (
-            <a href={item.resourceUrl} target="_blank" rel="noreferrer" className="text-sm text-emerald-700 hover:underline">Abrir recurso</a>
+            <a
+              href={item.resourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => {
+                void materialsApi.trackStudyDownload(idNum).catch(() => undefined);
+              }}
+              className="text-sm text-emerald-700 hover:underline"
+            >
+              Abrir recurso
+            </a>
           )}
           {/* Visor embebido del material */}
           {item.resourceUrl && (

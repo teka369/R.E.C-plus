@@ -38,6 +38,32 @@ enum MaterialType {
   OTHER
 }
 
+enum RecoveryRequestType {
+  RECOVERY
+  REINFORCEMENT
+}
+
+enum RecoveryRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum RecoveryActivityType {
+  HOMEWORK
+  EXAM
+  PROJECT
+  PRACTICE
+}
+
+enum RecoveryActivityStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  EVALUATED
+}
+
 model User {
   id                 Int      @id @default(autoincrement())
   nombres            String
@@ -65,6 +91,10 @@ model User {
   scheduleEntries    WeeklyScheduleEntry[] @relation("ScheduleEntryTeacher")
   scheduleNotes      ScheduleNote[] @relation("ScheduleNoteTeacher")
   scheduleEvents     ScheduleEvent[] @relation("ScheduleEventTeacher")
+  recoveryRequestsAsStudent RecoveryRequest[] @relation("RecoveryStudent")
+  recoveryRequestsAsTeacher RecoveryRequest[] @relation("RecoveryTeacher")
+  recoveryActivitiesCreated RecoveryActivity[] @relation("RecoveryActivityTeacher")
+  recoveryMessagesSent RecoveryMessage[] @relation("RecoveryMessageAuthor")
 }
 
 // Modelos académicos
@@ -95,10 +125,33 @@ model Group {
   scheduleEntries    WeeklyScheduleEntry[]
   scheduleNotes      ScheduleNote[]
   events             ScheduleEvent[]
+  recoveryRequests   RecoveryRequest[]
+  performance        GradePerformance?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   @@unique([nombre, gradeId])
+}
+
+model GradePerformance {
+  id                                Int      @id @default(autoincrement())
+  groupId                           Int      @unique
+  promedioGeneral                   Float?
+  asistenciaPromedio                Float?
+  aprobacion                        Float?
+  mejorAsignatura                   String?
+  estudiantesDestacados             String?
+  inasistenciasJustificadas         Int?
+  inasistenciasInjustificadas       Int?
+  porcentajeCursoMayorAsistencia    Float?
+  variacionPromedio                 Float?
+  variacionAprobacion               Float?
+  reduccionAusencias                Float?
+  tendenciaGeneral                  String?
+  createdAt                         DateTime @default(now())
+  updatedAt                         DateTime @updatedAt
+
+  group                             Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 model Subject {
@@ -112,6 +165,7 @@ model Subject {
   // Schedule
   scheduleEntries    WeeklyScheduleEntry[]
   feedbacks          Feedback[]
+  recoveryRequests   RecoveryRequest[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -167,6 +221,8 @@ model StudyMaterial {
   imageUrl    String?
   filePath    String?
   visibility  Visibility    @default(GROUP)
+  views       Int           @default(0)
+  downloads   Int           @default(0)
   createdAt   DateTime      @default(now())
 
   subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
@@ -316,4 +372,111 @@ model ScheduleEvent {
 
   @@index([groupId])
   @@index([startAt])
+}
+
+// Solicitudes de recuperación/refuerzo académico
+model RecoveryRequest {
+  id             Int                   @id @default(autoincrement())
+  studentId      Int
+  teacherId      Int
+  groupId        Int
+  subjectId      Int
+  type           RecoveryRequestType   @default(RECOVERY)
+  reason         String
+  status         RecoveryRequestStatus @default(PENDING)
+  teacherComment String?
+  requestedAt    DateTime              @default(now())
+  respondedAt    DateTime?
+  dueDate        DateTime?
+  finalScore     Float?
+
+  student        User                  @relation("RecoveryStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher        User                  @relation("RecoveryTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  group          Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject        Subject               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  activities     RecoveryActivity[]
+  messages       RecoveryMessage[]
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([groupId])
+  @@index([subjectId])
+  @@index([status])
+}
+
+// Actividades asignadas dentro de una solicitud
+model RecoveryActivity {
+  id             Int                  @id @default(autoincrement())
+  requestId      Int
+  teacherId      Int
+  title          String
+  description    String
+  activityType   RecoveryActivityType @default(HOMEWORK)
+  status         RecoveryActivityStatus @default(PENDING)
+  startAt        DateTime?
+  dueAt          DateTime
+  score          Float?
+  attachmentUrl  String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  request        RecoveryRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  teacher        User                 @relation("RecoveryActivityTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  attachment     RecoveryActivityAttachment?
+
+  @@index([requestId])
+  @@index([teacherId])
+  @@index([status])
+  @@index([dueAt])
+}
+
+// Archivo adjunto por actividad de recuperación
+model RecoveryActivityAttachment {
+  id           Int      @id @default(autoincrement())
+  activityId   Int      @unique
+  originalName String
+  mimeType     String
+  fileContent  Bytes
+  uploadedById Int?
+  uploadedAt   DateTime @default(now())
+
+  activity     RecoveryActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([uploadedAt])
+}
+
+// Seguimiento conversacional de una solicitud
+model RecoveryMessage {
+  id             Int      @id @default(autoincrement())
+  requestId      Int
+  authorId       Int
+  body           String
+  createdAt      DateTime @default(now())
+
+  request        RecoveryRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author         User            @relation("RecoveryMessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+// Configuración del periodo de recuperaciones (singleton)
+model RecoveryConfig {
+  id          Int      @id @default(1)
+  startAt     DateTime
+  endAt       DateTime
+  updatedById Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Archivo de horario de recuperación (singleton)
+model RecoverySchedule {
+  id          Int      @id @default(1)
+  originalName String
+  mimeType    String
+  fileContent Bytes
+  uploadedById Int?
+  uploadedAt  DateTime @default(now())
 }

@@ -17,7 +17,7 @@ export default function SecretariaDocentesPage() {
   const [teacherAssignmentsMap, setTeacherAssignmentsMap] = useState<Record<number, { loaded: boolean; items: { id: number; groupLabel: string; subjectName: string }[]; expanded?: boolean }>>({});
 
   useEffect(() => {
-    usersApi.list("PROFESOR" as any).then(setUsers);
+    usersApi.list("PROFESOR").then(setUsers);
     academicApi.listGroups().then((gs) => setGroups(gs.map((g) => ({ id: g.id, label: `${g.grade?.nombre ?? g.gradeId}-${g.nombre}` }))));
     academicApi.listSubjects().then((ss) => setSubjects(ss.map((s) => ({ id: s.id, nombre: s.nombre }))));
   }, []);

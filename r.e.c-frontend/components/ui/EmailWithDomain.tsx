@@ -10,24 +10,22 @@ type Props = {
 };
 
 export default function EmailWithDomain({ label = "Correo", email, onEmailChange, persistKey = "rec_email_domain" }: Props) {
-  const [domain, setDomain] = useState<string>("");
-  const [localPart, setLocalPart] = useState<string>("");
-
-  // Cargar dominio persistido o el por defecto
-  useEffect(() => {
+  const [domain, setDomain] = useState<string>(() => {
+    const emailDomain = email.split("@")[1];
+    if (typeof window === "undefined") {
+      return emailDomain || DEFAULT_EMAIL_DOMAIN;
+    }
     try {
       const saved = window.localStorage.getItem(persistKey);
-      setDomain((saved && saved.trim()) || DEFAULT_EMAIL_DOMAIN);
+      return (saved && saved.trim()) || emailDomain || DEFAULT_EMAIL_DOMAIN;
     } catch {
-      setDomain(DEFAULT_EMAIL_DOMAIN);
+      return emailDomain || DEFAULT_EMAIL_DOMAIN;
     }
-  }, [persistKey]);
+  });
 
-  // Sincronizar localPart desde email completo
-  useEffect(() => {
-    const [local, dom] = email.split("@");
-    setLocalPart(local || "");
-    if (dom && !domain) setDomain(dom);
+  const localPart = useMemo(() => {
+    const [local] = email.split("@");
+    return local || "";
   }, [email]);
 
   // Construir email completo cada vez que cambian las partes
@@ -37,6 +35,14 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
     const full = sanitizedDomain ? `${sanitizedLocal}@${sanitizedDomain}` : sanitizedLocal;
     onEmailChange(full);
   }, [localPart, domain, onEmailChange]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(persistKey, domain.replace(/^@+/, ""));
+    } catch {
+      // noop
+    }
+  }, [domain, persistKey]);
 
   const domainDisplay = useMemo(() => (domain ? `@${domain.replace(/^@+/, "")}` : ""), [domain]);
 
@@ -50,7 +56,16 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
           placeholder="usuario"
           className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black flex-1"
           value={localPart}
-          onChange={(e) => setLocalPart(e.target.value)}
+          onChange={(e) => {
+            const nextLocal = e.target.value;
+            const sanitizedLocal = nextLocal.replace(/\s+/g, "").replace(/@+/g, "");
+            const sanitizedDomain = domain.replace(/^@+/, "").trim();
+            onEmailChange(
+              sanitizedDomain
+                ? `${sanitizedLocal}@${sanitizedDomain}`
+                : sanitizedLocal,
+            );
+          }}
         />
         <div className="flex items-center">
           <span className="text-sm text-gray-700 px-2">@</span>
@@ -62,9 +77,6 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
             onChange={(e) => {
               const next = e.target.value.replace(/^@+/, "");
               setDomain(next);
-              try {
-                window.localStorage.setItem(persistKey, next);
-              } catch {}
             }}
           />
         </div>
