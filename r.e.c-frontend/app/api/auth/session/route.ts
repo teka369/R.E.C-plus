@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+const isProd = process.env.NODE_ENV === "production";
+
 export async function POST(req: Request) {
   try {
     const { token, role, userId } = await req.json();
@@ -13,22 +15,22 @@ export async function POST(req: Request) {
     res.cookies.set("rec_token", token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: isProd,
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 días
     });
     res.cookies.set("rec_role", role, {
       httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: isProd,
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
-    // Cookie no HttpOnly para hidratar el id del usuario en el cliente tras recarga
+    // UID en cookie HttpOnly; se hidrata desde GET /api/auth/session en servidor
     res.cookies.set("rec_uid", String(userId), {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: isProd,
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
@@ -40,9 +42,9 @@ export async function POST(req: Request) {
 
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("rec_token", "", { httpOnly: true, sameSite: "lax", secure: false, path: "/", maxAge: 0 });
-  res.cookies.set("rec_role", "", { httpOnly: true, sameSite: "lax", secure: false, path: "/", maxAge: 0 });
-  res.cookies.set("rec_uid", "", { httpOnly: false, sameSite: "lax", secure: false, path: "/", maxAge: 0 });
+  res.cookies.set("rec_token", "", { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
+  res.cookies.set("rec_role", "", { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
+  res.cookies.set("rec_uid", "", { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
   return res;
 }
 

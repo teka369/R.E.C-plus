@@ -6,6 +6,7 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import { UserRole } from "@/types/user";
 import { usersApi, type UserDTO } from "@/lib/usersApi";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function EditUsuarioPage() {
   const router = useRouter();
@@ -53,8 +54,8 @@ export default function EditUsuarioPage() {
       });
       const target = role === "ESTUDIANTE" ? "/secretaria/estudiantes" : role === "PROFESOR" ? "/secretaria/docentes" : "/secretaria/secretaria";
       router.push(target);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al actualizar usuario");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al actualizar usuario"));
     }
   };
 

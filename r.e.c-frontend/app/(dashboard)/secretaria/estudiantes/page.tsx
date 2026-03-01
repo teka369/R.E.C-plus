@@ -16,7 +16,7 @@ export default function SecretariaEstudiantesPage() {
   const [currentGroup, setCurrentGroup] = useState<Record<number, { label: string } | null>>({});
 
   useEffect(() => {
-    usersApi.list("ESTUDIANTE" as any).then(setUsers);
+    usersApi.list("ESTUDIANTE").then(setUsers);
     academicApi.listGroups().then((gs) => setGroups(gs.map((g) => ({ id: g.id, label: `${g.grade?.nombre ?? g.gradeId}-${g.nombre}` }))));
   }, []);
 

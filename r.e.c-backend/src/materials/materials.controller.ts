@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { MaterialsService } from './materials.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -10,6 +21,13 @@ import { CreateSyllabusDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { UpdateGroupInfoDto } from './dto/update-group-info.dto';
 
+type AuthenticatedRequest = {
+  user: {
+    userId: number;
+    role: UserRole;
+  };
+};
+
 @Controller('materials')
 export class MaterialsController {
   constructor(private readonly materials: MaterialsService) {}
@@ -18,20 +36,44 @@ export class MaterialsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('study')
-  createStudy(@Body() dto: CreateStudyMaterialDto, @Req() req: any) {
+  createStudy(
+    @Body() dto: CreateStudyMaterialDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.materials.createStudyMaterial(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('study')
-  listStudy(@Req() req: any) {
+  listStudy(@Req() req: AuthenticatedRequest) {
     return this.materials.listStudyMaterials(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('study/:id')
-  getStudy(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  getStudy(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.materials.getStudyMaterial(req.user, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('study/:id/view')
+  incrementStudyViews(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.materials.incrementStudyViews(req.user, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('study/:id/download')
+  incrementStudyDownloads(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.materials.incrementStudyDownloads(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,7 +82,7 @@ export class MaterialsController {
   updateStudy(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateStudyMaterialDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.materials.updateStudyMaterial(req.user, id, dto);
   }
@@ -48,7 +90,10 @@ export class MaterialsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Delete('study/:id')
-  deleteStudy(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  deleteStudy(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.materials.deleteStudyMaterial(req.user, id);
   }
 
@@ -56,19 +101,25 @@ export class MaterialsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('syllabi')
-  createSyllabus(@Body() dto: CreateSyllabusDto, @Req() req: any) {
+  createSyllabus(
+    @Body() dto: CreateSyllabusDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.materials.createSyllabus(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('syllabi')
-  listSyllabi(@Req() req: any) {
+  listSyllabi(@Req() req: AuthenticatedRequest) {
     return this.materials.listSyllabi(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('syllabi/:id')
-  getSyllabus(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  getSyllabus(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.materials.getSyllabus(req.user, id);
   }
 
@@ -78,7 +129,7 @@ export class MaterialsController {
   updateSyllabus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSyllabusDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.materials.updateSyllabus(req.user, id, dto);
   }
@@ -86,7 +137,10 @@ export class MaterialsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Delete('syllabi/:id')
-  deleteSyllabus(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+  deleteSyllabus(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.materials.deleteSyllabus(req.user, id);
   }
 
@@ -103,7 +157,7 @@ export class MaterialsController {
   updateGroupInfo(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Body() dto: UpdateGroupInfoDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.materials.updateGroupInfo(req.user, groupId, dto);
   }

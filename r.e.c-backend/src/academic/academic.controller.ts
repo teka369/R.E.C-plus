@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Header, Param, ParseIntPipe, Post, Put, UseGuards, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  UseGuards,
+  Delete,
+} from '@nestjs/common';
 import { AcademicService } from './academic.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -35,7 +46,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA)
   @Put('grades/:id')
-  updateGrade(@Param('id', ParseIntPipe) id: number, @Body() dto: { nombre: string }) {
+  updateGrade(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { nombre: string },
+  ) {
     return this.academic.updateGrade(id, dto);
   }
 
@@ -69,7 +83,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA)
   @Put('groups/:id')
-  updateGroup(@Param('id', ParseIntPipe) id: number, @Body() dto: { nombre?: string; gradeId?: number }) {
+  updateGroup(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { nombre?: string; gradeId?: number },
+  ) {
     return this.academic.updateGroup(id, dto);
   }
 
@@ -86,7 +103,7 @@ export class AcademicController {
   @Put('groups/:groupId/director')
   assignGroupDirector(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Body() dto: AssignGroupDirectorDto
+    @Body() dto: AssignGroupDirectorDto,
   ) {
     return this.academic.assignGroupDirector(groupId, dto.directorId);
   }
@@ -114,7 +131,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA)
   @Put('subjects/:id')
-  updateSubject(@Param('id', ParseIntPipe) id: number, @Body() dto: { nombre?: string; codigo?: string }) {
+  updateSubject(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { nombre?: string; codigo?: string },
+  ) {
     return this.academic.updateSubject(id, dto);
   }
 
@@ -159,7 +179,10 @@ export class AcademicController {
   @Roles(UserRole.SECRETARIA)
   @Header('Deprecation', 'true')
   @Header('Sunset', '2026-01-31T00:00:00Z')
-  @Header('Link', '</academic/students/:studentId/group>; rel="successor-version"')
+  @Header(
+    'Link',
+    '</academic/students/:studentId/group>; rel="successor-version"',
+  )
   @Post('students/assign-group')
   assignStudentToGroup(@Body() dto: { studentId: number; groupId: number }) {
     return this.academic.assignStudentToGroup(dto);
@@ -171,9 +194,12 @@ export class AcademicController {
   @Put('students/:studentId/group')
   updateStudentGroup(
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Body() dto: UpdateStudentGroupDto
+    @Body() dto: UpdateStudentGroupDto,
   ) {
-    return this.academic.assignStudentToGroup({ studentId, groupId: dto.groupId });
+    return this.academic.assignStudentToGroup({
+      studentId,
+      groupId: dto.groupId,
+    });
   }
 
   // Obtener grupo actual del estudiante
@@ -201,7 +227,7 @@ export class AcademicController {
   @Roles(UserRole.SECRETARIA)
   @Post('promotions/grade')
   promoteGrade(@Body() dto: PromoteGradeDto) {
-    return this.academic.promoteGrade(dto as any);
+    return this.academic.promoteGrade(dto);
   }
 
   // Simulación de promoción de grado (SECRETARIA)
@@ -209,14 +235,16 @@ export class AcademicController {
   @Roles(UserRole.SECRETARIA)
   @Post('promotions/grade/preview')
   previewPromoteGrade(@Body() dto: PromoteGradeDto) {
-    return this.academic.previewPromoteGrade(dto as any);
+    return this.academic.previewPromoteGrade(dto);
   }
 
   // Asignar profesor a grupo/materia
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA)
   @Post('teachers/assign')
-  assignTeacher(@Body() dto: { teacherId: number; groupId: number; subjectId: number }) {
+  assignTeacher(
+    @Body() dto: { teacherId: number; groupId: number; subjectId: number },
+  ) {
     return this.academic.assignTeacher(dto);
   }
 

@@ -1,14 +1,33 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Prisma } from '@prisma/client';
 import { UserRole } from './dto/user-role.enum';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+type AuthenticatedRequest = {
+  user: {
+    userId: number;
+    role: UserRole;
+    email: string;
+  };
+};
 
 @Controller('users')
 @ApiTags('Users')
@@ -32,14 +51,22 @@ export class UsersController {
     return this.usersService.bulkCreate(dtos);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA)
   @Get()
   findAll(@Query('role') role?: UserRole) {
     return this.usersService.findAll(role);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(Number(id));
+  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    const requestedId = Number(id);
+    const actor = req.user;
+    if (actor.role !== UserRole.SECRETARIA && actor.userId !== requestedId) {
+      throw new ForbiddenException('No autorizado');
+    }
+    return this.usersService.findOne(requestedId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -63,7 +90,7 @@ export class UsersController {
   async changePassword(
     @Param('id') id: string,
     @Body() dto: ChangePasswordDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const userId = Number(id);
     const actor = req.user; // { userId, role, email }
@@ -81,6 +108,10 @@ export class UsersController {
       throw new ForbiddenException('La contraseña actual es requerida');
     }
 
-    return this.usersService.changePasswordWithValidation(userId, dto.currentPassword, dto.newPassword);
+    return this.usersService.changePasswordWithValidation(
+      userId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 }

@@ -1,4 +1,24 @@
-import { IsEnum, IsInt, IsOptional, IsString, Length, IsUrl } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  IsUrl,
+} from 'class-validator';
+
+export enum StudyMaterialType {
+  PDF = 'PDF',
+  VIDEO = 'VIDEO',
+  LINK = 'LINK',
+  DOC = 'DOC',
+  OTHER = 'OTHER',
+}
+
+export enum StudyMaterialVisibility {
+  GROUP = 'GROUP',
+  GRADE = 'GRADE',
+}
 
 export class CreateStudyMaterialDto {
   @IsInt()
@@ -16,8 +36,8 @@ export class CreateStudyMaterialDto {
   @Length(0, 2000)
   description?: string;
 
-  @IsEnum(['PDF', 'VIDEO', 'LINK', 'DOC', 'OTHER'] as any)
-  type: 'PDF' | 'VIDEO' | 'LINK' | 'DOC' | 'OTHER';
+  @IsEnum(StudyMaterialType)
+  type: StudyMaterialType;
 
   @IsOptional()
   @IsUrl({ require_tld: false })
@@ -31,6 +51,6 @@ export class CreateStudyMaterialDto {
   @IsString()
   filePath?: string;
 
-  @IsEnum(['GROUP', 'GRADE'] as any)
-  visibility: 'GROUP' | 'GRADE';
+  @IsEnum(StudyMaterialVisibility)
+  visibility: StudyMaterialVisibility;
 }

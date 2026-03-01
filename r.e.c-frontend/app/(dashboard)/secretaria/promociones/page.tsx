@@ -2,7 +2,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
-import { academicApi, type Grade, type Group, type GroupStudentDTO } from "@/lib/academicApi";
+import {
+  academicApi,
+  type Grade,
+  type Group,
+  type GroupStudentDTO,
+  type PromoteGradePayload,
+  type PromotionSummary,
+} from "@/lib/academicApi";
 
 type GroupMap = {
   students: GroupStudentDTO[];
@@ -20,7 +27,9 @@ export default function SecretariaPromocionesPage() {
   const [groupMap, setGroupMap] = useState<Record<number, GroupMap>>({});
   const [submitting, setSubmitting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
-  const [result, setResult] = useState<{ summary: { sourceGroupId: number; targetGroupId: number; promotedCount: number; repeatCount: number }[] } | null>(null);
+  const [result, setResult] = useState<{ summary: PromotionSummary[] } | null>(
+    null,
+  );
 
   useEffect(() => {
     academicApi.listGrades().then((gs) => setGrades(gs.map((g) => ({ id: g.id, nombre: g.nombre }))));
@@ -86,13 +95,13 @@ export default function SecretariaPromocionesPage() {
     setSubmitting(true);
     setResult(null);
     try {
-      const payload = {
+      const payload: PromoteGradePayload = {
         sourceGradeId: Number(sourceGradeId),
         targetGradeId: Number(targetGradeId),
         mappings: sourceGroups.map((g) => {
           const gm = groupMap[g.id];
           const repeatIds = Object.entries(gm.repeaters)
-            .filter(([_, v]) => v)
+            .filter(([, v]) => v)
             .map(([id]) => Number(id));
           return {
             sourceGroupId: g.id,
@@ -101,9 +110,9 @@ export default function SecretariaPromocionesPage() {
           };
         }),
       };
-      const res = await academicApi.promoteGrade(payload as any);
+      const res = await academicApi.promoteGrade(payload);
       setResult({ summary: res.summary });
-    } catch (err) {
+    } catch {
       // noop; se podría mostrar error
     } finally {
       setSubmitting(false);
@@ -115,13 +124,13 @@ export default function SecretariaPromocionesPage() {
     setPreviewing(true);
     setResult(null);
     try {
-      const payload = {
+      const payload: PromoteGradePayload = {
         sourceGradeId: Number(sourceGradeId),
         targetGradeId: Number(targetGradeId),
         mappings: sourceGroups.map((g) => {
           const gm = groupMap[g.id];
           const repeatIds = Object.entries(gm.repeaters)
-            .filter(([_, v]) => v)
+            .filter(([, v]) => v)
             .map(([id]) => Number(id));
           return {
             sourceGroupId: g.id,
@@ -130,7 +139,7 @@ export default function SecretariaPromocionesPage() {
           };
         }),
       };
-      const res = await academicApi.promoteGradePreview(payload as any);
+      const res = await academicApi.promoteGradePreview(payload);
       setResult({ summary: res.summary });
     } catch {
       // opcional: mostrar error
@@ -255,12 +264,12 @@ export default function SecretariaPromocionesPage() {
                           const groupPct = groupTotal > 0 ? Math.round((r.promotedCount / groupTotal) * 100) : 0;
                           return (
                             <tr key={idx} className="border-t border-gray-200">
-                              <td className="p-2">{(r as any).sourceGroupName || nameById[r.sourceGroupId] || `Grupo ${r.sourceGroupId}`}</td>
-                              <td className="p-2">{(r as any).targetGroupName || nameById[r.targetGroupId] || `Grupo ${r.targetGroupId}`}</td>
+                              <td className="p-2">{r.sourceGroupName || nameById[r.sourceGroupId] || `Grupo ${r.sourceGroupId}`}</td>
+                              <td className="p-2">{r.targetGroupName || nameById[r.targetGroupId] || `Grupo ${r.targetGroupId}`}</td>
                               <td className="p-2">{r.promotedCount}</td>
                               <td className="p-2">{r.repeatCount}</td>
-                              <td className="p-2">{(r as any).beforeCount ?? '-'}</td>
-                              <td className="p-2">{(r as any).afterCount ?? '-'}</td>
+                              <td className="p-2">{r.beforeCount ?? '-'}</td>
+                              <td className="p-2">{r.afterCount ?? '-'}</td>
                               <td className="p-2">{groupPct}%</td>
                             </tr>
                           );
@@ -272,11 +281,11 @@ export default function SecretariaPromocionesPage() {
                     {result.summary.map((r, idx) => {
                       const gm = groupMap[r.sourceGroupId];
                       const nameByStudentId = new Map<number, string>((gm?.students || []).map((s) => [s.id, `${s.nombres} ${s.apellidos}`]));
-                      const promotedList = ((r as any).promotedStudentIds || []) as number[];
-                      const repeatList = ((r as any).repeatStudentIds || []) as number[];
+                      const promotedList = r.promotedStudentIds || [];
+                      const repeatList = r.repeatStudentIds || [];
                       return (
                         <div key={`detail-${idx}`} className="border-t border-gray-200 pt-2 mt-2">
-                          <div className="font-medium">Detalle {((r as any).sourceGroupName || nameById[r.sourceGroupId])} → {((r as any).targetGroupName || nameById[r.targetGroupId])}</div>
+                          <div className="font-medium">Detalle {(r.sourceGroupName || nameById[r.sourceGroupId])} → {(r.targetGroupName || nameById[r.targetGroupId])}</div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             <div>
                               <div className="text-gray-600">Promovidos ({promotedList.length})</div>

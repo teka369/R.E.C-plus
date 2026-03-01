@@ -30,6 +30,31 @@ export type StudentGroup = {
 
 export type GroupSubject = { id: number; subject: { id: number; nombre: string; codigo?: string | null } };
 
+export type PromoteGradeMapping = {
+  sourceGroupId: number;
+  targetGroupId: number;
+  repeatStudentIds: number[];
+};
+
+export type PromoteGradePayload = {
+  sourceGradeId: number;
+  targetGradeId: number;
+  mappings: PromoteGradeMapping[];
+};
+
+export type PromotionSummary = {
+  sourceGroupId: number;
+  targetGroupId: number;
+  promotedCount: number;
+  repeatCount: number;
+  beforeCount?: number;
+  afterCount?: number;
+  sourceGroupName?: string;
+  targetGroupName?: string;
+  promotedStudentIds?: number[];
+  repeatStudentIds?: number[];
+};
+
 export const academicApi = {
   // Grados
   async listGrades(): Promise<Grade[]> {
@@ -52,7 +77,7 @@ export const academicApi = {
   // Grupos
   async listGroups(): Promise<(Group & { grade?: Grade })[]> {
     const res = await api.get<(Group & { grade?: Grade })[]>("/academic/groups");
-    return res.data as any;
+    return res.data;
   },
   async createGroup(nombre: string, gradeId: number): Promise<Group> {
     const res = await api.post<Group>("/academic/groups", { nombre, gradeId });
@@ -133,12 +158,12 @@ export const academicApi = {
     const res = await api.get<GroupStudentDTO[]>(`/academic/groups/${groupId}/students`);
     return res.data;
   },
-  async promoteGrade(dto: { sourceGradeId: number; targetGradeId: number; mappings: { sourceGroupId: number; targetGroupId: number; repeatStudentIds: number[] }[] }): Promise<{ summary: any[] }> {
-    const res = await api.post(`/academic/promotions/grade`, dto);
+  async promoteGrade(dto: PromoteGradePayload): Promise<{ summary: PromotionSummary[] }> {
+    const res = await api.post<{ summary: PromotionSummary[] }>(`/academic/promotions/grade`, dto);
     return res.data;
   },
-  async promoteGradePreview(dto: { sourceGradeId: number; targetGradeId: number; mappings: { sourceGroupId: number; targetGroupId: number; repeatStudentIds: number[] }[] }): Promise<{ summary: any[] }> {
-    const res = await api.post(`/academic/promotions/grade/preview`, dto);
+  async promoteGradePreview(dto: PromoteGradePayload): Promise<{ summary: PromotionSummary[] }> {
+    const res = await api.post<{ summary: PromotionSummary[] }>(`/academic/promotions/grade/preview`, dto);
     return res.data;
   },
 };

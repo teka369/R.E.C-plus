@@ -9,7 +9,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(helmet());
   // CORS: permitir cookies/credenciales y orígenes específicos (por defecto Next dev)
-  const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001';
+  const corsOrigin =
+    process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001';
   const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
   app.enableCors({
     origin: allowedOrigins,
@@ -17,7 +18,13 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   // Swagger documentation
   const swaggerConfig = new DocumentBuilder()
     .setTitle('R.E.C API')
@@ -25,9 +32,14 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  if (process.env.NODE_ENV !== 'production') {
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, document);
+  }
   const port = parseInt(process.env.PORT ?? '3000', 10);
   await app.listen(port);
 }
-bootstrap();
+bootstrap().catch((error: unknown) => {
+  console.error(error);
+  process.exit(1);
+});

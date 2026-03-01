@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { materialsApi, type Syllabus, type CreateSyllabusInput } from "@/lib/materialsApi";
 import { academicApi, type TeacherAssignment } from "@/lib/academicApi";
 import { useAuth } from "@/hooks/useAuth";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function TemariosDocentePage() {
   const { user } = useAuth();
@@ -31,8 +32,9 @@ export default function TemariosDocentePage() {
             setForm((prev) => ({ ...prev, groupId: as[0].group.id, subjectId: as[0].subject.id }));
           }
         }
-      } catch (e: any) {
-        if (!abort) setError(e?.response?.data?.message || e?.message || "Error cargando temarios");
+      } catch (error: unknown) {
+        if (!abort)
+          setError(getErrorMessage(error, "Error cargando temarios"));
       } finally {
         if (!abort) setLoading(false);
       }
@@ -49,8 +51,8 @@ export default function TemariosDocentePage() {
       const created = await materialsApi.createSyllabus(form);
       setSyllabi((prev) => [created, ...prev]);
       setForm((prev) => ({ ...prev, title: "", content: "" }));
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "No se pudo crear");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "No se pudo crear"));
     } finally {
       setSaving(false);
     }

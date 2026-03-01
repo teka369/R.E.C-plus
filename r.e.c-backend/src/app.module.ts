@@ -11,7 +11,7 @@ import { PerformanceModule } from './performance/performance.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
-
+import { RecoverySettingsModule } from './recovery-settings/recovery-settings.module';
 
 @Module({
   imports: [
@@ -23,6 +23,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ScheduleModule,
     CommunicationModule,
     PerformanceModule,
+    RecoverySettingsModule,
     AuthModule,
     PrismaModule,
   ],

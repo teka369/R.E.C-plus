@@ -1,13 +1,12 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/layouts/Navbar";
 import api from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +16,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-  try {
+    try {
       const res = await api.post("/auth/login", { email, password });
       const { access_token, user } = res.data;
       // Este login es exclusivo para Estudiantes y Docentes
@@ -28,8 +27,8 @@ export default function LoginPage() {
       await login(user, access_token);
       const target = user.role === "PROFESOR" ? "/docente" : "/estudiante";
       window.location.href = target;
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al iniciar sesión");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al iniciar sesión"));
     } finally {
       setLoading(false);
     }

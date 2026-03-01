@@ -4,10 +4,24 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { usersApi, type CreateUserDto, type BulkCreateResult } from "@/lib/usersApi";
 import * as XLSX from "xlsx";
+import { getErrorMessage } from "@/lib/errors";
 
 type PreviewItem = CreateUserDto & { _row?: number; _error?: string };
 type ValidationIssue = { field: string; message: string; severity: "error" | "warning" };
 type RowValidation = { row: number; issues: ValidationIssue[]; isValid: boolean };
+type SupportedRole = NonNullable<CreateUserDto["role"]>;
+
+function parseRole(value: string): SupportedRole | undefined {
+  const normalized = value.trim().toUpperCase();
+  if (
+    normalized === "ESTUDIANTE" ||
+    normalized === "PROFESOR" ||
+    normalized === "SECRETARIA"
+  ) {
+    return normalized;
+  }
+  return undefined;
+}
 
 function parseCSV(text: string): PreviewItem[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
@@ -32,7 +46,7 @@ function parseCSV(text: string): PreviewItem[] {
       email: iEmail >= 0 ? cols[iEmail] : "",
       documento_identidad: iDoc >= 0 ? cols[iDoc] : "",
       telefono: iTelefono >= 0 ? cols[iTelefono] || undefined : undefined,
-      role: (roleVal as any) || undefined,
+      role: parseRole(roleVal),
       password: iPassword >= 0 ? (cols[iPassword] || undefined) : undefined,
       _row: r,
     };
@@ -47,7 +61,9 @@ async function parseXLSX(file: File): Promise<PreviewItem[]> {
   const wsName = wb.SheetNames[0];
   if (!wsName) return [];
   const ws = wb.Sheets[wsName];
-  const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+    defval: "",
+  });
   // Normalizamos claves a minúsculas
   return rows.map((row, idx) => {
     const get = (k: string) => {
@@ -61,7 +77,7 @@ async function parseXLSX(file: File): Promise<PreviewItem[]> {
       email: get("email"),
       documento_identidad: get("documento_identidad"),
       telefono: get("telefono") || undefined,
-      role: (roleVal as any) || undefined,
+      role: parseRole(roleVal),
       password: get("password") || undefined,
       _row: idx + 1,
     } as PreviewItem;
@@ -88,18 +104,26 @@ export default function RegistroMasivoPage() {
         const parsed = parseCSV(text);
         setItems(parsed);
       } else if (file.name.toLowerCase().endsWith(".json")) {
-        const data = JSON.parse(text);
+        const data: unknown = JSON.parse(text);
         if (!Array.isArray(data)) throw new Error("El JSON debe ser un arreglo de usuarios");
-        const normalized: PreviewItem[] = data.map((x: any, idx: number) => ({
-          nombres: x.nombres || "",
-          apellidos: x.apellidos || "",
-          email: x.email || "",
-          documento_identidad: x.documento_identidad || "",
-          telefono: x.telefono || undefined,
-          role: (x.role || "").toUpperCase(),
-          password: x.password || undefined,
-          _row: idx + 1,
-        }));
+        const normalized: PreviewItem[] = data.map((value, idx: number) => {
+          const x = (typeof value === "object" && value !== null
+            ? value
+            : {}) as Record<string, unknown>;
+          return {
+            nombres: typeof x.nombres === "string" ? x.nombres : "",
+            apellidos: typeof x.apellidos === "string" ? x.apellidos : "",
+            email: typeof x.email === "string" ? x.email : "",
+            documento_identidad:
+              typeof x.documento_identidad === "string"
+                ? x.documento_identidad
+                : "",
+            telefono: typeof x.telefono === "string" ? x.telefono : undefined,
+            role: parseRole(typeof x.role === "string" ? x.role : ""),
+            password: typeof x.password === "string" ? x.password : undefined,
+            _row: idx + 1,
+          };
+        });
         setItems(normalized);
       } else if (file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls")) {
         const parsed = await parseXLSX(file);
@@ -107,8 +131,8 @@ export default function RegistroMasivoPage() {
       } else {
         throw new Error("Formato no soportado. Usa CSV o JSON.");
       }
-    } catch (e: any) {
-      setError(e?.message || "Error leyendo archivo");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error leyendo archivo"));
       setItems([]);
     }
   }, []);
@@ -119,12 +143,22 @@ export default function RegistroMasivoPage() {
     setError(null);
     setResult(null);
     try {
-      const source: PreviewItem[] = registerOnlyValid ? items.filter((_, idx) => validation[idx]?.isValid) : items;
-      const payload: CreateUserDto[] = source.map(({ _row, _error, ...rest }) => rest);
+      const source: PreviewItem[] = registerOnlyValid
+        ? items.filter((_, idx) => validation[idx]?.isValid)
+        : items;
+      const payload: CreateUserDto[] = source.map((item) => ({
+        nombres: item.nombres,
+        apellidos: item.apellidos,
+        email: item.email,
+        documento_identidad: item.documento_identidad,
+        telefono: item.telefono,
+        password: item.password,
+        role: item.role,
+      }));
       const res = await usersApi.bulkCreate(payload);
       setResult(res);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Error al registrar");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al registrar"));
     } finally {
       setLoading(false);
     }
@@ -178,7 +212,7 @@ export default function RegistroMasivoPage() {
 
     const rows: RowValidation[] = items.map((it, i) => {
       const issues: ValidationIssue[] = [];
-      const role = (it.role as any)?.toString()?.toUpperCase() || "ESTUDIANTE";
+      const role = (it.role || "ESTUDIANTE").toString().toUpperCase();
       if (!it.nombres?.trim()) issues.push({ field: "nombres", message: "Nombres es requerido", severity: "error" });
       if (!it.apellidos?.trim()) issues.push({ field: "apellidos", message: "Apellidos es requerido", severity: "error" });
       if (!it.email?.trim() || !isEmailValid(it.email)) {
@@ -195,7 +229,8 @@ export default function RegistroMasivoPage() {
       } else if (it.telefono && !isPhoneDigits(it.telefono)) {
         issues.push({ field: "telefono", message: "Teléfono debe tener 10-15 dígitos", severity: "warning" });
       }
-      if (!isRoleValid(it.role as any)) issues.push({ field: "role", message: "Rol desconocido", severity: "error" });
+      if (!isRoleValid(it.role))
+        issues.push({ field: "role", message: "Rol desconocido", severity: "error" });
       // Contraseña requerida para PROFESOR y SECRETARIA; para ESTUDIANTE si falta, se usa documento
       if (["PROFESOR", "SECRETARIA"].includes(role) && !it.password?.trim()) {
         issues.push({ field: "password", message: "Contraseña requerida para este rol", severity: "error" });
@@ -245,7 +280,7 @@ export default function RegistroMasivoPage() {
           setExistingEmails(eSet);
           setExistingDocs(dSet);
         }
-      } catch (e) {
+      } catch {
         // Si falla la carga, mantener sets vacíos (no bloquea la validación básica)
         if (!cancelled) {
           setExistingEmails(new Set());
@@ -326,7 +361,7 @@ export default function RegistroMasivoPage() {
                         <td className="p-2">{it.email}</td>
                         <td className="p-2">{it.documento_identidad}</td>
                         <td className="p-2">{it.telefono || ""}</td>
-                        <td className="p-2">{(it.role as string) || "ESTUDIANTE"}</td>
+                        <td className="p-2">{it.role || "ESTUDIANTE"}</td>
                         <td className="p-2">
                           {errText && <div className="text-red-600">{errText}</div>}
                           {warnText && <div className="text-yellow-600">{warnText}</div>}

@@ -1,14 +1,19 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { academicApi, type TeacherAssignment } from "@/lib/academicApi";
 import { materialsApi, type CreateStudyMaterialInput } from "@/lib/materialsApi";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function CrearMaterialPage() {
   const { user } = useAuth();
   const [assignments, setAssignments] = useState<TeacherAssignment[]>([]);
-  const [form, setForm] = useState<Partial<CreateStudyMaterialInput>>({ type: "LINK", visibility: "GROUP" } as any);
+  const [form, setForm] = useState<Partial<CreateStudyMaterialInput>>({
+    type: "LINK",
+    visibility: "GROUP",
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -57,9 +62,12 @@ export default function CrearMaterialPage() {
         visibility: form.visibility!,
       });
       setOk("Material creado correctamente");
-      setForm({ type: form.type, visibility: form.visibility } as any);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Error al crear material");
+      setForm({
+        type: form.type ?? "LINK",
+        visibility: form.visibility ?? "GROUP",
+      });
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al crear material"));
     } finally {
       setSaving(false);
     }
@@ -115,7 +123,16 @@ export default function CrearMaterialPage() {
           </div>
           <div>
             <label className="block text-xs text-gray-600">Tipo</label>
-            <select className="mt-1 w-full border rounded p-2 text-sm" value={form.type ?? "LINK"} onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as any }))}>
+            <select
+              className="mt-1 w-full border rounded p-2 text-sm"
+              value={form.type ?? "LINK"}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  type: e.target.value as CreateStudyMaterialInput["type"],
+                }))
+              }
+            >
               {(["PDF", "VIDEO", "LINK", "DOC", "OTHER"] as const).map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -144,7 +161,17 @@ export default function CrearMaterialPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-600">Visibilidad</label>
-            <select className="mt-1 w-full border rounded p-2 text-sm" value={form.visibility ?? "GROUP"} onChange={(e) => setForm((prev) => ({ ...prev, visibility: e.target.value as any }))}>
+            <select
+              className="mt-1 w-full border rounded p-2 text-sm"
+              value={form.visibility ?? "GROUP"}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  visibility:
+                    e.target.value as CreateStudyMaterialInput["visibility"],
+                }))
+              }
+            >
               {(["GROUP", "GRADE"] as const).map((v) => (
                 <option key={v} value={v}>{v}</option>
               ))}

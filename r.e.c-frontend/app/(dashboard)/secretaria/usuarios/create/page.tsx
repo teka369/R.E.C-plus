@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import EmailWithDomain from "@/components/ui/EmailWithDomain";
 import { UserRole } from "@/types/user";
 import { usersApi } from "@/lib/usersApi";
+import { getErrorMessage } from "@/lib/errors";
 
 function CrearUsuarioContent() {
   const router = useRouter();
@@ -16,18 +17,19 @@ function CrearUsuarioContent() {
   const [documento, setDocumento] = useState("");
   const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("ESTUDIANTE");
-  const [roleLocked, setRoleLocked] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole>("ESTUDIANTE");
   const [error, setError] = useState<string | null>(null);
 
   const search = useSearchParams();
-  useEffect(() => {
-    const r = search.get("role");
-    if (r === "ESTUDIANTE" || r === "PROFESOR" || r === "SECRETARIA") {
-      setRole(r as UserRole);
-      setRoleLocked(true);
-    }
-  }, [search]);
+  const roleParam = search.get("role");
+  const lockedRole: UserRole | null =
+    roleParam === "ESTUDIANTE" ||
+    roleParam === "PROFESOR" ||
+    roleParam === "SECRETARIA"
+      ? roleParam
+      : null;
+  const role = lockedRole ?? selectedRole;
+  const roleLocked = lockedRole !== null;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,8 +61,8 @@ function CrearUsuarioContent() {
       });
       const target = role === "ESTUDIANTE" ? "/secretaria/estudiantes" : role === "PROFESOR" ? "/secretaria/docentes" : "/secretaria/secretaria";
       router.push(target);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al crear usuario");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al crear usuario"));
     }
   };
 
@@ -83,7 +85,7 @@ function CrearUsuarioContent() {
           <Select
             label="Rol"
             value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
+            onChange={(e) => setSelectedRole(e.target.value as UserRole)}
             options={[
               { label: "Estudiante", value: "ESTUDIANTE" },
               { label: "Profesor", value: "PROFESOR" },
@@ -121,7 +123,13 @@ function CrearUsuarioContent() {
 export default function CrearUsuarioPage() {
   // Envolver el uso de useSearchParams en un límite de Suspense para evitar CSR bailouts
   return (
-    <Suspense fallback={<section className="p-4"><h2 className="text-lg font-semibold">Cargando…</h2></section>}>
+    <Suspense
+      fallback={
+        <section className="p-4">
+          <h2 className="text-lg font-semibold">Cargando…</h2>
+        </section>
+      }
+    >
       <CrearUsuarioContent />
     </Suspense>
   );

@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { usersApi } from "@/lib/usersApi";
 
 type Role = "SECRETARIA" | "PROFESOR" | "ESTUDIANTE";
@@ -33,8 +33,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data?.ok) {
           // Hidratar token y usuario mínimo (id + role) para cargar asignaciones
           setToken((prev) => prev ?? "cookie");
-          if (!user && data?.userId && data?.role) {
-            setUser({ id: String(data.userId), role: data.role as Role, name: "", email: "" });
+          if (data?.userId && data?.role) {
+            setUser((prev) => {
+              if (prev) return prev;
+              return {
+                id: String(data.userId),
+                role: data.role as Role,
+                name: "",
+                email: "",
+              };
+            });
           }
         }
       })
@@ -101,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
   };
 
-  const value = useMemo(() => ({ user, token, login, logout }), [user, token]);
+  const value: AuthContextType = { user, token, login, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

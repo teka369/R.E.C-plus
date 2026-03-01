@@ -3,8 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    // Permitir cargar imágenes remotas usadas en el carrusel
-    domains: ["images.pexels.com", "images.unsplash.com"],
     remotePatterns: [
       {
         protocol: "https",

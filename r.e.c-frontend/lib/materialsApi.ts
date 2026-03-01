@@ -12,6 +12,8 @@ export type StudyMaterial = {
   imageUrl?: string | null;
   filePath?: string | null;
   visibility: "GROUP" | "GRADE";
+  views?: number;
+  downloads?: number;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -69,6 +71,14 @@ export const materialsApi = {
   },
   async getStudy(id: number): Promise<StudyMaterial> {
     const res = await api.get<StudyMaterial>(`/materials/study/${id}`);
+    return res.data;
+  },
+  async trackStudyView(id: number): Promise<{ id: number; views: number; downloads: number }> {
+    const res = await api.post<{ id: number; views: number; downloads: number }>(`/materials/study/${id}/view`);
+    return res.data;
+  },
+  async trackStudyDownload(id: number): Promise<{ id: number; views: number; downloads: number }> {
+    const res = await api.post<{ id: number; views: number; downloads: number }>(`/materials/study/${id}/download`);
     return res.data;
   },
   async createStudy(payload: CreateStudyMaterialInput): Promise<StudyMaterial> {

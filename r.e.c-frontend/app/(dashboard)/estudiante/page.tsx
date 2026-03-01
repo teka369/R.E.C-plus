@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { academicApi, type GroupSubject, type StudentGroup } from "@/lib/academicApi";
-import { FiBook, FiClock, FiFileText, FiLink, FiAward } from "react-icons/fi";
+import { FiBook, FiClock, FiFileText, FiAward } from "react-icons/fi";
 import Link from "next/link";
 
 export default function EstudiantePanel() {
@@ -16,28 +16,30 @@ export default function EstudiantePanel() {
     const idNum = Number(user?.id);
     if (!idNum) return;
 
-    setLoading(true);
-    Promise.all([
-      academicApi
-        .listStudentSubjects(idNum)
-        .then((data) => {
-          console.log("✅ Materias cargadas:", data);
-          setSubjects(data);
-        })
-        .catch((err) => {
-          console.error("❌ Error cargando materias:", err);
-          setError("No se pudieron cargar tus materias");
-        }),
-      academicApi
-        .getStudentGroup(idNum)
-        .then((data) => {
-          console.log("✅ Grupo cargado:", data);
-          setStudentGroup(data);
-        })
-        .catch((err) => {
-          console.error("❌ Error cargando grupo:", err);
-        }),
-    ]).finally(() => setLoading(false));
+    const loadStudentData = async () => {
+      setLoading(true);
+      await Promise.all([
+        academicApi
+          .listStudentSubjects(idNum)
+          .then((data) => {
+            setSubjects(data);
+          })
+          .catch(() => {
+            setError("No se pudieron cargar tus materias");
+          }),
+        academicApi
+          .getStudentGroup(idNum)
+          .then((data) => {
+            setStudentGroup(data);
+          })
+          .catch(() => {
+            // noop
+          }),
+      ]);
+      setLoading(false);
+    };
+
+    void loadStudentData();
   }, [user?.id]);
 
   const totalMaterias = subjects.length;

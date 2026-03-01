@@ -1,13 +1,12 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/layouts/Navbar";
 import api from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function AccesoSecretariaPage() {
   const { login } = useAuth();
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,8 +25,8 @@ export default function AccesoSecretariaPage() {
       }
       await login(user, access_token);
       window.location.href = "/secretaria";
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al iniciar sesión");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, "Error al iniciar sesión"));
     } finally {
       setLoading(false);
     }
