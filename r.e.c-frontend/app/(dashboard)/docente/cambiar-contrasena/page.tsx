@@ -1,0 +1,117 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { usersApi } from "@/lib/usersApi";
+
+export default function DocenteCambiarContrasenaPage() {
+  const { user } = useAuth();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const userId = Number(user?.id);
+    if (!userId) {
+      setError("No se pudo identificar al usuario actual");
+      return;
+    }
+
+    if (!currentPassword.trim() || !newPassword.trim()) {
+      setError("Completa todos los campos requeridos");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("La nueva contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("La confirmación no coincide con la nueva contraseña");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      setMessage(null);
+      await usersApi.changePassword(userId, { currentPassword, newPassword });
+      setMessage("Contraseña actualizada correctamente");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      setError("No se pudo actualizar la contraseña. Verifica la contraseña actual.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="p-4 max-w-xl space-y-4">
+      <h1 className="text-xl font-semibold">Cambiar contraseña</h1>
+      <p className="text-sm text-slate-600">Actualiza tu contraseña de acceso al sistema.</p>
+
+      {message ? <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">{message}</div> : null}
+      {error ? <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+
+      <form onSubmit={onSubmit} className="space-y-3 rounded border border-slate-200 bg-white p-4">
+        <Field
+          label="Contraseña actual"
+          type="password"
+          value={currentPassword}
+          onChange={setCurrentPassword}
+        />
+        <Field
+          label="Nueva contraseña"
+          type="password"
+          value={newPassword}
+          onChange={setNewPassword}
+        />
+        <Field
+          label="Confirmar nueva contraseña"
+          type="password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+        />
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+        >
+          {saving ? "Guardando..." : "Guardar nueva contraseña"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  type,
+  value,
+  onChange,
+}: {
+  label: string;
+  type: "text" | "password";
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+      />
+    </label>
+  );
+}

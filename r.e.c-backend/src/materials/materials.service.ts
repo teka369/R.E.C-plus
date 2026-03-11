@@ -1,8 +1,12 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { MaterialType, Prisma, Visibility } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStudyMaterialDto } from './dto/create-study-material.dto';
@@ -15,6 +19,8 @@ import { UserRole } from '../users/dto/user-role.enum';
 @Injectable()
 export class MaterialsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly uploadsRoot = path.join(process.cwd(), 'uploads');
 
   private toJsonValue(value: unknown): Prisma.InputJsonValue {
     return value as Prisma.InputJsonValue;
@@ -50,6 +56,51 @@ export class MaterialsService {
   }
 
   // Study Materials
+  async uploadStudyFile(
+    actor: { userId: number; role: UserRole },
+    groupId: number,
+    subjectId: number,
+    file: { originalname: string; mimetype: string; buffer: Buffer },
+  ) {
+    if (actor.role !== UserRole.PROFESOR)
+      throw new ForbiddenException('Solo profesores');
+    await this.ensureTeacherAssignment(actor.userId, groupId, subjectId);
+    if (!file?.buffer || !file.originalname || !file.mimetype) {
+      throw new BadRequestException('Archivo inválido');
+    }
+    if (file.buffer.length > 25 * 1024 * 1024) {
+      throw new BadRequestException('El archivo supera el límite de 25MB');
+    }
+
+    const safeBaseName =
+      path
+        .basename(file.originalname)
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .slice(0, 100) || 'archivo';
+    
+    // Estructura: study-materials/teacher-{id}/{yyyy-mm}/ para escalabilidad
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const storedName = `${Date.now()}-${randomUUID()}-${safeBaseName}`;
+    const relativePath = path.join(
+      'study-materials',
+      `teacher-${actor.userId}`,
+      yearMonth,
+      storedName,
+    );
+    const absolutePath = path.join(this.uploadsRoot, relativePath);
+
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.writeFile(absolutePath, file.buffer);
+
+    return {
+      filePath: relativePath.replace(/\\/g, '/'),
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.buffer.length,
+    };
+  }
+
   async createStudyMaterial(
     actor: { userId: number; role: UserRole },
     dto: CreateStudyMaterialDto,
@@ -106,6 +157,37 @@ export class MaterialsService {
     });
   }
 
+  private async cleanupEmptyDirs(dirPath: string): Promise<void> {
+    try {
+      const uploadsResolved = path.resolve(this.uploadsRoot);
+      const dirResolved = path.resolve(dirPath);
+
+      // Seguridad: solo limpiar dentro de uploadsRoot
+      if (!dirResolved.startsWith(uploadsResolved)) return;
+
+      // Subir recursivamente limpiando directorios vacíos
+      let currentDir = dirPath;
+      while (
+        currentDir.startsWith(uploadsResolved) &&
+        currentDir !== uploadsResolved
+      ) {
+        try {
+          const files = await fs.readdir(currentDir);
+          if (files.length === 0) {
+            await fs.rmdir(currentDir);
+            currentDir = path.dirname(currentDir);
+          } else {
+            break; // Directorio no vacío, parar
+          }
+        } catch (e) {
+          break;
+        }
+      }
+    } catch (e) {
+      // Ignorar errores de limpieza, no es crítico
+    }
+  }
+
   async deleteStudyMaterial(
     actor: { userId: number; role: UserRole },
     id: number,
@@ -120,6 +202,28 @@ export class MaterialsService {
     ) {
       throw new ForbiddenException('Solo el autor puede eliminar');
     }
+
+    // Eliminar archivo si existe
+    if (material.filePath) {
+      const normalized = path
+        .normalize(material.filePath)
+        .replace(/^([.][./\\])+/, '');
+      const absolutePath = path.resolve(this.uploadsRoot, normalized);
+      const uploadsResolved = path.resolve(this.uploadsRoot);
+
+      // Validar que la ruta esté dentro de uploadsRoot
+      if (absolutePath.startsWith(uploadsResolved)) {
+        try {
+          await fs.unlink(absolutePath);
+          // Limpiar directorios vacíos
+          await this.cleanupEmptyDirs(path.dirname(absolutePath));
+        } catch (e) {
+          // Log pero no fallar
+          console.warn(`No se pudo eliminar archivo: ${absolutePath}`, e);
+        }
+      }
+    }
+
     await this.prisma.studyMaterial.delete({ where: { id } });
     return { deleted: true };
   }
@@ -186,6 +290,58 @@ export class MaterialsService {
         material.group.gradeId === ctx!.gradeId);
     if (!allowed) throw new ForbiddenException('No autorizado');
     return material;
+  }
+
+  async getStudyFile(
+    actor: { userId: number; role: UserRole },
+    id: number,
+  ): Promise<{ originalName: string; mimeType: string; fileContent: Buffer }> {
+    const material = await this.getStudyMaterial(actor, id);
+    if (!material.filePath) {
+      throw new NotFoundException('El material no tiene archivo local');
+    }
+
+    const normalized = path.normalize(material.filePath).replace(/^([.][./\\])+/, '');
+    const absolutePath = path.resolve(this.uploadsRoot, normalized);
+    const uploadsResolved = path.resolve(this.uploadsRoot);
+    if (!absolutePath.startsWith(uploadsResolved)) {
+      throw new BadRequestException('Ruta de archivo inválida');
+    }
+
+    let fileContent: Buffer;
+    try {
+      fileContent = await fs.readFile(absolutePath);
+    } catch {
+      throw new NotFoundException('Archivo local no encontrado');
+    }
+
+    const ext = path.extname(material.filePath).toLowerCase();
+    const mimeByExt: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx':
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.txt': 'text/plain',
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+    };
+
+    return {
+      originalName: path.basename(material.filePath),
+      mimeType: mimeByExt[ext] ?? 'application/octet-stream',
+      fileContent,
+    };
   }
 
   async incrementStudyViews(

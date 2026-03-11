@@ -34,6 +34,59 @@ export type UpsertGradePerformanceInput = {
   tendenciaGeneral?: string;
 };
 
+export type StudentAcademicRecord = {
+  id: number;
+  subjectId: number;
+  subject: { id: number; nombre: string };
+  parcial1: number | null;
+  parcial2: number | null;
+  parcial3: number | null;
+  parcial4: number | null;
+  notaFinal: number | null;
+  promedioMateria: number | null;
+  progresoMateria: number | null;
+  inasistenciasJustificadas: number;
+  inasistenciasInjustificadas: number;
+  totalInasistencias?: number;
+  observaciones: string | null;
+  updatedAt: string;
+};
+
+export type StudentAcademicResponse = {
+  student: { id: number; nombres: string; apellidos: string; email: string };
+  group: { id: number; nombre: string; grade: { id: number; nombre: string } };
+  summary: {
+    promedioGeneral: number | null;
+    materiasConRegistro: number;
+    inasistenciasJustificadas: number;
+    inasistenciasInjustificadas: number;
+    totalInasistencias: number;
+  };
+  records: StudentAcademicRecord[];
+};
+
+export type GroupAcademicOverview = {
+  group: { id: number; nombre: string; grade: { id: number; nombre: string } };
+  subjects: { id: number; nombre: string }[];
+  students: {
+    student: { id: number; nombres: string; apellidos: string; email: string };
+    promedioGeneral: number | null;
+    records: StudentAcademicRecord[];
+  }[];
+};
+
+export type UpsertStudentAcademicInput = {
+  parcial1?: number;
+  parcial2?: number;
+  parcial3?: number;
+  parcial4?: number;
+  notaFinal?: number;
+  progresoMateria?: number;
+  inasistenciasJustificadas?: number;
+  inasistenciasInjustificadas?: number;
+  observaciones?: string;
+};
+
 export const performanceApi = {
   async getByGrade(grade: string): Promise<GradePerformance | null> {
     const res = await api.get<GradePerformance | null>(`/performance/grades/${encodeURIComponent(grade)}`);
@@ -47,6 +100,29 @@ export const performanceApi = {
 
   async upsertByGrade(grade: string, payload: UpsertGradePerformanceInput): Promise<GradePerformance | null> {
     const res = await api.post<GradePerformance | null>(`/performance/grades/${encodeURIComponent(grade)}`, payload);
+    return res.data;
+  },
+
+  async getStudentAcademic(studentId: number): Promise<StudentAcademicResponse> {
+    const res = await api.get<StudentAcademicResponse>(`/performance/students/${studentId}/academic`);
+    return res.data;
+  },
+
+  async getGroupAcademicOverview(groupId: number): Promise<GroupAcademicOverview> {
+    const res = await api.get<GroupAcademicOverview>(`/performance/groups/${groupId}/students-academic`);
+    return res.data;
+  },
+
+  async upsertStudentAcademic(
+    groupId: number,
+    studentId: number,
+    subjectId: number,
+    payload: UpsertStudentAcademicInput,
+  ): Promise<StudentAcademicRecord> {
+    const res = await api.post<StudentAcademicRecord>(
+      `/performance/groups/${groupId}/students/${studentId}/subjects/${subjectId}/academic`,
+      payload,
+    );
     return res.data;
   },
 };

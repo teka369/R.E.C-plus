@@ -1,4 +1,5 @@
 import api from "@/lib/axios";
+import { API_BASE_URL } from "@/lib/constants";
 
 export type StudyMaterial = {
   id: number;
@@ -16,6 +17,13 @@ export type StudyMaterial = {
   downloads?: number;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type UploadStudyFileResult = {
+  filePath: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
 };
 
 export type CreateStudyMaterialInput = {
@@ -65,6 +73,19 @@ export type UpdateGroupInfoInput = Partial<Omit<GroupInfo, "groupId">>;
 export type LeagueGroup = { groupId: number; nombre: string; info: GroupInfo };
 
 export const materialsApi = {
+  getStudyFileUrl(id: number): string {
+    return `${API_BASE_URL}/materials/study/${id}/file`;
+  },
+
+  async uploadStudyFile(file: File, groupId: number, subjectId: number): Promise<UploadStudyFileResult> {
+    const formData = new FormData();
+    formData.append("archivo", file);
+    formData.append("groupId", String(groupId));
+    formData.append("subjectId", String(subjectId));
+    const res = await api.post<UploadStudyFileResult>("/materials/study/upload", formData);
+    return res.data;
+  },
+
   async listStudy(): Promise<StudyMaterial[]> {
     const res = await api.get<StudyMaterial[]>("/materials/study");
     return res.data;

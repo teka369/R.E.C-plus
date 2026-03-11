@@ -32,6 +32,7 @@ function DocenteMaterialesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   // Filtros UI
   const [query, setQuery] = useState("");
@@ -253,7 +254,19 @@ function DocenteMaterialesContent() {
     }
   };
 
-  const isImageUrl = (url?: string | null) => !!url && /(\.png|\.jpe?g|\.gif|\.webp|\.bmp)$/i.test(url);
+  const isImageUrl = (url?: string | null) => {
+    if (!url) return false;
+    const value = url.trim();
+    if (!value) return false;
+    if (/^data:image\//i.test(value)) return true;
+    if (/^https?:\/\//i.test(value)) return true;
+    return /(\.png|\.jpe?g|\.gif|\.webp|\.bmp)(\?.*)?(#.*)?$/i.test(value);
+  };
+  const getThumbnailUrl = (m: StudyMaterial) => {
+    if (m.imageUrl && isImageUrl(m.imageUrl)) return m.imageUrl;
+    if (m.resourceUrl && isImageUrl(m.resourceUrl)) return m.resourceUrl;
+    return null;
+  };
   const badgePalette = [
     "bg-emerald-50 text-emerald-700 border border-emerald-200",
     "bg-indigo-50 text-indigo-700 border border-indigo-200",
@@ -281,6 +294,19 @@ function DocenteMaterialesContent() {
     return a ? `${a.group.grade?.nombre ?? a.group.grade?.id}-${a.group.nombre}` : `Grupo #${id}`;
   };
 
+  useEffect(() => {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem("teacher-materials-view-mode") : null;
+      if (stored === "list" || stored === "grid") setViewMode(stored);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") localStorage.setItem("teacher-materials-view-mode", viewMode);
+    } catch {}
+  }, [viewMode]);
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -297,11 +323,11 @@ function DocenteMaterialesContent() {
         <Link href="/docente/materiales/crear" prefetch={false} className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700">Crear material</Link>
       </div>
 
-      <div className="flex items-end gap-3 flex-wrap">
+      <div className="flex items-end gap-3 flex-wrap rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
         <div className="flex-1 max-w-xs">
           <label className="block text-xs text-gray-600">Grado–Grupo asignado</label>
           <select
-            className="mt-1 w-full border rounded p-2 text-sm"
+            className="mt-1 w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             value={String(selectedGroupId)}
             onChange={(e) => setSelectedGroupId(e.target.value ? Number(e.target.value) : "")}
           >
@@ -324,13 +350,13 @@ function DocenteMaterialesContent() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Título o descripción"
-            className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm"
+            className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
           />
         </div>
         <div>
           <label className="block text-xs text-gray-600">Tipo</label>
           <select
-            className="mt-1 border rounded p-2 text-sm"
+            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
           >
@@ -345,7 +371,7 @@ function DocenteMaterialesContent() {
         <div>
           <label className="block text-xs text-gray-600">Visibilidad</label>
           <select
-            className="mt-1 border rounded p-2 text-sm"
+            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             value={visibilityFilter}
             onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
           >
@@ -357,7 +383,7 @@ function DocenteMaterialesContent() {
         <div>
           <label className="block text-xs text-gray-600">Materia</label>
           <select
-            className="mt-1 border rounded p-2 text-sm"
+            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
           >
@@ -370,7 +396,7 @@ function DocenteMaterialesContent() {
         <div>
           <label className="block text-xs text-gray-600">Por página</label>
           <select
-            className="mt-1 border rounded p-2 text-sm"
+            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
           >
@@ -380,6 +406,22 @@ function DocenteMaterialesContent() {
           </select>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "list" ? "mode-active" : "text-slate-700 hover:bg-slate-100"}`}
+            >
+              Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "grid" ? "mode-active" : "text-slate-700 hover:bg-slate-100"}`}
+            >
+              Cuadro
+            </button>
+          </div>
           {hasActiveFilters && (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
               Filtros activos
@@ -426,59 +468,261 @@ function DocenteMaterialesContent() {
               </div>
             </div>
           )}
-          {paginatedItems.map((m) => (
-            <div key={m.id} className={`rounded p-4 flex items-center justify-between ${cardClasses(m.groupId)}`}>
-              <div>
-                <div className="text-sm font-medium text-gray-900">{m.title}</div>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-gray-600">Tipo: {m.type} · Visibilidad: {m.visibility} · Materia: {subjectName(m.subjectId)}</span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${badgeClasses(m.groupId)}`}>
-                    {groupLabelForId(m.groupId)}
-                  </span>
-                </div>
-                {(m.imageUrl && isImageUrl(m.imageUrl)) ? (
-                  <img src={m.imageUrl!} alt="Imagen del material" className="mt-2 h-32 w-auto rounded border" />
-                ) : (isImageUrl(m.resourceUrl) && (
-                  <img src={m.resourceUrl!} alt="Imagen del material" className="mt-2 h-32 w-auto rounded border" />
-                ))}
-                {m.description && <p className="text-xs text-gray-700 mt-1">{m.description}</p>}
-                <p className="text-[11px] text-gray-600 mt-1">
-                  Vistas: {m.views ?? 0} · Descargas: {m.downloads ?? 0}
-                </p>
-                {m.resourceUrl && (
-                  <a
-                    href={m.resourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => {
-                      void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
-                    }}
-                    className="text-xs text-emerald-700 hover:underline"
-                  >
-                    Abrir recurso
-                  </a>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
-                {isProfessor && (
-                  <Link href={`/docente/materiales/editar/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Editar</Link>
-                )}
-                {isProfessor && pendingDeleteId !== m.id && (
-                  <button onClick={() => setPendingDeleteId(m.id)} className="px-3 py-1.5 rounded-md text-sm bg-red-600 text-white hover:bg-red-700">Eliminar</button>
-                )}
-                {isProfessor && pendingDeleteId === m.id && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-600">¿Confirmar?</span>
-                    <button onClick={handleDeleteConfirm} className="px-2 py-1 rounded-md text-xs bg-red-600 text-white hover:bg-red-700">Sí</button>
-                    <button onClick={() => setPendingDeleteId(null)} className="px-2 py-1 rounded-md text-xs border border-gray-300 text-gray-700 hover:bg-gray-100">No</button>
-                  </div>
-                )}
-              </div>
+          <div key={`view-${viewMode}`} className="view-mode-switch">
+          {viewMode === "list" ? (
+            <div className="space-y-4 view-grid">
+              {paginatedItems.map((m) => {
+                const thumb = getThumbnailUrl(m);
+                const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);
+                return (
+                  <article key={m.id} className={`material-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition ${cardClasses(m.id)}`}>
+                    <div className="flex flex-col sm:flex-row">
+                      <div className="media-shell sm:w-52 shrink-0 relative bg-slate-100 max-h-[200px] sm:max-h-none overflow-hidden">
+                        {thumb ? (
+                          <img src={thumb} alt={`Miniatura de ${m.title}`} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full min-h-[120px] w-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">
+                            Sin miniatura
+                          </div>
+                        )}
+                        <span className={`absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium backdrop-blur ${badgeClasses(m.groupId)}`}>
+                          {groupLabelForId(m.groupId)}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 p-5 flex flex-col gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-900 leading-tight">{m.title}</h3>
+                          {m.description ? <p className="mt-1.5 text-sm text-slate-600 line-clamp-3">{m.description}</p> : null}
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{subjectName(m.subjectId)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tipo</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.type}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Visibilidad</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.visibility === "GROUP" ? "Grupo" : "Grado"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vistas</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.views ?? 0}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mt-auto">
+                          <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
+                          {isProfessor ? (
+                            <Link href={`/docente/materiales/editar/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Editar</Link>
+                          ) : null}
+                          {resourceHref ? (
+                            <a
+                              href={resourceHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => {
+                                void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
+                              }}
+                              className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                            >
+                              Abrir recurso
+                            </a>
+                          ) : null}
+                          {isProfessor && pendingDeleteId !== m.id ? (
+                            <button onClick={() => setPendingDeleteId(m.id)} className="px-3 py-1.5 rounded-md text-sm bg-red-600 text-white hover:bg-red-700">Eliminar</button>
+                          ) : null}
+                        </div>
+                        {isProfessor && pendingDeleteId === m.id ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-600">¿Confirmar eliminación?</span>
+                            <button onClick={handleDeleteConfirm} className="px-2 py-1 rounded-md text-xs bg-red-600 text-white hover:bg-red-700">Sí</button>
+                            <button onClick={() => setPendingDeleteId(null)} className="px-2 py-1 rounded-md text-xs border border-gray-300 text-gray-700 hover:bg-gray-100">No</button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 view-grid">
+              {paginatedItems.map((m) => {
+                const thumb = getThumbnailUrl(m);
+                const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);
+                return (
+                  <article key={m.id} className={`material-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition ${cardClasses(m.id)}`}>
+                    <div className="media-shell h-52 bg-slate-100 relative">
+                      {thumb ? (
+                        <img src={thumb} alt={`Miniatura de ${m.title}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">Sin miniatura</div>
+                      )}
+                      <span className={`absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium backdrop-blur ${badgeClasses(m.groupId)}`}>
+                        {groupLabelForId(m.groupId)}
+                      </span>
+                    </div>
+
+                    <div className="p-4 flex flex-col gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 line-clamp-2">{m.title}</h3>
+                        {m.description ? <p className="mt-1.5 text-xs text-slate-600 line-clamp-3">{m.description}</p> : null}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700 truncate">{subjectName(m.subjectId)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tipo</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Visibilidad</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.visibility === "GROUP" ? "Grupo" : "Grado"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vistas</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.views ?? 0}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mt-auto">
+                        <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
+                        {isProfessor ? (
+                          <Link href={`/docente/materiales/editar/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Editar</Link>
+                        ) : null}
+                        {resourceHref ? (
+                          <a
+                            href={resourceHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => {
+                              void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
+                            }}
+                            className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                          >
+                            Abrir recurso
+                          </a>
+                        ) : null}
+                        {isProfessor && pendingDeleteId !== m.id ? (
+                          <button onClick={() => setPendingDeleteId(m.id)} className="px-3 py-1.5 rounded-md text-sm bg-red-600 text-white hover:bg-red-700">Eliminar</button>
+                        ) : null}
+                      </div>
+
+                      {isProfessor && pendingDeleteId === m.id ? (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs text-gray-600">¿Confirmar?</span>
+                          <button onClick={handleDeleteConfirm} className="px-2 py-1 rounded-md text-xs bg-red-600 text-white hover:bg-red-700">Sí</button>
+                          <button onClick={() => setPendingDeleteId(null)} className="px-2 py-1 rounded-md text-xs border border-gray-300 text-gray-700 hover:bg-gray-100">No</button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          </div>
         </div>
       )}
+      <style jsx>{`
+        .mode-button {
+          transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+        }
+
+        .mode-button:hover {
+          transform: translateY(-1px);
+        }
+
+        .mode-active {
+          background: #059669;
+          color: white;
+          box-shadow: 0 6px 14px -10px rgba(5, 150, 105, 0.75);
+        }
+
+        .view-mode-switch {
+          animation: viewModeSwitch 220ms ease-out;
+          transform-origin: center top;
+        }
+
+        .view-grid > * {
+          animation: cardReveal 320ms ease-out both;
+        }
+
+        .view-grid > *:nth-child(2) { animation-delay: 25ms; }
+        .view-grid > *:nth-child(3) { animation-delay: 50ms; }
+        .view-grid > *:nth-child(4) { animation-delay: 75ms; }
+        .view-grid > *:nth-child(5) { animation-delay: 100ms; }
+        .view-grid > *:nth-child(6) { animation-delay: 125ms; }
+
+        .material-card {
+          transition: transform 220ms ease, box-shadow 220ms ease;
+        }
+
+        .material-card:hover {
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.7);
+        }
+
+        .media-shell {
+          overflow: hidden;
+        }
+
+        .media-shell img {
+          transition: transform 380ms ease;
+        }
+
+        .material-card:hover .media-shell img {
+          transform: scale(1.06);
+        }
+
+        @keyframes viewModeSwitch {
+          0% {
+            opacity: 0;
+            transform: scale(0.96, 1.04);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.01, 0.99);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1, 1);
+          }
+        }
+
+        @keyframes cardReveal {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.985);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mode-button,
+          .material-card,
+          .media-shell img,
+          .view-grid > * {
+            animation: none;
+            transition: none;
+          }
+
+          .view-mode-switch {
+            animation: none;
+          }
+        }
+      `}</style>
     </section>
   );
 }

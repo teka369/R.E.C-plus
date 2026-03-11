@@ -15,6 +15,7 @@ import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/dto/user-role.enum';
 import { PerformanceService } from './performance.service';
 import { UpsertGradePerformanceDto } from './dto/performance.dto';
+import { UpsertStudentAcademicDto } from './dto/student-academic.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -50,5 +51,43 @@ export class PerformanceController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.performance.upsertByGrade(req.user, grade, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('students/:studentId/academic')
+  getStudentAcademic(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.performance.getStudentAcademic(req.user, studentId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Get('groups/:groupId/students-academic')
+  getGroupAcademicOverview(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.performance.getGroupAcademicOverview(req.user, groupId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Post('groups/:groupId/students/:studentId/subjects/:subjectId/academic')
+  upsertStudentAcademic(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Param('subjectId', ParseIntPipe) subjectId: number,
+    @Body() dto: UpsertStudentAcademicDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.performance.upsertStudentAcademic(
+      req.user,
+      groupId,
+      studentId,
+      subjectId,
+      dto,
+    );
   }
 }

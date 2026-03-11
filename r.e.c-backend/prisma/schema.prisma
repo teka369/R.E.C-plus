@@ -95,6 +95,8 @@ model User {
   recoveryRequestsAsTeacher RecoveryRequest[] @relation("RecoveryTeacher")
   recoveryActivitiesCreated RecoveryActivity[] @relation("RecoveryActivityTeacher")
   recoveryMessagesSent RecoveryMessage[] @relation("RecoveryMessageAuthor")
+  academicRecords StudentAcademicRecord[] @relation("AcademicRecordStudent")
+  academicRecordsUpdated StudentAcademicRecord[] @relation("AcademicRecordTeacher")
 }
 
 // Modelos académicos
@@ -127,6 +129,7 @@ model Group {
   events             ScheduleEvent[]
   recoveryRequests   RecoveryRequest[]
   performance        GradePerformance?
+  academicRecords    StudentAcademicRecord[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -166,8 +169,38 @@ model Subject {
   scheduleEntries    WeeklyScheduleEntry[]
   feedbacks          Feedback[]
   recoveryRequests   RecoveryRequest[]
+  academicRecords    StudentAcademicRecord[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model StudentAcademicRecord {
+  id                     Int      @id @default(autoincrement())
+  studentId              Int
+  groupId                Int
+  subjectId              Int
+  updatedByTeacherId     Int?
+  parcial1               Float?
+  parcial2               Float?
+  parcial3               Float?
+  parcial4               Float?
+  notaFinal              Float?
+  progresoMateria        Float?
+  inasistenciasJustificadas   Int  @default(0)
+  inasistenciasInjustificadas Int  @default(0)
+  observaciones          String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  student                User     @relation("AcademicRecordStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  group                  Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject                Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  updatedByTeacher       User?    @relation("AcademicRecordTeacher", fields: [updatedByTeacherId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, groupId, subjectId])
+  @@index([studentId])
+  @@index([groupId])
+  @@index([subjectId])
 }
 
 // Asignación de estudiante a grupo
