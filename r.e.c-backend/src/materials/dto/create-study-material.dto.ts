@@ -5,6 +5,7 @@ import {
   IsString,
   Length,
   IsUrl,
+  Matches,
 } from 'class-validator';
 
 export enum StudyMaterialType {
@@ -44,7 +45,10 @@ export class CreateStudyMaterialDto {
   resourceUrl?: string;
 
   @IsOptional()
-  @IsUrl({ require_tld: false })
+  @IsString()
+  @Matches(/^(https?:\/\/|data:image\/)/i, {
+    message: 'imageUrl debe ser una URL http(s) o data:image/*',
+  })
   imageUrl?: string;
 
   @IsOptional()

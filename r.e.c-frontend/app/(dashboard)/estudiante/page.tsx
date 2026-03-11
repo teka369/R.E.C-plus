@@ -177,6 +177,12 @@ export default function EstudiantePanel() {
           icon={<FiFileText className="h-6 w-6" />}
           href="/estudiante/temarios"
         />
+        <QuickAccessCard
+          title="Gestión académica"
+          description="Revisa notas, progreso e inasistencias"
+          icon={<FiAward className="h-6 w-6" />}
+          href="/estudiante/gestion-academica"
+        />
       </div>
     </div>
   );

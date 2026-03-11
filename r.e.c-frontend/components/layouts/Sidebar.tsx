@@ -150,17 +150,6 @@ export default function Sidebar({ role }: { role: Role }) {
           ),
         },
         {
-          href: "/docente/ligas",
-          label: "Ligas",
-          description: "Enlaces y recursos externos",
-          icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-              <path d="M10 13a5 5 0 007.07 0l2.12-2.12a5 5 0 00-7.07-7.07L12.1 4.9" />
-              <path d="M14 11a5 5 0 00-7.07 0L4.81 13.12a5 5 0 107.07 7.07l1.99-1.99" />
-            </svg>
-          ),
-        },
-        {
           href: "/docente/feedback",
           label: "Feedback",
           description: "Retroalimentación",
@@ -168,6 +157,17 @@ export default function Sidebar({ role }: { role: Role }) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M21 15a4 4 0 01-4 4H7l-4 4V5a4 4 0 014-4h10a4 4 0 014 4v10z" />
               <path d="M8 9h8M8 13h6" />
+            </svg>
+          ),
+        },
+        {
+          href: "/docente/gestion-academica",
+          label: "Gestión académica",
+          description: "Notas e inasistencias por estudiante",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l3-3 3 2 4-5" />
             </svg>
           ),
         },
@@ -186,8 +186,8 @@ export default function Sidebar({ role }: { role: Role }) {
           ),
         },
         {
-          href: "/docente/performance",
-          label: "Rendimiento",
+          href: "/docente/ligas",
+          label: "Ligas",
           description: "Métricas por grupo",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -253,6 +253,17 @@ export default function Sidebar({ role }: { role: Role }) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M21 15a4 4 0 01-4 4H7l-4 4V5a4 4 0 014-4h10a4 4 0 014 4v10z" />
               <path d="M8 9h8M8 13h6" />
+            </svg>
+          ),
+        },
+        {
+          href: "/estudiante/gestion-academica",
+          label: "Gestión académica",
+          description: "Tu rendimiento por materia",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l3-3 3 2 4-5" />
             </svg>
           ),
         },

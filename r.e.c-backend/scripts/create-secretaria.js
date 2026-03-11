@@ -10,7 +10,7 @@ async function createSecretaria() {
     const secretariaData = {
       nombres: 'María',
       apellidos: 'García López',
-      email: 'secretaria@iejavieralondonobarriosevilla.edu.co',
+      email: 'secretaria5@iejavieralondonobarriosevilla.edu.co',
       documento_identidad: '12345678',
       password: 'Admin@2025', // Contraseña inicial
       role: 'SECRETARIA',

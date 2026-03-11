@@ -8,7 +8,16 @@ import type { SVGProps } from "react";
 import Image from "next/image";
 
 export default function Home() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const dashboardBase = user?.role === "PROFESOR" ? "/docente" : user?.role === "ESTUDIANTE" ? "/estudiante" : "/secretaria";
+  const featureHref = (feature: "temarios" | "materiales" | "horarios" | "feedback") => {
+    if (!token) return "/login";
+    if (user?.role === "SECRETARIA") return "/secretaria";
+    if (feature === "temarios") return `${dashboardBase}/temarios`;
+    if (feature === "materiales") return `${dashboardBase}/materiales`;
+    if (feature === "horarios") return user?.role === "PROFESOR" ? "/docente/horarios" : "/estudiante/horario";
+    return `${dashboardBase}/feedback`;
+  };
   const [welcomeReady, setWelcomeReady] = useState(false);
   useEffect(() => {
     const id = setTimeout(() => setWelcomeReady(true), 50);
@@ -52,7 +61,7 @@ export default function Home() {
                   </>
                 ) : (
                   <Link
-                    href="/secretaria"
+                    href={dashboardBase}
                     prefetch={false}
                     className="inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2 text-sm font-medium text-indigo-900 shadow hover:bg-white"
                   >
@@ -109,13 +118,13 @@ export default function Home() {
         <p className="mt-2 text-sm text-slate-600">Accede de forma directa a las áreas clave de la plataforma.</p>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { href: "/temarios", title: "Temarios", desc: "Explora contenidos planificados y objetivos por asignatura.", Icon: IconBookOpen, accent: "indigo" },
-            { href: "/materiales", title: "Materiales", desc: "Comparte y consulta recursos de estudio organizados.", Icon: IconLink, accent: "violet" },
-            { href: "/horarios", title: "Horarios", desc: "Visualiza y organiza tu calendario académico.", Icon: IconClock, accent: "fuchsia" },
-            { href: "/feedbacks", title: "Feedbacks", desc: "Revisa observaciones y retroalimentación de desempeño.", Icon: IconChat, accent: "cyan" },
+            { href: featureHref("temarios"), title: "Temarios", desc: "Explora contenidos planificados y objetivos por asignatura.", Icon: IconBookOpen, accent: "indigo" },
+            { href: featureHref("materiales"), title: "Materiales", desc: "Comparte y consulta recursos de estudio organizados.", Icon: IconLink, accent: "violet" },
+            { href: featureHref("horarios"), title: "Horarios", desc: "Visualiza y organiza tu calendario académico.", Icon: IconClock, accent: "fuchsia" },
+            { href: featureHref("feedback"), title: "Feedbacks", desc: "Revisa observaciones y retroalimentación de desempeño.", Icon: IconChat, accent: "cyan" },
           ].map((l) => (
             <Link
-              key={l.href}
+              key={`${l.title}-${l.href}`}
               href={l.href}
               prefetch={false}
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5 shadow-sm hover:shadow-md transition"
@@ -144,10 +153,10 @@ export default function Home() {
         </p>
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { Icon: IconBookOpen, title: "Materiales", text: "Comparte y consulta recursos de estudio organizados.", href: "/materiales" },
-            { Icon: IconClock, title: "Horarios", text: "Visualiza y organiza tu calendario académico.", href: "/horarios" },
-            { Icon: IconChat, title: "Feedback", text: "Revisa observaciones y retroalimentación de desempeño.", href: "/feedbacks" },
-            { Icon: IconBookOpen, title: "Temarios", text: "Explora contenidos planificados y objetivos por asignatura.", href: "/temarios" },
+            { Icon: IconBookOpen, title: "Materiales", text: "Comparte y consulta recursos de estudio organizados.", href: featureHref("materiales") },
+            { Icon: IconClock, title: "Horarios", text: "Visualiza y organiza tu calendario académico.", href: featureHref("horarios") },
+            { Icon: IconChat, title: "Feedback", text: "Revisa observaciones y retroalimentación de desempeño.", href: featureHref("feedback") },
+            { Icon: IconBookOpen, title: "Temarios", text: "Explora contenidos planificados y objetivos por asignatura.", href: featureHref("temarios") },
           ].map((s, i) => (
             <div key={i} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 shadow-sm hover:shadow-md transition">
               {/* Decoración */}
@@ -192,7 +201,7 @@ export default function Home() {
                 <span className="inline-flex items-center gap-2"><IconMapPin className="h-4 w-4" /> Auditorio Principal</span>
               </div>
               <div className="mt-4">
-                <Link href="/horarios" prefetch={false} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-5 py-2 text-sm font-medium text-white shadow hover:from-indigo-500 hover:via-violet-500 hover:to-fuchsia-500" aria-label="Ver agenda de eventos">
+                <Link href={featureHref("horarios")} prefetch={false} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-5 py-2 text-sm font-medium text-white shadow hover:from-indigo-500 hover:via-violet-500 hover:to-fuchsia-500" aria-label="Ver agenda de eventos">
                   <IconSparkles className="h-4 w-4" /> Ver agenda
                 </Link>
               </div>

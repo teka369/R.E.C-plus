@@ -69,8 +69,8 @@ export default function DocentePanel() {
         />
         <StatCard
           icon={<FiTrendingUp className="h-6 w-6" />}
-          label="Rendimiento"
-          href="/docente/performance"
+          label="Ligas"
+          href="/docente/ligas"
           color="blue"
         />
       </div>
@@ -168,10 +168,16 @@ export default function DocentePanel() {
           href="/docente/temarios"
         />
         <QuickAccessCard
-          title="Rendimiento"
+          title="Ligas"
           description="Actualiza métricas por grupo"
           icon={<FiTrendingUp className="h-6 w-6" />}
-          href="/docente/performance"
+          href="/docente/ligas"
+        />
+        <QuickAccessCard
+          title="Gestión académica"
+          description="Registra notas e inasistencias por estudiante"
+          icon={<FiTrendingUp className="h-6 w-6" />}
+          href="/docente/gestion-academica"
         />
       </div>
     </div>

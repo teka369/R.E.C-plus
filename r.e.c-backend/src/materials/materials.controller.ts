@@ -8,8 +8,15 @@ import {
   Post,
   Put,
   Req,
+  Res,
+  StreamableFile,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { MaterialsService } from './materials.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -43,6 +50,23 @@ export class MaterialsController {
     return this.materials.createStudyMaterial(req.user, dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR)
+  @Post('study/upload')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('archivo', { limits: { fileSize: 25 * 1024 * 1024 } }),
+  )
+  uploadStudyFile(
+    @UploadedFile()
+    file: { originalname: string; mimetype: string; buffer: Buffer },
+    @Body('groupId', ParseIntPipe) groupId: number,
+    @Body('subjectId', ParseIntPipe) subjectId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.materials.uploadStudyFile(req.user, groupId, subjectId, file);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('study')
   listStudy(@Req() req: AuthenticatedRequest) {
@@ -56,6 +80,22 @@ export class MaterialsController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.materials.getStudyMaterial(req.user, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('study/:id/file')
+  async getStudyFile(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const file = await this.materials.getStudyFile(req.user, id);
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${file.originalName}"`,
+    );
+    return new StreamableFile(file.fileContent);
   }
 
   @UseGuards(JwtAuthGuard)

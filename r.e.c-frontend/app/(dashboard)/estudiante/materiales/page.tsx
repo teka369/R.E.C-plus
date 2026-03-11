@@ -38,6 +38,7 @@ function EstudianteMaterialesContent() {
   const [studentGroup, setStudentGroup] = useState<{ groupId: number; gradeId: number; label: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   // Filtros UI
   const [query, setQuery] = useState("");
@@ -214,7 +215,19 @@ function EstudianteMaterialesContent() {
     setPage(1);
   }, [query, typeFilter, visibilityFilter, subjectFilter]);
 
-  const isImageUrl = (url?: string | null) => !!url && /(\.png|\.jpe?g|\.gif|\.webp|\.bmp)$/i.test(url);
+  const isImageUrl = (url?: string | null) => {
+    if (!url) return false;
+    const value = url.trim();
+    if (!value) return false;
+    if (/^data:image\//i.test(value)) return true;
+    if (/^https?:\/\//i.test(value)) return true;
+    return /(\.png|\.jpe?g|\.gif|\.webp|\.bmp)(\?.*)?(#.*)?$/i.test(value);
+  };
+  const getThumbnailUrl = (m: StudyMaterial) => {
+    if (m.imageUrl && isImageUrl(m.imageUrl)) return m.imageUrl;
+    if (m.resourceUrl && isImageUrl(m.resourceUrl)) return m.resourceUrl;
+    return null;
+  };
   const badgePalette = [
     "bg-emerald-50 text-emerald-700 border border-emerald-200",
     "bg-indigo-50 text-indigo-700 border border-indigo-200",
@@ -227,14 +240,14 @@ function EstudianteMaterialesContent() {
   ];
   const badgeClasses = (key: number) => badgePalette[key % badgePalette.length];
   const cardPalette = [
-    "bg-emerald-200 border border-emerald-400",
-    "bg-indigo-200 border border-indigo-400",
-    "bg-amber-200 border border-amber-400",
-    "bg-rose-200 border border-rose-400",
-    "bg-sky-200 border border-sky-400",
-    "bg-violet-200 border border-violet-400",
-    "bg-teal-200 border border-teal-400",
-    "bg-lime-200 border border-lime-400",
+    "bg-emerald-50 border border-emerald-200",
+    "bg-indigo-50 border border-indigo-200",
+    "bg-amber-50 border border-amber-200",
+    "bg-rose-50 border border-rose-200",
+    "bg-sky-50 border border-sky-200",
+    "bg-violet-50 border border-violet-200",
+    "bg-teal-50 border border-teal-200",
+    "bg-lime-50 border border-lime-200",
   ];
   const cardClasses = (key: number) => cardPalette[key % cardPalette.length];
   const groupLabelForId = (id: number) => {
@@ -250,6 +263,19 @@ function EstudianteMaterialesContent() {
     }
     return `Grupo #${id}`;
   };
+
+  useEffect(() => {
+    try {
+      const stored = typeof window !== "undefined" ? localStorage.getItem("student-materials-view-mode") : null;
+      if (stored === "list" || stored === "grid") setViewMode(stored);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") localStorage.setItem("student-materials-view-mode", viewMode);
+    } catch {}
+  }, [viewMode]);
 
   const computeCounts = (list: StudyMaterial[]) => {
     let group = 0;
@@ -314,7 +340,7 @@ function EstudianteMaterialesContent() {
 
       {/* Filtros */}
       {!loading && !error && (
-        <div className="flex flex-wrap gap-2 items-end">
+        <div className="flex flex-wrap gap-2 items-end rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
           <div className="flex-1 min-w-[220px]">
             <label className="block text-xs text-gray-700">Buscar
               {countsAll.total > 0 && (
@@ -328,7 +354,7 @@ function EstudianteMaterialesContent() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Título o descripción"
-              className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             />
           </div>
           <div>
@@ -336,7 +362,7 @@ function EstudianteMaterialesContent() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm"
+              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             >
               <option value="ALL">Todos</option>
               <option value="PDF">PDF</option>
@@ -351,7 +377,7 @@ function EstudianteMaterialesContent() {
             <select
               value={visibilityFilter}
               onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm"
+              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             >
               <option value="ALL">Todas</option>
               <option value="GROUP">Grupo</option>
@@ -363,7 +389,7 @@ function EstudianteMaterialesContent() {
             <select
               value={subjectFilter}
               onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm"
+              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             >
               <option value="ALL">Todas</option>
               {studentSubjects.map((s) => (
@@ -376,23 +402,39 @@ function EstudianteMaterialesContent() {
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm"
+              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
             >
               <option value={6}>6</option>
               <option value={12}>12</option>
               <option value={24}>24</option>
             </select>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <div className="mb-2 inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "list" ? "mode-active" : "text-slate-700 hover:bg-slate-100"}`}
+              >
+                Lista
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "grid" ? "mode-active" : "text-slate-700 hover:bg-slate-100"}`}
+              >
+                Cuadro
+              </button>
+            </div>
             {hasActiveFilters && (
-              <span className="mr-2 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
                 Filtros activos
               </span>
             )}
             <button
               type="button"
               onClick={handleResetFilters}
-              className="mt-5 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
             >
               Limpiar filtros
             </button>
@@ -441,42 +483,139 @@ function EstudianteMaterialesContent() {
               </div>
             </div>
           )}
-          {paginatedMaterials.map((m) => (
-            <div key={m.id} className={`rounded p-4 ${cardClasses(m.groupId)}`}>
-              <div className="text-sm font-medium text-gray-900">{m.title}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="text-xs text-gray-600">Tipo: {m.type} · Visibilidad: {m.visibility} · Origen: {m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"} · Materia: {subjectName(m.subjectId)}</span>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${badgeClasses(m.groupId)}`}>
-                  {groupLabelForId(m.groupId)}
-                </span>
-              </div>
-              {(m.imageUrl && isImageUrl(m.imageUrl)) ? (
-                <img src={m.imageUrl!} alt="Imagen del material" className="mt-2 h-32 w-auto rounded border" />
-              ) : (isImageUrl(m.resourceUrl) && (
-                <img src={m.resourceUrl!} alt="Imagen del material" className="mt-2 h-32 w-auto rounded border" />
-              ))}
-              {m.description && <p className="text-xs text-gray-700 mt-1">{m.description}</p>}
-              <p className="text-[11px] text-gray-600 mt-1">
-                Vistas: {m.views ?? 0} · Descargas: {m.downloads ?? 0}
-              </p>
-              {m.resourceUrl && (
-                <a
-                  href={m.resourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => {
-                    void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
-                  }}
-                  className="text-xs text-emerald-700 hover:underline"
-                >
-                  Abrir recurso
-                </a>
-              )}
-              <div className="mt-2">
-                <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
-              </div>
+          <div key={`view-${viewMode}`} className="view-mode-switch">
+          {viewMode === "list" ? (
+            <div className="space-y-4 view-grid">
+              {paginatedMaterials.map((m) => {
+                const thumb = getThumbnailUrl(m);
+                const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);
+                return (
+                  <article key={m.id} className={`material-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition ${cardClasses(m.id)}`}>
+                    <div className="flex flex-col sm:flex-row">
+                      <div className="media-shell sm:w-52 shrink-0 relative bg-slate-100 max-h-[200px] sm:max-h-none overflow-hidden">
+                        {thumb ? (
+                          <img src={thumb} alt={`Miniatura de ${m.title}`} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full min-h-[120px] w-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">Sin miniatura</div>
+                        )}
+                        <span className={`absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium backdrop-blur ${badgeClasses(m.groupId)}`}>
+                          {groupLabelForId(m.groupId)}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 p-5 flex flex-col gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-900 leading-tight">{m.title}</h3>
+                          {m.description ? <p className="mt-1.5 text-sm text-slate-600 line-clamp-3">{m.description}</p> : null}
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{subjectName(m.subjectId)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tipo</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.type}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Acceso</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vistas</p>
+                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.views ?? 0}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mt-auto">
+                          <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
+                          {resourceHref ? (
+                            <a
+                              href={resourceHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => {
+                                void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
+                              }}
+                              className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                            >
+                              Abrir recurso
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 view-grid">
+              {paginatedMaterials.map((m) => {
+                const thumb = getThumbnailUrl(m);
+                const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);
+                return (
+                  <article key={m.id} className={`material-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition ${cardClasses(m.id)}`}>
+                    <div className="media-shell h-52 bg-slate-100 relative">
+                      {thumb ? (
+                        <img src={thumb} alt={`Miniatura de ${m.title}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">Sin miniatura</div>
+                      )}
+                      <span className={`absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium backdrop-blur ${badgeClasses(m.groupId)}`}>
+                        {groupLabelForId(m.groupId)}
+                      </span>
+                    </div>
+
+                    <div className="p-4 flex flex-col gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900 line-clamp-2">{m.title}</h3>
+                        {m.description ? <p className="mt-1.5 text-xs text-slate-600 line-clamp-3">{m.description}</p> : null}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700 truncate">{subjectName(m.subjectId)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tipo</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Acceso</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vistas</p>
+                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.views ?? 0}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 mt-auto">
+                        <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
+                        {resourceHref ? (
+                          <a
+                            href={resourceHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => {
+                              void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
+                            }}
+                            className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                          >
+                            Abrir recurso
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          </div>
           {process.env.NODE_ENV !== "production" && (
             <details className="mt-4">
               <summary className="cursor-pointer text-xs text-gray-700">Depuración (solo desarrollo)</summary>
@@ -495,6 +634,97 @@ function EstudianteMaterialesContent() {
           )}
         </div>
       )}
+      <style jsx>{`
+        .mode-button {
+          transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+        }
+
+        .mode-button:hover {
+          transform: translateY(-1px);
+        }
+
+        .mode-active {
+          background: #059669;
+          color: white;
+          box-shadow: 0 6px 14px -10px rgba(5, 150, 105, 0.75);
+        }
+
+        .view-mode-switch {
+          animation: viewModeSwitch 220ms ease-out;
+          transform-origin: center top;
+        }
+
+        .view-grid > * {
+          animation: cardReveal 320ms ease-out both;
+        }
+
+        .view-grid > *:nth-child(2) { animation-delay: 25ms; }
+        .view-grid > *:nth-child(3) { animation-delay: 50ms; }
+        .view-grid > *:nth-child(4) { animation-delay: 75ms; }
+        .view-grid > *:nth-child(5) { animation-delay: 100ms; }
+        .view-grid > *:nth-child(6) { animation-delay: 125ms; }
+
+        .material-card {
+          transition: transform 220ms ease, box-shadow 220ms ease;
+        }
+
+        .material-card:hover {
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.7);
+        }
+
+        .media-shell {
+          overflow: hidden;
+        }
+
+        .media-shell img {
+          transition: transform 380ms ease;
+        }
+
+        .material-card:hover .media-shell img {
+          transform: scale(1.06);
+        }
+
+        @keyframes viewModeSwitch {
+          0% {
+            opacity: 0;
+            transform: scale(0.96, 1.04);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.01, 0.99);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1, 1);
+          }
+        }
+
+        @keyframes cardReveal {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.985);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mode-button,
+          .material-card,
+          .media-shell img,
+          .view-grid > * {
+            animation: none;
+            transition: none;
+          }
+
+          .view-mode-switch {
+            animation: none;
+          }
+        }
+      `}</style>
     </section>
   );
 }

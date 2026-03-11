@@ -151,6 +151,42 @@ export default function Navbar() {
                     Certificados
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/tutorial"
+                    prefetch={false}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/tutorial") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                  >
+                    Tutorial
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/Informacion"
+                    prefetch={false}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Informacion") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                  >
+                    Información
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/Contacto"
+                    prefetch={false}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Contacto") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                  >
+                    Contacto
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/Reportes"
+                    prefetch={false}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Reportes") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                  >
+                    Reportes
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -321,6 +357,10 @@ export default function Navbar() {
               <div className="mt-1 pl-3 space-y-1">
                 <Link href="/portafolio" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/portafolio") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Portafolio</Link>
                 <Link href="/certificados" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/certificados") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Certificados</Link>
+                <Link href="/tutorial" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/tutorial") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Tutorial</Link>
+                <Link href="/Informacion" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Informacion") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Información</Link>
+                <Link href="/Contacto" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Contacto") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Contacto</Link>
+                <Link href="/Reportes" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Reportes") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Reportes</Link>
               </div>
             </details>
             {token && (
