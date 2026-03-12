@@ -65,7 +65,8 @@ export const scheduleApi = {
     return res.data;
   },
   async createEntry(payload: CreateEntryInput): Promise<ScheduleEntry> {
-    const res = await api.post<ScheduleEntry>(`/schedule/groups/${payload.groupId}/entries`, payload);
+    const { groupId, ...body } = payload;
+    const res = await api.post<ScheduleEntry>(`/schedule/groups/${groupId}/entries`, body);
     return res.data;
   },
   async updateEntry(id: number, payload: UpdateEntryInput): Promise<ScheduleEntry> {
@@ -82,7 +83,8 @@ export const scheduleApi = {
     return res.data;
   },
   async createEvent(payload: CreateEventInput): Promise<ScheduleEvent> {
-    const res = await api.post<ScheduleEvent>(`/schedule/groups/${payload.groupId}/events`, payload);
+    const { groupId, ...body } = payload;
+    const res = await api.post<ScheduleEvent>(`/schedule/groups/${groupId}/events`, body);
     return res.data;
   },
   async updateEvent(id: number, payload: UpdateEventInput): Promise<ScheduleEvent> {
@@ -99,7 +101,8 @@ export const scheduleApi = {
     return res.data;
   },
   async createNote(payload: CreateNoteInput): Promise<ScheduleNote> {
-    const res = await api.post<ScheduleNote>(`/schedule/groups/${payload.groupId}/notes`, payload);
+    const { groupId, ...body } = payload;
+    const res = await api.post<ScheduleNote>(`/schedule/groups/${groupId}/notes`, body);
     return res.data;
   },
   async updateNote(id: number, payload: UpdateNoteInput): Promise<ScheduleNote> {
