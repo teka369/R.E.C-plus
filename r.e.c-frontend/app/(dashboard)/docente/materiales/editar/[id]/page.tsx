@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { materialsApi, type StudyMaterial, type UpdateStudyMaterialInput } from "@/lib/materialsApi";
+import { academicApi, type Grade, type Subject } from "@/lib/academicApi";
 import { getErrorMessage } from "@/lib/errors";
 
 export default function EditarMaterialPage() {
@@ -27,15 +28,23 @@ export default function EditarMaterialPage() {
   const [localResourceFile, setLocalResourceFile] = useState<File | null>(null);
   const [localResourceName, setLocalResourceName] = useState<string | null>(null);
   const [removeLocalFile, setRemoveLocalFile] = useState(false);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let abort = false;
     (async () => {
       try {
-        const data = await materialsApi.getStudy(idNum);
+        const [data, allGrades, allSubjects] = await Promise.all([
+          materialsApi.getStudy(idNum),
+          academicApi.listGrades().catch(() => []),
+          academicApi.listSubjects().catch(() => []),
+        ]);
         if (!abort) {
           setItem(data);
+          setGrades(allGrades);
+          setSubjects(allSubjects);
           setForm({
             title: data.title,
             description: data.description ?? undefined,
@@ -147,6 +156,19 @@ export default function EditarMaterialPage() {
     reader.readAsDataURL(file);
   };
 
+  const groupLabel = (groupId?: number | null) => {
+    if (!groupId) return `Grupo #${groupId}`;
+    for (const g of grades) {
+      const gr = (g.groups ?? []).find((x) => x.id === groupId);
+      if (gr) return `${g.nombre} - ${gr.nombre}`;
+    }
+    return `Grupo #${groupId}`;
+  };
+  const subjectLabel = (subjectId?: number | null) => {
+    if (!subjectId) return `Materia #${subjectId}`;
+    return subjects.find((s) => s.id === subjectId)?.nombre ?? `Materia #${subjectId}`;
+  };
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -184,9 +206,9 @@ export default function EditarMaterialPage() {
         <>
         <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-800 flex flex-wrap gap-2">
           <span className="font-medium">Resumen:</span>
-          <span>Materia #{item.subjectId}</span>
+          <span>{subjectLabel(item.subjectId)}</span>
           <span>•</span>
-          <span>Grupo #{item.groupId}</span>
+          <span>{groupLabel(item.groupId)}</span>
           <span>•</span>
           <span>Tipo {form.type ?? item.type}</span>
           <span>•</span>
@@ -203,11 +225,11 @@ export default function EditarMaterialPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-600">Grupo</label>
-                <input className={inputClass} value={`Grupo #${item.groupId}`} disabled />
+                <input className={inputClass} value={groupLabel(item.groupId)} disabled />
               </div>
               <div>
                 <label className="block text-xs text-gray-600">Materia</label>
-                <input className={inputClass} value={`Materia #${item.subjectId}`} disabled />
+                <input className={inputClass} value={subjectLabel(item.subjectId)} disabled />
               </div>
             </div>
             <p className="text-[11px] text-gray-500">Grupo y materia no se cambian desde esta vista para mantener consistencia de asignación docente.</p>
