@@ -1,5 +1,17 @@
 import api from "@/lib/axios";
 
+// ── Shared ───────────────────────────────────────────────────────────────────
+
+export type GradeEntry = {
+  label: string;
+  value: number | null;
+  period?: number;
+  inasistenciasJustificadas?: number;
+  inasistenciasInjustificadas?: number;
+};
+
+// ── Grade Performance (group-level stats) ────────────────────────────────────
+
 export type GradePerformance = {
   id: number;
   groupId: number;
@@ -34,6 +46,8 @@ export type UpsertGradePerformanceInput = {
   tendenciaGeneral?: string;
 };
 
+// ── Student Academic Record ───────────────────────────────────────────────────
+
 export type StudentAcademicRecord = {
   id: number;
   subjectId: number;
@@ -42,6 +56,7 @@ export type StudentAcademicRecord = {
   parcial2: number | null;
   parcial3: number | null;
   parcial4: number | null;
+  gradesJson: string | null;
   notaFinal: number | null;
   promedioMateria: number | null;
   progresoMateria: number | null;
@@ -51,6 +66,21 @@ export type StudentAcademicRecord = {
   observaciones: string | null;
   updatedAt: string;
 };
+
+export type UpsertStudentAcademicInput = {
+  parcial1?: number;
+  parcial2?: number;
+  parcial3?: number;
+  parcial4?: number;
+  gradesJson?: string;
+  notaFinal?: number;
+  progresoMateria?: number;
+  inasistenciasJustificadas?: number;
+  inasistenciasInjustificadas?: number;
+  observaciones?: string;
+};
+
+// ── Student Academic Response (single student) ───────────────────────────────
 
 export type StudentAcademicResponse = {
   student: { id: number; nombres: string; apellidos: string; email: string };
@@ -65,31 +95,27 @@ export type StudentAcademicResponse = {
   records: StudentAcademicRecord[];
 };
 
-export type GroupAcademicOverview = {
-  group: { id: number; nombre: string; grade: { id: number; nombre: string } };
-  subjects: { id: number; nombre: string }[];
-  students: {
-    student: { id: number; nombres: string; apellidos: string; email: string };
-    promedioGeneral: number | null;
-    records: StudentAcademicRecord[];
-  }[];
+// ── Group Academic Overview ───────────────────────────────────────────────────
+
+export type GroupStudentEntry = {
+  student: { id: number; nombres: string; apellidos: string; email: string };
+  promedioGeneral: number | null;
+  records: StudentAcademicRecord[];
 };
 
-export type UpsertStudentAcademicInput = {
-  parcial1?: number;
-  parcial2?: number;
-  parcial3?: number;
-  parcial4?: number;
-  notaFinal?: number;
-  progresoMateria?: number;
-  inasistenciasJustificadas?: number;
-  inasistenciasInjustificadas?: number;
-  observaciones?: string;
+export type GroupAcademicOverview = {
+  group: { id: number; nombre: string; grade: { id: number; nombre: string } };
+  subjects: Array<{ id: number; nombre: string }>;
+  students: GroupStudentEntry[];
 };
+
+// ── API ───────────────────────────────────────────────────────────────────────
 
 export const performanceApi = {
   async getByGrade(grade: string): Promise<GradePerformance | null> {
-    const res = await api.get<GradePerformance | null>(`/performance/grades/${encodeURIComponent(grade)}`);
+    const res = await api.get<GradePerformance | null>(
+      `/performance/grades/${encodeURIComponent(grade)}`,
+    );
     return res.data;
   },
 
@@ -98,18 +124,36 @@ export const performanceApi = {
     return res.data;
   },
 
-  async upsertByGrade(grade: string, payload: UpsertGradePerformanceInput): Promise<GradePerformance | null> {
-    const res = await api.post<GradePerformance | null>(`/performance/grades/${encodeURIComponent(grade)}`, payload);
+  async upsertByGrade(
+    grade: string,
+    payload: UpsertGradePerformanceInput,
+  ): Promise<GradePerformance | null> {
+    const res = await api.post<GradePerformance | null>(
+      `/performance/grades/${encodeURIComponent(grade)}`,
+      payload,
+    );
+    return res.data;
+  },
+
+  async upsertGradePerformance(
+    gradeId: number,
+    payload: UpsertGradePerformanceInput,
+  ): Promise<GradePerformance> {
+    const res = await api.post<GradePerformance>(`/performance/grades/${gradeId}`, payload);
     return res.data;
   },
 
   async getStudentAcademic(studentId: number): Promise<StudentAcademicResponse> {
-    const res = await api.get<StudentAcademicResponse>(`/performance/students/${studentId}/academic`);
+    const res = await api.get<StudentAcademicResponse>(
+      `/performance/students/${studentId}/academic`,
+    );
     return res.data;
   },
 
   async getGroupAcademicOverview(groupId: number): Promise<GroupAcademicOverview> {
-    const res = await api.get<GroupAcademicOverview>(`/performance/groups/${groupId}/students-academic`);
+    const res = await api.get<GroupAcademicOverview>(
+      `/performance/groups/${groupId}/students-academic`,
+    );
     return res.data;
   },
 

@@ -16,18 +16,21 @@ async function bootstrap() {
       .split(/[\s,]+/)
       .map((origin) => origin.trim())
       .filter(Boolean);
-  
+
   // Configurar helmet para permitir iframes desde el frontend
-  const allowEmbedOrigins = process.env.EMBED_ORIGINS ?? 'http://localhost:3000 http://localhost:3001';
+  const allowEmbedOrigins =
+    process.env.EMBED_ORIGINS ?? 'http://localhost:3000 http://localhost:3001';
   const frameAncestors = parseOrigins(allowEmbedOrigins);
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        frameAncestors,
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          frameAncestors,
+        },
       },
-    },
-    crossOriginOpenerPolicy: false,
-  }));
+      crossOriginOpenerPolicy: false,
+    }),
+  );
   // CORS: permitir cookies/credenciales y orígenes específicos (por defecto Next dev)
   const corsOrigin =
     process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001';

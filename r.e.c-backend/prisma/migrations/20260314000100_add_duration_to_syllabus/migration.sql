@@ -1,0 +1,2 @@
+ALTER TABLE "Syllabus"
+ADD COLUMN IF NOT EXISTS "duration" TEXT;

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateFeedbackDto } from './dto/feedback.dto';
+import { CreateFeedbackDto, UpdateFeedbackDto } from './dto/feedback.dto';
 import { SendMessageDto } from './dto/message.dto';
 import { CreateNotificationDto } from './dto/notification.dto';
 import { UserRole } from '../users/dto/user-role.enum';
@@ -21,7 +21,6 @@ export class CommunicationService {
     if (actor.role !== UserRole.PROFESOR) {
       throw new ForbiddenException('Solo profesores pueden crear feedback');
     }
-    // Validar que el profesor enseña al grupo indicado
     const assignment = await this.prisma.teacherAssignment.findFirst({
       where: {
         teacherId: actor.userId,
@@ -37,12 +36,14 @@ export class CommunicationService {
 
     const feedback = await this.prisma.feedback.create({
       data: {
-        teacherId: actor.userId, // Ignorar teacherId del payload por seguridad
+        teacherId: actor.userId,
         studentId: dto.studentId,
         groupId: dto.groupId,
         subjectId: dto.subjectId ?? null,
         title: dto.title,
         content: dto.content,
+        tipo: dto.tipo ?? 'INFORMATIVA',
+        estado: dto.estado ?? 'PENDIENTE',
         strengths: dto.strengths ? { items: dto.strengths.items } : undefined,
         improvements: dto.improvements
           ? { items: dto.improvements.items }
@@ -50,6 +51,76 @@ export class CommunicationService {
       },
     });
     return feedback;
+  }
+
+  async updateFeedback(
+    feedbackId: number,
+    dto: UpdateFeedbackDto,
+    actor: { userId: number; role: UserRole },
+  ) {
+    const existing = await this.prisma.feedback.findUnique({
+      where: { id: feedbackId },
+    });
+    if (!existing) throw new NotFoundException('Feedback no encontrado');
+    if (existing.teacherId !== actor.userId) {
+      throw new ForbiddenException('Solo el autor puede editar este feedback');
+    }
+    return this.prisma.feedback.update({
+      where: { id: feedbackId },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title } : {}),
+        ...(dto.content !== undefined ? { content: dto.content } : {}),
+        ...(dto.tipo !== undefined ? { tipo: dto.tipo } : {}),
+        ...(dto.estado !== undefined ? { estado: dto.estado } : {}),
+        ...(dto.strengths !== undefined
+          ? { strengths: { items: dto.strengths.items } }
+          : {}),
+        ...(dto.improvements !== undefined
+          ? { improvements: { items: dto.improvements.items } }
+          : {}),
+      },
+    });
+  }
+
+  async deleteFeedback(
+    feedbackId: number,
+    actor: { userId: number; role: UserRole },
+  ) {
+    const existing = await this.prisma.feedback.findUnique({
+      where: { id: feedbackId },
+    });
+    if (!existing) throw new NotFoundException('Feedback no encontrado');
+    if (
+      existing.teacherId !== actor.userId &&
+      actor.role !== UserRole.SECRETARIA
+    ) {
+      throw new ForbiddenException('No autorizado para eliminar este feedback');
+    }
+    await this.prisma.feedback.delete({ where: { id: feedbackId } });
+    return { deleted: true };
+  }
+
+  async listFeedbackByGroup(
+    groupId: number,
+    actor: { userId: number; role: UserRole },
+  ) {
+    if (actor.role === UserRole.SECRETARIA) {
+      return this.prisma.feedback.findMany({
+        where: { groupId },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+    if (actor.role === UserRole.PROFESOR) {
+      const teaches = await this.prisma.teacherAssignment.findFirst({
+        where: { teacherId: actor.userId, groupId },
+      });
+      if (!teaches) throw new ForbiddenException('No enseña en este grupo');
+      return this.prisma.feedback.findMany({
+        where: { groupId },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+    throw new ForbiddenException('No autorizado');
   }
 
   async listFeedbackByStudent(

@@ -1,4 +1,6 @@
-import { IsInt, IsOptional, IsString, Length } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Length } from 'class-validator';
+
+const SYLLABUS_STATUS = ['BORRADOR', 'ACTIVO', 'ARCHIVADO'] as const;
 
 export class CreateSyllabusDto {
   @IsInt()
@@ -10,6 +12,21 @@ export class CreateSyllabusDto {
   @IsString()
   @Length(1, 120)
   title: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  duration?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 30)
+  period?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(SYLLABUS_STATUS)
+  status?: (typeof SYLLABUS_STATUS)[number];
 
   @IsOptional()
   @IsString()

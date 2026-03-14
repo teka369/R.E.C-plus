@@ -161,7 +161,7 @@ export class AcademicController {
 
   // Listar estudiantes de un grupo
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.PROFESOR)
   @Get('groups/:groupId/students')
   listGroupStudents(@Param('groupId', ParseIntPipe) groupId: number) {
     return this.academic.listGroupStudents(groupId);

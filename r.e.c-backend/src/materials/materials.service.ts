@@ -77,7 +77,7 @@ export class MaterialsService {
         .basename(file.originalname)
         .replace(/[^a-zA-Z0-9._-]/g, '_')
         .slice(0, 100) || 'archivo';
-    
+
     // Estructura: study-materials/teacher-{id}/{yyyy-mm}/ para escalabilidad
     const now = new Date();
     const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -179,11 +179,11 @@ export class MaterialsService {
           } else {
             break; // Directorio no vacío, parar
           }
-        } catch (e) {
+        } catch {
           break;
         }
       }
-    } catch (e) {
+    } catch {
       // Ignorar errores de limpieza, no es crítico
     }
   }
@@ -301,7 +301,9 @@ export class MaterialsService {
       throw new NotFoundException('El material no tiene archivo local');
     }
 
-    const normalized = path.normalize(material.filePath).replace(/^([.][./\\])+/, '');
+    const normalized = path
+      .normalize(material.filePath)
+      .replace(/^([.][./\\])+/, '');
     const absolutePath = path.resolve(this.uploadsRoot, normalized);
     const uploadsResolved = path.resolve(this.uploadsRoot);
     if (!absolutePath.startsWith(uploadsResolved)) {
@@ -388,6 +390,9 @@ export class MaterialsService {
         groupId: dto.groupId,
         teacherId: actor.userId,
         title: dto.title,
+        period: dto.period,
+        status: dto.status ?? 'BORRADOR',
+        duration: dto.duration,
         content: dto.content,
       },
     });
@@ -405,7 +410,13 @@ export class MaterialsService {
     }
     return this.prisma.syllabus.update({
       where: { id },
-      data: { title: dto.title, content: dto.content },
+      data: {
+        title: dto.title,
+        period: dto.period,
+        status: dto.status,
+        duration: dto.duration,
+        content: dto.content,
+      },
     });
   }
 
