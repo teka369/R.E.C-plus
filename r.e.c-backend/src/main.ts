@@ -10,13 +10,20 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(json({ limit: '8mb' }));
   app.use(urlencoded({ extended: true, limit: '8mb' }));
+
+  const parseOrigins = (rawValue: string): string[] =>
+    rawValue
+      .split(/[\s,]+/)
+      .map((origin) => origin.trim())
+      .filter(Boolean);
   
   // Configurar helmet para permitir iframes desde el frontend
   const allowEmbedOrigins = process.env.EMBED_ORIGINS ?? 'http://localhost:3000 http://localhost:3001';
+  const frameAncestors = parseOrigins(allowEmbedOrigins);
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
-        frameAncestors: allowEmbedOrigins.split(' '),
+        frameAncestors,
       },
     },
     crossOriginOpenerPolicy: false,
@@ -24,7 +31,7 @@ async function bootstrap() {
   // CORS: permitir cookies/credenciales y orígenes específicos (por defecto Next dev)
   const corsOrigin =
     process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001';
-  const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
+  const allowedOrigins = parseOrigins(corsOrigin);
   app.enableCors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
