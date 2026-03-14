@@ -11,7 +11,10 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
     if (!user) throw new UnauthorizedException('Credenciales inválidas');
     // Comparación estricta con hashing (sin compatibilidad texto plano)
     const valid = await bcrypt.compare(password, user.password);

@@ -17,7 +17,11 @@ export default function AccesoSecretariaPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const normalizedEmail = email.trim().toLowerCase();
+      const res = await api.post("/auth/login", {
+        email: normalizedEmail,
+        password,
+      });
       const { access_token, user } = res.data;
       if (user.role !== "SECRETARIA") {
         setError("Acceso exclusivo para Secretaría");
