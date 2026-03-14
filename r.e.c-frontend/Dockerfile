@@ -4,7 +4,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 FROM deps AS build
 ARG NEXT_PUBLIC_API_BASE_URL
