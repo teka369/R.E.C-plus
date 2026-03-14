@@ -7,7 +7,21 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// No adjuntamos Authorization desde localStorage.
-// El backend valida con cookies HttpOnly (rec_token).
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const cookies = document.cookie.split(";").map((v) => v.trim());
+  const entry = cookies.find((v) => v.startsWith(`${name}=`));
+  if (!entry) return null;
+  return decodeURIComponent(entry.split("=").slice(1).join("="));
+}
+
+api.interceptors.request.use((config) => {
+  const token = getCookie("rec_token_client");
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export default api;
