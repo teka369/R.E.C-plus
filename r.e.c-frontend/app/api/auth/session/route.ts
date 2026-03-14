@@ -19,6 +19,14 @@ export async function POST(req: Request) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 días
     });
+    // Token duplicado en cookie de cliente para adjuntar Authorization en llamadas cross-domain al backend.
+    res.cookies.set("rec_token_client", token, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: isProd,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
     res.cookies.set("rec_role", role, {
       httpOnly: true,
       sameSite: "lax",
@@ -43,6 +51,7 @@ export async function POST(req: Request) {
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
   res.cookies.set("rec_token", "", { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
+  res.cookies.set("rec_token_client", "", { httpOnly: false, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
   res.cookies.set("rec_role", "", { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
   res.cookies.set("rec_uid", "", { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 0 });
   return res;
