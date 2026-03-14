@@ -1,0 +1,7 @@
+ALTER TABLE "Syllabus"
+ADD COLUMN IF NOT EXISTS "period" TEXT,
+ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'BORRADOR';
+
+UPDATE "Syllabus"
+SET "status" = 'BORRADOR'
+WHERE "status" IS NULL OR "status" = '';

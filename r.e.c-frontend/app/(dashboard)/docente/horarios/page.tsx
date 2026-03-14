@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { academicApi, type Group, type TeacherAssignment } from "@/lib/academicApi";
+import { academicApi, type Group, type GroupSubject, type TeacherAssignment } from "@/lib/academicApi";
 import {
   scheduleApi,
   type CreateEntryInput,
@@ -21,6 +21,7 @@ const HOUR_HEIGHT = 42;
 
 type Tab = "horario" | "entrada" | "evento" | "nota";
 type ViewMode = "grid" | "list";
+type DeleteKind = "entry" | "event" | "note";
 
 const ENTRY_COLORS = [
   "bg-emerald-100 border-l-emerald-500 text-emerald-900",
@@ -102,6 +103,7 @@ export default function DocenteHorariosPage() {
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [notes, setNotes] = useState<ScheduleNote[]>([]);
+  const [groupSubjects, setGroupSubjects] = useState<GroupSubject[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -127,6 +129,13 @@ export default function DocenteHorariosPage() {
   const [eventLocation, setEventLocation] = useState("");
 
   const [noteContent, setNoteContent] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<{
+    kind: DeleteKind;
+    id: number;
+    title: string;
+    subtitle?: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const groups = useMemo(() => {
     const map = new Map<number, { id: number; label: string }>();
@@ -140,18 +149,13 @@ export default function DocenteHorariosPage() {
     return Array.from(map.values());
   }, [assignments]);
 
-  const subjectsInSelectedGroup = useMemo(
-    () => assignments.filter((a) => a.group?.id === selectedGroupId),
-    [assignments, selectedGroupId],
-  );
-
   const subjectMap = useMemo(() => {
     const map: Record<number, string> = {};
-    subjectsInSelectedGroup.forEach((a) => {
-      map[a.subject.id] = a.subject.nombre;
+    groupSubjects.forEach((item) => {
+      map[item.subject.id] = item.subject.nombre;
     });
     return map;
-  }, [subjectsInSelectedGroup]);
+  }, [groupSubjects]);
 
   const isDirector = selectedGroupId != null && directorGroupIds.has(selectedGroupId);
 
@@ -203,6 +207,7 @@ export default function DocenteHorariosPage() {
       setEntries([]);
       setEvents([]);
       setNotes([]);
+      setGroupSubjects([]);
       return;
     }
     setError(null);
@@ -210,11 +215,13 @@ export default function DocenteHorariosPage() {
       scheduleApi.listEntries(selectedGroupId),
       scheduleApi.listEvents(selectedGroupId),
       scheduleApi.listNotes(selectedGroupId),
+      academicApi.listGroupSubjects(selectedGroupId).catch(() => [] as GroupSubject[]),
     ])
-      .then(([entryData, eventData, noteData]) => {
+      .then(([entryData, eventData, noteData, subjectData]) => {
         setEntries(entryData);
         setEvents(eventData);
         setNotes(noteData);
+        setGroupSubjects(subjectData);
       })
       .catch((cause: unknown) => setError(getErrorMessage(cause, "No se pudo cargar el horario")));
   }, [selectedGroupId]);
@@ -262,7 +269,6 @@ export default function DocenteHorariosPage() {
   };
 
   const onDeleteEntry = async (id: number) => {
-    if (!window.confirm("Eliminar esta entrada?")) return;
     try {
       await scheduleApi.deleteEntry(id);
       setEntries((prev) => prev.filter((item) => item.id !== id));
@@ -313,7 +319,6 @@ export default function DocenteHorariosPage() {
   };
 
   const onDeleteEvent = async (id: number) => {
-    if (!window.confirm("Eliminar este evento?")) return;
     try {
       await scheduleApi.deleteEvent(id);
       setEvents((prev) => prev.filter((item) => item.id !== id));
@@ -342,7 +347,6 @@ export default function DocenteHorariosPage() {
   };
 
   const onDeleteNote = async (id: number) => {
-    if (!window.confirm("Eliminar esta nota?")) return;
     try {
       await scheduleApi.deleteNote(id);
       setNotes((prev) => prev.filter((item) => item.id !== id));
@@ -353,6 +357,28 @@ export default function DocenteHorariosPage() {
 
   const inputClass =
     "w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white/90 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-500";
+
+  const onConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setError(null);
+    setOk(null);
+    try {
+      if (pendingDelete.kind === "entry") {
+        await onDeleteEntry(pendingDelete.id);
+        setOk("Entrada eliminada");
+      } else if (pendingDelete.kind === "event") {
+        await onDeleteEvent(pendingDelete.id);
+        setOk("Evento eliminado");
+      } else {
+        await onDeleteNote(pendingDelete.id);
+        setOk("Nota eliminada");
+      }
+      setPendingDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -557,7 +583,14 @@ export default function DocenteHorariosPage() {
                                       {height > 42 && entry.location && <p className="text-[9px] opacity-60 truncate">{entry.location}</p>}
                                       {isDirector && (
                                         <button
-                                          onClick={() => void onDeleteEntry(entry.id)}
+                                          onClick={() =>
+                                            setPendingDelete({
+                                              kind: "entry",
+                                              id: entry.id,
+                                              title: subjectName ?? entry.title ?? (isBreak ? "Descanso" : "Clase"),
+                                              subtitle: `${toTimeText(entry.startMinutes)}-${toTimeText(entry.endMinutes)}`,
+                                            })
+                                          }
                                           className="hidden group-hover:flex absolute top-1 right-1 w-5 h-5 items-center justify-center rounded bg-white/80 text-[11px] text-red-600 hover:bg-red-100"
                                           title="Eliminar"
                                         >
@@ -601,7 +634,14 @@ export default function DocenteHorariosPage() {
                             </div>
                             {isDirector && (
                               <button
-                                onClick={() => void onDeleteEntry(entry.id)}
+                                onClick={() =>
+                                  setPendingDelete({
+                                    kind: "entry",
+                                    id: entry.id,
+                                    title: subjectName ?? entry.title ?? (isBreak ? "Descanso" : "Clase"),
+                                    subtitle: `${toTimeText(entry.startMinutes)}-${toTimeText(entry.endMinutes)}`,
+                                  })
+                                }
                                 className="ml-2 px-2 py-1 rounded text-xs text-red-600 hover:bg-red-100"
                               >
                                 Eliminar
@@ -641,9 +681,9 @@ export default function DocenteHorariosPage() {
                       <label className="block text-xs font-medium text-slate-600 mb-1">Materia</label>
                       <select className={inputClass} value={entrySubjectId} onChange={(event) => setEntrySubjectId(event.target.value)} disabled={entryKind === "break"}>
                         <option value="0">Sin materia asignada</option>
-                        {subjectsInSelectedGroup.map((assignment) => (
-                          <option key={assignment.id} value={assignment.subject.id}>
-                            {assignment.subject.nombre}
+                        {groupSubjects.map((item) => (
+                          <option key={item.id} value={item.subject.id}>
+                            {item.subject.nombre}
                           </option>
                         ))}
                       </select>
@@ -800,7 +840,17 @@ export default function DocenteHorariosPage() {
                           {item.description && <p className="text-slate-600">{item.description}</p>}
                           {item.location && <p className="text-slate-500">{item.location}</p>}
                           {isDirector && (
-                            <button onClick={() => void onDeleteEvent(item.id)} className="text-red-600 hover:text-red-700">
+                            <button
+                              onClick={() =>
+                                setPendingDelete({
+                                  kind: "event",
+                                  id: item.id,
+                                  title: item.title,
+                                  subtitle: `${formatDateTime(item.startAt)} - ${formatDateTime(item.endAt)}`,
+                                })
+                              }
+                              className="text-red-600 hover:text-red-700"
+                            >
                               Eliminar
                             </button>
                           )}
@@ -827,7 +877,17 @@ export default function DocenteHorariosPage() {
                       <li key={item.id} className="border border-amber-100 bg-amber-50 rounded-xl p-2.5">
                         <p className="text-sm text-slate-700 whitespace-pre-wrap">{item.content}</p>
                         {isDirector && (
-                          <button onClick={() => void onDeleteNote(item.id)} className="text-xs text-red-600 hover:text-red-700 mt-1">
+                          <button
+                            onClick={() =>
+                              setPendingDelete({
+                                kind: "note",
+                                id: item.id,
+                                title: "Nota importante",
+                                subtitle: item.content.slice(0, 80),
+                              })
+                            }
+                            className="text-xs text-red-600 hover:text-red-700 mt-1"
+                          >
                             Eliminar
                           </button>
                         )}
@@ -858,6 +918,51 @@ export default function DocenteHorariosPage() {
             </div>
           </div>
         </>
+      )}
+
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
+            onClick={() => !deleting && setPendingDelete(null)}
+            aria-label="Cerrar confirmacion"
+          />
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="p-5">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600 mb-3">
+                !
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Confirmar eliminacion</h3>
+              <p className="text-sm text-slate-600 mt-1">
+                Vas a eliminar este {pendingDelete.kind === "entry" ? "bloque" : pendingDelete.kind === "event" ? "evento" : "nota"}.
+              </p>
+
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-sm font-semibold text-slate-800">{pendingDelete.title}</p>
+                {pendingDelete.subtitle && <p className="text-xs text-slate-500 mt-0.5">{pendingDelete.subtitle}</p>}
+              </div>
+
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingDelete(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void onConfirmDelete()}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-xl bg-red-600 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? "Eliminando..." : "Si, eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

@@ -6,7 +6,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 import { UpsertGradePerformanceDto } from './dto/performance.dto';
-import { UpsertStudentAcademicDto } from './dto/student-academic.dto';
+import {
+  type GradeEntryJson,
+  UpsertStudentAcademicDto,
+} from './dto/student-academic.dto';
 
 type GradePerformanceRow = {
   id: number;
@@ -66,6 +69,34 @@ export class PerformanceService {
     if (present.length === 0) return null;
     const total = present.reduce((sum, item) => sum + item, 0);
     return Number((total / present.length).toFixed(2));
+  }
+
+  private computePromedioFromGradesJson(
+    gradesJson: string | null,
+    fallback: Array<number | null | undefined>,
+  ): number | null {
+    if (gradesJson) {
+      try {
+        const parsedRaw: unknown = JSON.parse(gradesJson);
+        const parsed = Array.isArray(parsedRaw)
+          ? (parsedRaw as GradeEntryJson[])
+          : [];
+        const values = parsed
+          .map((g) => g.value)
+          .filter(
+            (v): v is number => typeof v === 'number' && !Number.isNaN(v),
+          );
+        if (values.length > 0) return this.average(values);
+      } catch {
+        // fallback to legacy parcial fields
+      }
+    }
+    return this.average(fallback);
+  }
+
+  private getGradesJsonValue(record: unknown): string | null {
+    const value = (record as { gradesJson?: unknown }).gradesJson;
+    return typeof value === 'string' ? value : null;
   }
 
   private async ensureCanViewStudentAcademic(actor: Actor, studentId: number) {
@@ -145,21 +176,21 @@ export class PerformanceService {
   async getByGrade(grade: string) {
     const group = await this.findGroupByGradeName(grade);
     const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-			SELECT *
-			FROM "GradePerformance"
-			WHERE "groupId" = ${group.id}
-			LIMIT 1
-		`;
+      SELECT *
+      FROM "GradePerformance"
+      WHERE "groupId" = ${group.id}
+      LIMIT 1
+    `;
     return rows[0] ?? null;
   }
 
   async getByGroup(groupId: number) {
     const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-			SELECT *
-			FROM "GradePerformance"
-			WHERE "groupId" = ${groupId}
-			LIMIT 1
-		`;
+      SELECT *
+      FROM "GradePerformance"
+      WHERE "groupId" = ${groupId}
+      LIMIT 1
+    `;
     return rows[0] ?? null;
   }
 
@@ -172,63 +203,63 @@ export class PerformanceService {
     await this.ensureWriteAccess(actor, group.id);
 
     await this.prisma.$executeRaw`
-			INSERT INTO "GradePerformance" (
-				"groupId",
-				"promedioGeneral",
-				"asistenciaPromedio",
-				"aprobacion",
-				"mejorAsignatura",
-				"estudiantesDestacados",
-				"inasistenciasJustificadas",
-				"inasistenciasInjustificadas",
-				"porcentajeCursoMayorAsistencia",
-				"variacionPromedio",
-				"variacionAprobacion",
-				"reduccionAusencias",
-				"tendenciaGeneral",
-				"createdAt",
-				"updatedAt"
-			)
-			VALUES (
-				${group.id},
-				${dto.promedioGeneral ?? null},
-				${dto.asistenciaPromedio ?? null},
-				${dto.aprobacion ?? null},
-				${dto.mejorAsignatura ?? null},
-				${dto.estudiantesDestacados ?? null},
-				${dto.inasistenciasJustificadas ?? null},
-				${dto.inasistenciasInjustificadas ?? null},
-				${dto.porcentajeCursoMayorAsistencia ?? null},
-				${dto.variacionPromedio ?? null},
-				${dto.variacionAprobacion ?? null},
-				${dto.reduccionAusencias ?? null},
-				${dto.tendenciaGeneral ?? null},
-				NOW(),
-				NOW()
-			)
-			ON CONFLICT ("groupId")
-			DO UPDATE SET
-				"promedioGeneral" = EXCLUDED."promedioGeneral",
-				"asistenciaPromedio" = EXCLUDED."asistenciaPromedio",
-				"aprobacion" = EXCLUDED."aprobacion",
-				"mejorAsignatura" = EXCLUDED."mejorAsignatura",
-				"estudiantesDestacados" = EXCLUDED."estudiantesDestacados",
-				"inasistenciasJustificadas" = EXCLUDED."inasistenciasJustificadas",
-				"inasistenciasInjustificadas" = EXCLUDED."inasistenciasInjustificadas",
-				"porcentajeCursoMayorAsistencia" = EXCLUDED."porcentajeCursoMayorAsistencia",
-				"variacionPromedio" = EXCLUDED."variacionPromedio",
-				"variacionAprobacion" = EXCLUDED."variacionAprobacion",
-				"reduccionAusencias" = EXCLUDED."reduccionAusencias",
-				"tendenciaGeneral" = EXCLUDED."tendenciaGeneral",
-				"updatedAt" = NOW()
-		`;
+      INSERT INTO "GradePerformance" (
+        "groupId",
+        "promedioGeneral",
+        "asistenciaPromedio",
+        "aprobacion",
+        "mejorAsignatura",
+        "estudiantesDestacados",
+        "inasistenciasJustificadas",
+        "inasistenciasInjustificadas",
+        "porcentajeCursoMayorAsistencia",
+        "variacionPromedio",
+        "variacionAprobacion",
+        "reduccionAusencias",
+        "tendenciaGeneral",
+        "createdAt",
+        "updatedAt"
+      )
+      VALUES (
+        ${group.id},
+        ${dto.promedioGeneral ?? null},
+        ${dto.asistenciaPromedio ?? null},
+        ${dto.aprobacion ?? null},
+        ${dto.mejorAsignatura ?? null},
+        ${dto.estudiantesDestacados ?? null},
+        ${dto.inasistenciasJustificadas ?? null},
+        ${dto.inasistenciasInjustificadas ?? null},
+        ${dto.porcentajeCursoMayorAsistencia ?? null},
+        ${dto.variacionPromedio ?? null},
+        ${dto.variacionAprobacion ?? null},
+        ${dto.reduccionAusencias ?? null},
+        ${dto.tendenciaGeneral ?? null},
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT ("groupId")
+      DO UPDATE SET
+        "promedioGeneral" = EXCLUDED."promedioGeneral",
+        "asistenciaPromedio" = EXCLUDED."asistenciaPromedio",
+        "aprobacion" = EXCLUDED."aprobacion",
+        "mejorAsignatura" = EXCLUDED."mejorAsignatura",
+        "estudiantesDestacados" = EXCLUDED."estudiantesDestacados",
+        "inasistenciasJustificadas" = EXCLUDED."inasistenciasJustificadas",
+        "inasistenciasInjustificadas" = EXCLUDED."inasistenciasInjustificadas",
+        "porcentajeCursoMayorAsistencia" = EXCLUDED."porcentajeCursoMayorAsistencia",
+        "variacionPromedio" = EXCLUDED."variacionPromedio",
+        "variacionAprobacion" = EXCLUDED."variacionAprobacion",
+        "reduccionAusencias" = EXCLUDED."reduccionAusencias",
+        "tendenciaGeneral" = EXCLUDED."tendenciaGeneral",
+        "updatedAt" = NOW()
+    `;
 
     const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-			SELECT *
-			FROM "GradePerformance"
-			WHERE "groupId" = ${group.id}
-			LIMIT 1
-		`;
+      SELECT *
+      FROM "GradePerformance"
+      WHERE "groupId" = ${group.id}
+      LIMIT 1
+    `;
     return rows[0] ?? null;
   }
 
@@ -267,7 +298,8 @@ export class PerformanceService {
     });
 
     const normalized = records.map((record) => {
-      const promedioMateria = this.average([
+      const gradesJson = this.getGradesJsonValue(record);
+      const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
         record.parcial1,
         record.parcial2,
         record.parcial3,
@@ -282,6 +314,7 @@ export class PerformanceService {
         parcial2: record.parcial2,
         parcial3: record.parcial3,
         parcial4: record.parcial4,
+        gradesJson,
         notaFinal: record.notaFinal,
         promedioMateria,
         progresoMateria: record.progresoMateria,
@@ -368,7 +401,8 @@ export class PerformanceService {
       const studentRecords = byStudent.get(item.student.id) ?? [];
 
       const normalizedRecords = studentRecords.map((record) => {
-        const promedioMateria = this.average([
+        const gradesJson = this.getGradesJsonValue(record);
+        const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
           record.parcial1,
           record.parcial2,
           record.parcial3,
@@ -382,6 +416,7 @@ export class PerformanceService {
           parcial2: record.parcial2,
           parcial3: record.parcial3,
           parcial4: record.parcial4,
+          gradesJson,
           notaFinal: record.notaFinal,
           promedioMateria,
           progresoMateria: record.progresoMateria,
@@ -445,6 +480,11 @@ export class PerformanceService {
       throw new NotFoundException('La materia no está asignada a ese grupo');
     }
 
+    const gradesJsonPatch =
+      dto.gradesJson !== undefined
+        ? ({ gradesJson: dto.gradesJson } as Record<string, unknown>)
+        : {};
+
     const result = await this.prisma.studentAcademicRecord.upsert({
       where: {
         studentId_groupId_subjectId: {
@@ -458,6 +498,7 @@ export class PerformanceService {
         parcial2: dto.parcial2,
         parcial3: dto.parcial3,
         parcial4: dto.parcial4,
+        ...gradesJsonPatch,
         notaFinal: dto.notaFinal,
         progresoMateria: dto.progresoMateria,
         inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
@@ -473,6 +514,7 @@ export class PerformanceService {
         parcial2: dto.parcial2,
         parcial3: dto.parcial3,
         parcial4: dto.parcial4,
+        ...gradesJsonPatch,
         notaFinal: dto.notaFinal,
         progresoMateria: dto.progresoMateria,
         inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
@@ -480,10 +522,19 @@ export class PerformanceService {
         observaciones: dto.observaciones,
         updatedByTeacherId: actor.userId,
       },
-      include: { subject: true },
     });
 
-    const promedioMateria = this.average([
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: result.subjectId },
+      select: { id: true, nombre: true },
+    });
+    if (!subject) {
+      throw new NotFoundException('Materia no encontrada');
+    }
+
+    const gradesJson = this.getGradesJsonValue(result);
+
+    const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
       result.parcial1,
       result.parcial2,
       result.parcial3,
@@ -495,11 +546,12 @@ export class PerformanceService {
       studentId: result.studentId,
       groupId: result.groupId,
       subjectId: result.subjectId,
-      subject: { id: result.subject.id, nombre: result.subject.nombre },
+      subject,
       parcial1: result.parcial1,
       parcial2: result.parcial2,
       parcial3: result.parcial3,
       parcial4: result.parcial4,
+      gradesJson,
       notaFinal: result.notaFinal,
       promedioMateria,
       progresoMateria: result.progresoMateria,

@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
   Request,
@@ -12,7 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/dto/user-role.enum';
-import { CreateFeedbackDto } from './dto/feedback.dto';
+import { CreateFeedbackDto, UpdateFeedbackDto } from './dto/feedback.dto';
 import { SendMessageDto, ReadMessageDto } from './dto/message.dto';
 import {
   CreateNotificationDto,
@@ -51,6 +53,45 @@ export class CommunicationController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.service.listFeedbackByStudent(Number(studentId), {
+      userId: req.user.userId,
+      role: req.user.role,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Get('feedback/group/:groupId')
+  async listFeedbackByGroup(
+    @Param('groupId') groupId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.service.listFeedbackByGroup(Number(groupId), {
+      userId: req.user.userId,
+      role: req.user.role,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR)
+  @Patch('feedback/:id')
+  async updateFeedback(
+    @Param('id') id: string,
+    @Body() dto: UpdateFeedbackDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.service.updateFeedback(Number(id), dto, {
+      userId: req.user.userId,
+      role: req.user.role,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('feedback/:id')
+  async deleteFeedback(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.service.deleteFeedback(Number(id), {
       userId: req.user.userId,
       role: req.user.role,
     });

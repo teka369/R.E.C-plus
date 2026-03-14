@@ -8,6 +8,8 @@ import {
   Min,
 } from 'class-validator';
 
+export type GradeEntryJson = { label: string; value: number };
+
 export class UpsertStudentAcademicDto {
   @IsOptional()
   @IsNumber()
@@ -59,4 +61,8 @@ export class UpsertStudentAcademicDto {
   @IsString()
   @MaxLength(1000)
   observaciones?: string;
+
+  @IsOptional()
+  @IsString()
+  gradesJson?: string;
 }

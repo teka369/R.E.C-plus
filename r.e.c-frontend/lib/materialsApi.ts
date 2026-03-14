@@ -46,6 +46,9 @@ export type Syllabus = {
   groupId: number;
   teacherId: number;
   title: string;
+  period?: string | null;
+  status?: "BORRADOR" | "ACTIVO" | "ARCHIVADO";
+  duration?: string | null;
   content?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -55,10 +58,19 @@ export type CreateSyllabusInput = {
   subjectId: number;
   groupId: number;
   title: string;
+  period?: string;
+  status?: "BORRADOR" | "ACTIVO" | "ARCHIVADO";
+  duration?: string;
   content?: string;
 };
 
-export type UpdateSyllabusInput = Partial<CreateSyllabusInput> & { title?: string; content?: string };
+export type UpdateSyllabusInput = Partial<CreateSyllabusInput> & {
+  title?: string;
+  period?: string;
+  status?: "BORRADOR" | "ACTIVO" | "ARCHIVADO";
+  duration?: string;
+  content?: string;
+};
 
 export type GroupInfo = {
   groupId: number;
