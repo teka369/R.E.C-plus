@@ -259,7 +259,7 @@ export default function DocenteFeedbackPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-6 py-8">
+      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-5xl mx-auto flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
@@ -279,7 +279,7 @@ export default function DocenteFeedbackPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
         {/* Group selector */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <label className="block text-xs font-medium text-slate-500 mb-1">Grupo</label>
@@ -463,7 +463,7 @@ export default function DocenteFeedbackPage() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">
                 {editingId ? "Editar feedback" : "Nuevo feedback"}
               </h2>
@@ -471,7 +471,7 @@ export default function DocenteFeedbackPage() {
                 <FiX className="w-5 h-5" />
               </button>
             </div>
-            <form id="feedback-form" className="flex-1 overflow-y-auto px-6 py-4 space-y-4" onSubmit={onSubmit}>
+            <form id="feedback-form" className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4" onSubmit={onSubmit}>
               {!editingId && (
                 <div className="grid grid-cols-1 gap-3">
                   <div>
@@ -503,7 +503,7 @@ export default function DocenteFeedbackPage() {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label>
                   <select
@@ -568,7 +568,7 @@ export default function DocenteFeedbackPage() {
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
             </form>
-            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
@@ -593,13 +593,13 @@ export default function DocenteFeedbackPage() {
       {detailFeedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">Detalle del feedback</h2>
               <button onClick={() => setDetailFeedback(null)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
                 <FiX className="w-5 h-5" />
               </button>
             </div>
-            <div className="px-6 py-4 space-y-3 overflow-y-auto">
+            <div className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIPO_STYLE[detailFeedback.tipo]}`}>
                   {detailFeedback.tipo.charAt(0) + detailFeedback.tipo.slice(1).toLowerCase()}
@@ -637,7 +637,7 @@ export default function DocenteFeedbackPage() {
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end">
               <button
                 onClick={() => setDetailFeedback(null)}
                 className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"

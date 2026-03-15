@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { academicApi } from "@/lib/academicApi";
-import { performanceApi, type GradePerformance } from "@/lib/performanceApi";
+import { performanceApi, type GradePerformance, type GradeRankingRow } from "@/lib/performanceApi";
 import { getErrorMessage } from "@/lib/errors";
 import { FiAward, FiBarChart2, FiCalendar, FiTrendingUp } from "react-icons/fi";
 
@@ -13,26 +13,7 @@ function valueOrNA(value: number | string | null | undefined, suffix = "") {
 }
 
 type RankingRow = {
-  groupId: number;
-  groupName: string;
-  score: number;
-  promedioGeneral: number | null;
-  asistenciaPromedio: number | null;
-  aprobacion: number | null;
-};
-
-function clamp(value: number, min = 0, max = 100) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function computeLeagueScore(stats: GradePerformance | null) {
-  if (!stats) return 0;
-  const promBase = clamp(((stats.promedioGeneral ?? 0) / 5) * 100);
-  const asistencia = clamp(stats.asistenciaPromedio ?? 0);
-  const aprobacion = clamp(stats.aprobacion ?? 0);
-  const reduccionAusencias = clamp(stats.reduccionAusencias ?? 0);
-  return Number((promBase * 0.45 + asistencia * 0.25 + aprobacion * 0.25 + reduccionAusencias * 0.05).toFixed(1));
-}
+} & GradeRankingRow;
 
 export default function EstudianteLigasPage() {
   const { user } = useAuth();
@@ -65,31 +46,14 @@ export default function EstudianteLigasPage() {
           return;
         }
 
-        const [report, allGroups] = await Promise.all([
-          performanceApi.getByGroup(groupId),
-          academicApi.listGroups(),
-        ]);
+        const report = await performanceApi.getByGroup(groupId);
         setStats(report);
 
         if (!gradeId) {
           setRanking([]);
         } else {
           setLoadingRanking(true);
-          const sameGradeGroups = allGroups.filter((group) => group.gradeId === gradeId);
-          const performanceRows = await Promise.all(
-            sameGradeGroups.map(async (group) => {
-              const perf = await performanceApi.getByGroup(group.id).catch(() => null);
-              return {
-                groupId: group.id,
-                groupName: group.nombre,
-                score: computeLeagueScore(perf),
-                promedioGeneral: perf?.promedioGeneral ?? null,
-                asistenciaPromedio: perf?.asistenciaPromedio ?? null,
-                aprobacion: perf?.aprobacion ?? null,
-              } satisfies RankingRow;
-            }),
-          );
-          performanceRows.sort((a, b) => b.score - a.score || a.groupName.localeCompare(b.groupName, "es", { sensitivity: "base" }));
+          const performanceRows = await performanceApi.getGradeRanking(gradeId);
           setRanking(performanceRows);
           setLoadingRanking(false);
         }
@@ -108,9 +72,42 @@ export default function EstudianteLigasPage() {
   const currentScore = currentIndex >= 0 ? ranking[currentIndex].score : null;
   const gapToLeader = leaderScore != null && currentScore != null ? Number((leaderScore - currentScore).toFixed(1)) : null;
 
+  const traceRows = stats?.scoreBreakdown
+    ? [
+        {
+          key: "Promedio",
+          raw: stats.scoreBreakdown.promedio.raw,
+          normalized: stats.scoreBreakdown.promedio.normalized,
+          weight: stats.scoreBreakdown.promedio.weight,
+          contribution: stats.scoreBreakdown.promedio.contribution,
+        },
+        {
+          key: "Asistencia",
+          raw: stats.scoreBreakdown.asistencia.raw,
+          normalized: stats.scoreBreakdown.asistencia.normalized,
+          weight: stats.scoreBreakdown.asistencia.weight,
+          contribution: stats.scoreBreakdown.asistencia.contribution,
+        },
+        {
+          key: "Aprobación",
+          raw: stats.scoreBreakdown.aprobacion.raw,
+          normalized: stats.scoreBreakdown.aprobacion.normalized,
+          weight: stats.scoreBreakdown.aprobacion.weight,
+          contribution: stats.scoreBreakdown.aprobacion.contribution,
+        },
+        {
+          key: "Recuperación de ausencias",
+          raw: stats.scoreBreakdown.recuperacionAusencias.raw,
+          normalized: stats.scoreBreakdown.recuperacionAusencias.normalized,
+          weight: stats.scoreBreakdown.recuperacionAusencias.weight,
+          contribution: stats.scoreBreakdown.recuperacionAusencias.contribution,
+        },
+      ]
+    : [];
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-6 py-8">
+      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-2xl font-bold">Ligas 2.0 · Tu Reporte</h1>
           <p className="text-emerald-100 mt-1 text-sm">
@@ -119,7 +116,11 @@ export default function EstudianteLigasPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
+        <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 text-xs text-cyan-800">
+          Este ranking se calcula automáticamente con datos reales de gestión académica y módulos relacionados.
+        </div>
+
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <p className="text-sm text-slate-700">
             <span className="font-semibold">Grupo:</span> {groupName || "N/A"}
@@ -198,6 +199,61 @@ export default function EstudianteLigasPage() {
             <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Trazabilidad del puntaje</h3>
+                  <p className="text-xs text-slate-500">Detalle del cálculo automático del score para tu grupo.</p>
+                </div>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-md px-2 py-1">
+                  Total {valueOrNA(stats?.scoreBreakdown?.total)}
+                </span>
+              </div>
+
+              {!stats?.scoreBreakdown ? (
+                <p className="text-sm text-slate-500">Sin desglose disponible aún.</p>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-slate-500 border-b border-slate-200">
+                          <th className="py-2 pr-3">Factor</th>
+                          <th className="py-2 pr-3">Dato base</th>
+                          <th className="py-2 pr-3">Normalizado</th>
+                          <th className="py-2 pr-3">Peso</th>
+                          <th className="py-2">Aporte</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {traceRows.map((row) => (
+                          <tr key={row.key} className="border-b border-slate-100">
+                            <td className="py-2 pr-3 font-medium text-slate-700">{row.key}</td>
+                            <td className="py-2 pr-3 text-slate-700">{row.raw.toFixed(2)}</td>
+                            <td className="py-2 pr-3 text-slate-700">{row.normalized.toFixed(2)}</td>
+                            <td className="py-2 pr-3 text-slate-700">{(row.weight * 100).toFixed(0)}%</td>
+                            <td className="py-2 font-semibold text-emerald-700">{row.contribution.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-cyan-800">
+                      Cierre recuperaciones: {valueOrNA(stats.derivedSignals?.recoveryCompletionRate, "%")}
+                    </div>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                      Recursos por materia: {valueOrNA(stats.derivedSignals?.resourcesPerSubject)}
+                    </div>
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
+                      Temarios activos: {valueOrNA(stats.derivedSignals?.activeSyllabusRate, "%")}
+                    </div>
+                  </div>
+                </>
+              )}
+            </article>
+
+            <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
                   <h3 className="text-sm font-semibold text-slate-900">Tabla de clasificación del grado</h3>
                   <p className="text-xs text-slate-500">Quién va ganando entre los grupos de tu grado</p>
                 </div>
@@ -248,7 +304,7 @@ export default function EstudianteLigasPage() {
 
             {!stats ? (
               <div className="bg-white border border-slate-200 rounded-xl p-5 text-sm text-slate-600">
-                Tu grupo aun no tiene reporte de ligas publicado por el docente.
+                Aún no hay datos suficientes para calcular la liga de tu grupo.
               </div>
             ) : null}
           </>

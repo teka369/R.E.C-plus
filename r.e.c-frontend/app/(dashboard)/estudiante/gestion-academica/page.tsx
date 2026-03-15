@@ -212,9 +212,9 @@ export default function EstudianteGestionAcademicaPage() {
       (periodFilter === "all" && totalAbsences >= 8));
 
   return (
-    <section className="min-h-screen bg-slate-50 p-4 md:p-6 space-y-5">
+    <section className="space-y-5">
       {/* ── Header ── */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg">
+      <header className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: "radial-gradient(circle at 75% 40%, white 0%, transparent 60%)" }}
@@ -233,7 +233,7 @@ export default function EstudianteGestionAcademicaPage() {
       </header>
 
       {loading && (
-        <div className="rounded-xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
+        <div className="rounded-xl bg-white border border-slate-200 p-6 sm:p-8 text-center text-sm text-slate-500">
           Cargando información académica...
         </div>
       )}
@@ -368,7 +368,7 @@ export default function EstudianteGestionAcademicaPage() {
           {/* ── Tarjetas por materia ── */}
           <div className="space-y-3">
             {records.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 text-center text-sm text-slate-500">
                 Aún no hay registros académicos cargados por tus docentes.
               </div>
             ) : (

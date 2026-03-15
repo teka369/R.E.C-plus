@@ -27,8 +27,46 @@ export type GradePerformance = {
   variacionAprobacion: number | null;
   reduccionAusencias: number | null;
   tendenciaGeneral: string | null;
+  leagueScore?: number;
+  scoreBreakdown?: ScoreBreakdown;
+  derivedSignals?: DerivedSignals;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ScoreComponent = {
+  raw: number;
+  normalized: number;
+  weight: number;
+  contribution: number;
+};
+
+export type ScoreBreakdown = {
+  promedio: ScoreComponent;
+  asistencia: ScoreComponent;
+  aprobacion: ScoreComponent;
+  recuperacionAusencias: ScoreComponent;
+  total: number;
+};
+
+export type DerivedSignals = {
+  recoveryCompletionRate: number | null;
+  resourcesPerSubject: number;
+  activeSyllabusRate: number;
+};
+
+export type GradeRankingRow = {
+  groupId: number;
+  groupName: string;
+  gradeId: number;
+  gradeName: string;
+  score: number;
+  promedioGeneral: number | null;
+  asistenciaPromedio: number | null;
+  aprobacion: number | null;
+  hasStats: boolean;
+  scoreBreakdown: ScoreBreakdown;
+  derivedSignals: DerivedSignals;
 };
 
 export type UpsertGradePerformanceInput = {
@@ -121,6 +159,11 @@ export const performanceApi = {
 
   async getByGroup(groupId: number): Promise<GradePerformance | null> {
     const res = await api.get<GradePerformance | null>(`/performance/groups/${groupId}`);
+    return res.data;
+  },
+
+  async getGradeRanking(gradeId: number): Promise<GradeRankingRow[]> {
+    const res = await api.get<GradeRankingRow[]>(`/performance/grades/${gradeId}/ranking`);
     return res.data;
   },
 

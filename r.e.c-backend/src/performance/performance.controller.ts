@@ -32,14 +32,26 @@ export class PerformanceController {
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:grade')
-  getByGrade(@Param('grade') grade: string) {
-    return this.performance.getByGrade(grade);
+  getByGrade(@Param('grade') grade: string, @Req() req: AuthenticatedRequest) {
+    return this.performance.getByGrade(req.user, grade);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId')
-  getByGroup(@Param('groupId', ParseIntPipe) groupId: number) {
-    return this.performance.getByGroup(groupId);
+  getByGroup(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.performance.getByGroup(req.user, groupId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('grades/:gradeId/ranking')
+  getGradeRanking(
+    @Param('gradeId', ParseIntPipe) gradeId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.performance.getGradeRanking(req.user, gradeId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

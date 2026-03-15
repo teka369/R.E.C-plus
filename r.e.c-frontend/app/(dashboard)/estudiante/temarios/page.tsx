@@ -256,7 +256,7 @@ export default function EstudianteTemariosPage() {
   };
 
   return (
-    <section className="space-y-4 p-4">
+    <section className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-indigo-50 p-4">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">Temarios</h2>
         <p className="text-sm text-slate-600">Consulta contenidos por materia con una vista mas clara y filtrable.</p>
@@ -276,7 +276,7 @@ export default function EstudianteTemariosPage() {
         <>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
             <p className="text-xs text-slate-500">Grupo actual: <span className="font-medium text-slate-700">{groupLabel || "Sin grupo"}</span></p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
               <select
                 className="border border-slate-300 rounded-lg p-2 text-sm"
                 value={selectedSubjectId}

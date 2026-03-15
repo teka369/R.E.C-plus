@@ -406,7 +406,7 @@ export default function TemariosDocentePage() {
   };
 
   return (
-    <section className="space-y-4 p-4">
+    <section className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-indigo-50 p-4">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Temarios</h1>
         <p className="text-sm text-slate-600">Gestion completa por grupo y materia, con filtros, edicion y control de contenidos.</p>
@@ -435,7 +435,7 @@ export default function TemariosDocentePage() {
                   Crear temario
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                 <select
                   className="border border-slate-300 rounded-lg p-2 text-sm"
                   value={filterGroupId}
@@ -532,7 +532,7 @@ export default function TemariosDocentePage() {
                 </select>
 
                 <input
-                  className="border border-slate-300 rounded-lg p-2 text-sm md:col-span-2 xl:col-span-2"
+                  className="border border-slate-300 rounded-lg p-2 text-sm sm:col-span-2 xl:col-span-2"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Buscar por título, contenido, grupo, materia, periodo o duración"

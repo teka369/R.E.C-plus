@@ -486,9 +486,9 @@ export default function DocenteGestionAcademicaPage() {
   };
 
   return (
-    <section className="min-h-screen bg-slate-50 p-4 md:p-6 space-y-5">
+    <section className="space-y-5">
       {/* ── Header ── */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+      <header className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: "radial-gradient(circle at 75% 40%, white 0%, transparent 60%)" }}
@@ -527,13 +527,13 @@ export default function DocenteGestionAcademicaPage() {
       )}
 
       {loadingAssignments && (
-        <div className="rounded-xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
+        <div className="rounded-xl bg-white border border-slate-200 p-6 sm:p-8 text-center text-sm text-slate-500">
           Cargando grupos asignados...
         </div>
       )}
 
       {!loadingAssignments && groups.length === 0 && (
-        <div className="rounded-xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
+        <div className="rounded-xl bg-white border border-slate-200 p-6 sm:p-8 text-center text-sm text-slate-500">
           No tienes grupos asignados para gestionar información académica.
         </div>
       )}
@@ -613,7 +613,7 @@ export default function DocenteGestionAcademicaPage() {
           )}
 
           {loadingOverview && (
-            <div className="rounded-xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
+            <div className="rounded-xl bg-white border border-slate-200 p-6 sm:p-8 text-center text-sm text-slate-500">
               Cargando gestión académica del grupo...
             </div>
           )}

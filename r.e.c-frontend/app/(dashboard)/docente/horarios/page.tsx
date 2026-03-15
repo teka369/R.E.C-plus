@@ -396,7 +396,7 @@ export default function DocenteHorariosPage() {
   const nowInRange = nowMinutes >= calendarRange.gridStart && nowMinutes <= calendarRange.gridStart + calendarRange.totalMinutes;
 
   return (
-    <section className="space-y-4 overflow-x-hidden p-3 md:p-4">
+    <section className="space-y-4 overflow-x-hidden">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-emerald-50 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
@@ -450,7 +450,7 @@ export default function DocenteHorariosPage() {
 
       {selectedGroupId && (
         <>
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
             <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-3.5">
               <p className="text-xs uppercase tracking-wide text-slate-500">Clases</p>
               <p className="text-2xl font-bold text-slate-900">{entries.length}</p>
@@ -508,7 +508,7 @@ export default function DocenteHorariosPage() {
               {activeTab === "horario" && viewMode === "grid" && (
                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
-                    <div className="min-w-[640px] lg:min-w-[700px]">
+                    <div className="min-w-[560px] lg:min-w-[700px]">
                       <div className="sticky top-0 z-10 flex border-b border-slate-200 bg-slate-50">
                         <div className="w-12 shrink-0 border-r border-slate-200" />
                         {DAYS.map((day) => (

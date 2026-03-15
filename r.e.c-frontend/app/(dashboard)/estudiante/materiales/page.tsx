@@ -341,7 +341,7 @@ function EstudianteMaterialesContent() {
       {/* Filtros */}
       {!loading && !error && (
         <div className="flex flex-wrap gap-2 items-end rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
-          <div className="flex-1 min-w-[220px]">
+          <div className="w-full sm:flex-1 sm:min-w-[220px]">
             <label className="block text-xs text-gray-700">Buscar
               {countsAll.total > 0 && (
                 <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
@@ -409,7 +409,7 @@ function EstudianteMaterialesContent() {
               <option value={24}>24</option>
             </select>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
             <div className="mb-2 inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
               <button
                 type="button"
@@ -434,7 +434,7 @@ function EstudianteMaterialesContent() {
             <button
               type="button"
               onClick={handleResetFilters}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
+              className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
             >
               Limpiar filtros
             </button>
@@ -509,7 +509,7 @@ function EstudianteMaterialesContent() {
                           {m.description ? <p className="mt-1.5 text-sm text-slate-600 line-clamp-3">{m.description}</p> : null}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
                             <p className="mt-0.5 text-xs font-medium text-slate-700">{subjectName(m.subjectId)}</p>
@@ -551,7 +551,7 @@ function EstudianteMaterialesContent() {
               })}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 view-grid">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 view-grid">
               {paginatedMaterials.map((m) => {
                 const thumb = getThumbnailUrl(m);
                 const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);
