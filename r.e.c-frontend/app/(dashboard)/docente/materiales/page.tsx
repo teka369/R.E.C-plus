@@ -309,7 +309,7 @@ function DocenteMaterialesContent() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Materiales</h2>
           <p className="text-sm text-gray-600">Listado de materiales creados por el docente según asignaciones.</p>
@@ -320,11 +320,11 @@ function DocenteMaterialesContent() {
             </div>
           )}
         </div>
-        <Link href="/docente/materiales/crear" prefetch={false} className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700">Crear material</Link>
+        <Link href="/docente/materiales/crear" prefetch={false} className="w-full sm:w-auto text-center px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700">Crear material</Link>
       </div>
 
       <div className="flex items-end gap-3 flex-wrap rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
-        <div className="flex-1 max-w-xs">
+        <div className="w-full sm:flex-1 sm:max-w-xs">
           <label className="block text-xs text-gray-600">Grado–Grupo asignado</label>
           <select
             className="mt-1 w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
@@ -337,7 +337,7 @@ function DocenteMaterialesContent() {
             ))}
           </select>
         </div>
-        <div className="flex-1 min-w-[220px]">
+        <div className="w-full sm:flex-1 sm:min-w-[220px]">
           <label className="block text-xs text-gray-600">Buscar
             {countsAll.total > 0 && (
               <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
@@ -405,7 +405,7 @@ function DocenteMaterialesContent() {
             <option value={24}>24</option>
           </select>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
             <button
               type="button"
@@ -430,7 +430,7 @@ function DocenteMaterialesContent() {
           <button
             type="button"
             onClick={handleResetFilters}
-            className="mt-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
+            className="mt-1 w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
           >
             Limpiar filtros
           </button>
@@ -496,7 +496,7 @@ function DocenteMaterialesContent() {
                           {m.description ? <p className="mt-1.5 text-sm text-slate-600 line-clamp-3">{m.description}</p> : null}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
                             <p className="mt-0.5 text-xs font-medium text-slate-700">{subjectName(m.subjectId)}</p>
@@ -551,7 +551,7 @@ function DocenteMaterialesContent() {
               })}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 view-grid">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 view-grid">
               {paginatedItems.map((m) => {
                 const thumb = getThumbnailUrl(m);
                 const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);

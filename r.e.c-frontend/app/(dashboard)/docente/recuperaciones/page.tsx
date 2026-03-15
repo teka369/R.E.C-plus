@@ -495,7 +495,7 @@ export default function DocenteRecuperacionesPage() {
               { label: "Aprobaste", value: kpis.completed, color: "text-green-700" },
               ...(kpis.rejected > 0 ? [{ label: "Rechazadas", value: kpis.rejected, color: "text-red-700" }] : []),
             ].map((kpi) => (
-              <div key={kpi.label} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-center min-w-[64px]">
+              <div key={kpi.label} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-center min-w-[56px] sm:min-w-[64px]">
                 <span className={`block text-lg font-bold ${kpi.color}`}>{kpi.value}</span>
                 <span className="text-xs text-slate-500">{kpi.label}</span>
               </div>
@@ -871,7 +871,7 @@ export default function DocenteRecuperacionesPage() {
                         return (
                           <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                             <div
-                              className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                              className={`max-w-full sm:max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
                                 isMe
                                   ? "rounded-br-none bg-emerald-600 text-white"
                                   : "rounded-bl-none border border-slate-200 bg-white text-slate-800"

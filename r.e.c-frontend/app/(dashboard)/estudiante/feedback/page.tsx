@@ -77,7 +77,7 @@ export default function FeedbackEstudiantePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-6 py-8">
+      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
           <p className="text-emerald-100 mt-1 text-sm">
@@ -91,7 +91,7 @@ export default function FeedbackEstudiantePage() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
         {/* Summary chips */}
         {!loading && feedback.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -225,7 +225,7 @@ export default function FeedbackEstudiantePage() {
       {detailFeedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">Detalle del feedback</h2>
               <button
                 onClick={() => setDetailFeedback(null)}
@@ -234,7 +234,7 @@ export default function FeedbackEstudiantePage() {
                 <FiX className="w-5 h-5" />
               </button>
             </div>
-            <div className="px-6 py-4 space-y-3 overflow-y-auto">
+            <div className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIPO_STYLE[detailFeedback.tipo]}`}>
                   {TIPO_LABEL[detailFeedback.tipo]}
@@ -277,7 +277,7 @@ export default function FeedbackEstudiantePage() {
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end">
               <button
                 onClick={() => setDetailFeedback(null)}
                 className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"

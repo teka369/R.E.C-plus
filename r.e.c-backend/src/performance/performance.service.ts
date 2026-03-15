@@ -30,6 +30,47 @@ type GradePerformanceRow = {
   updatedAt: Date;
 };
 
+type GradeRankingRow = {
+  groupId: number;
+  groupName: string;
+  gradeId: number;
+  gradeName: string;
+  score: number;
+  promedioGeneral: number | null;
+  asistenciaPromedio: number | null;
+  aprobacion: number | null;
+  hasStats: boolean;
+  scoreBreakdown: ScoreBreakdown;
+  derivedSignals: DerivedSignals;
+};
+
+type ScoreComponent = {
+  raw: number;
+  normalized: number;
+  weight: number;
+  contribution: number;
+};
+
+type ScoreBreakdown = {
+  promedio: ScoreComponent;
+  asistencia: ScoreComponent;
+  aprobacion: ScoreComponent;
+  recuperacionAusencias: ScoreComponent;
+  total: number;
+};
+
+type DerivedSignals = {
+  recoveryCompletionRate: number | null;
+  resourcesPerSubject: number;
+  activeSyllabusRate: number;
+};
+
+type RecomputedGradePerformance = GradePerformanceRow & {
+  leagueScore: number;
+  scoreBreakdown: ScoreBreakdown;
+  derivedSignals: DerivedSignals;
+};
+
 type Actor = { userId: number; role: UserRole };
 
 @Injectable()
@@ -62,6 +103,457 @@ export class PerformanceService {
     throw new ForbiddenException(
       'No autorizado para editar estadísticas de este grupo',
     );
+  }
+
+  private async ensureCanViewGroupPerformance(actor: Actor, groupId: number) {
+    if (actor.role === UserRole.SECRETARIA) return;
+
+    if (actor.role === UserRole.PROFESOR) {
+      const isDirector = await this.prisma.group.findFirst({
+        where: { id: groupId, directorId: actor.userId },
+        select: { id: true },
+      });
+      if (isDirector) return;
+
+      const assignment = await this.prisma.teacherAssignment.findFirst({
+        where: { groupId, teacherId: actor.userId },
+        select: { id: true },
+      });
+      if (assignment) return;
+    }
+
+    if (actor.role === UserRole.ESTUDIANTE) {
+      const studentGroup = await this.prisma.studentGroup.findFirst({
+        where: { studentId: actor.userId },
+        select: { groupId: true },
+      });
+      if (studentGroup?.groupId === groupId) return;
+    }
+
+    throw new ForbiddenException('No autorizado');
+  }
+
+  private async ensureCanViewGradePerformance(actor: Actor, gradeId: number) {
+    if (actor.role === UserRole.SECRETARIA) return;
+
+    if (actor.role === UserRole.PROFESOR) {
+      const directorGroup = await this.prisma.group.findFirst({
+        where: { gradeId, directorId: actor.userId },
+        select: { id: true },
+      });
+      if (directorGroup) return;
+
+      const assignment = await this.prisma.teacherAssignment.findFirst({
+        where: { teacherId: actor.userId, group: { gradeId } },
+        select: { id: true },
+      });
+      if (assignment) return;
+    }
+
+    if (actor.role === UserRole.ESTUDIANTE) {
+      const studentGroup = await this.prisma.studentGroup.findFirst({
+        where: { studentId: actor.userId },
+        include: { group: true },
+      });
+      if (studentGroup?.group.gradeId === gradeId) return;
+    }
+
+    throw new ForbiddenException('No autorizado');
+  }
+
+  private clamp(value: number, min = 0, max = 100) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  private getGradeScaleMax(value: number | null | undefined) {
+    if (value == null) return 10;
+    return value <= 5 ? 5 : 10;
+  }
+
+  private buildScoreBreakdown(input: {
+    promedioGeneral: number | null;
+    asistenciaPromedio: number | null;
+    aprobacion: number | null;
+    reduccionAusencias: number | null;
+  }): ScoreBreakdown {
+    const weights = {
+      promedio: 0.45,
+      asistencia: 0.25,
+      aprobacion: 0.25,
+      recuperacionAusencias: 0.05,
+    };
+
+    const scaleMax = this.getGradeScaleMax(input.promedioGeneral);
+    const promedioNormalized = this.clamp(
+      ((input.promedioGeneral ?? 0) / scaleMax) * 100,
+    );
+    const asistenciaNormalized = this.clamp(input.asistenciaPromedio ?? 0);
+    const aprobacionNormalized = this.clamp(input.aprobacion ?? 0);
+    const recuperacionAusenciasNormalized = this.clamp(
+      input.reduccionAusencias ?? 0,
+    );
+
+    const promedioContribution = Number(
+      (promedioNormalized * weights.promedio).toFixed(2),
+    );
+    const asistenciaContribution = Number(
+      (asistenciaNormalized * weights.asistencia).toFixed(2),
+    );
+    const aprobacionContribution = Number(
+      (aprobacionNormalized * weights.aprobacion).toFixed(2),
+    );
+    const recuperacionAusenciasContribution = Number(
+      (recuperacionAusenciasNormalized * weights.recuperacionAusencias).toFixed(
+        2,
+      ),
+    );
+
+    const total = Number(
+      (
+        promedioContribution +
+        asistenciaContribution +
+        aprobacionContribution +
+        recuperacionAusenciasContribution
+      ).toFixed(1),
+    );
+
+    return {
+      promedio: {
+        raw: input.promedioGeneral ?? 0,
+        normalized: Number(promedioNormalized.toFixed(2)),
+        weight: weights.promedio,
+        contribution: promedioContribution,
+      },
+      asistencia: {
+        raw: input.asistenciaPromedio ?? 0,
+        normalized: Number(asistenciaNormalized.toFixed(2)),
+        weight: weights.asistencia,
+        contribution: asistenciaContribution,
+      },
+      aprobacion: {
+        raw: input.aprobacion ?? 0,
+        normalized: Number(aprobacionNormalized.toFixed(2)),
+        weight: weights.aprobacion,
+        contribution: aprobacionContribution,
+      },
+      recuperacionAusencias: {
+        raw: input.reduccionAusencias ?? 0,
+        normalized: Number(recuperacionAusenciasNormalized.toFixed(2)),
+        weight: weights.recuperacionAusencias,
+        contribution: recuperacionAusenciasContribution,
+      },
+      total,
+    };
+  }
+
+  private buildEmptyBreakdown(): ScoreBreakdown {
+    return this.buildScoreBreakdown({
+      promedioGeneral: 0,
+      asistenciaPromedio: 0,
+      aprobacion: 0,
+      reduccionAusencias: 0,
+    });
+  }
+
+  private buildDefaultSignals(): DerivedSignals {
+    return {
+      recoveryCompletionRate: null,
+      resourcesPerSubject: 0,
+      activeSyllabusRate: 0,
+    };
+  }
+
+  private async getPersistedGroupPerformance(groupId: number) {
+    const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
+      SELECT *
+      FROM "GradePerformance"
+      WHERE "groupId" = ${groupId}
+      LIMIT 1
+    `;
+    return rows[0] ?? null;
+  }
+
+  private async recomputeGroupPerformance(
+    groupId: number,
+  ): Promise<RecomputedGradePerformance> {
+    const previous = await this.getPersistedGroupPerformance(groupId);
+
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        grade: true,
+        subjects: { include: { subject: true } },
+      },
+    });
+    if (!group) throw new NotFoundException('Grupo no encontrado');
+
+    const records = await this.prisma.studentAcademicRecord.findMany({
+      where: { groupId },
+      include: {
+        subject: true,
+        student: {
+          select: {
+            id: true,
+            nombres: true,
+            apellidos: true,
+          },
+        },
+      },
+    });
+
+    const materialsCount = await this.prisma.studyMaterial.count({
+      where: { groupId },
+    });
+    const activeSyllabiCount = await this.prisma.syllabus.count({
+      where: { groupId, status: 'ACTIVO' },
+    });
+    const recoveryRows = await this.prisma.recoveryRequest.findMany({
+      where: { groupId },
+      select: { status: true },
+    });
+
+    const normalized = records.map((record) => {
+      const gradesJson = this.getGradesJsonValue(record);
+      const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
+        record.parcial1,
+        record.parcial2,
+        record.parcial3,
+        record.parcial4,
+      ]);
+      const gradeValue =
+        record.notaFinal != null ? record.notaFinal : promedioMateria;
+      const ausenciasTotal =
+        record.inasistenciasJustificadas + record.inasistenciasInjustificadas;
+      return {
+        record,
+        gradeValue,
+        promedioMateria,
+        ausenciasTotal,
+      };
+    });
+
+    const gradeValues = normalized
+      .map((item) => item.gradeValue)
+      .filter((v): v is number => typeof v === 'number');
+    const maxObservedGrade =
+      gradeValues.length > 0 ? Math.max(...gradeValues) : 10;
+    const passingThreshold = maxObservedGrade <= 5 ? 3 : 7;
+
+    const promedioGeneral = this.average(gradeValues);
+
+    const aprobacion =
+      gradeValues.length > 0
+        ? Number(
+            (
+              (gradeValues.filter((value) => value >= passingThreshold).length /
+                gradeValues.length) *
+              100
+            ).toFixed(2),
+          )
+        : null;
+
+    const progressValues = normalized
+      .map((item) => item.record.progresoMateria)
+      .filter((v): v is number => typeof v === 'number');
+    const asistenciaPromedio = this.average(progressValues);
+
+    const inasistenciasJustificadas = normalized.reduce(
+      (acc, item) => acc + item.record.inasistenciasJustificadas,
+      0,
+    );
+    const inasistenciasInjustificadas = normalized.reduce(
+      (acc, item) => acc + item.record.inasistenciasInjustificadas,
+      0,
+    );
+    const totalAusencias =
+      inasistenciasJustificadas + inasistenciasInjustificadas;
+
+    const bySubject = new Map<
+      number,
+      { name: string; grades: number[]; progress: number[] }
+    >();
+    normalized.forEach((item) => {
+      const subjectId = item.record.subjectId;
+      const current = bySubject.get(subjectId) ?? {
+        name: item.record.subject.nombre,
+        grades: [],
+        progress: [],
+      };
+      if (typeof item.gradeValue === 'number')
+        current.grades.push(item.gradeValue);
+      if (typeof item.record.progresoMateria === 'number') {
+        current.progress.push(item.record.progresoMateria);
+      }
+      bySubject.set(subjectId, current);
+    });
+
+    let mejorAsignatura: string | null = null;
+    let mejorAsignaturaAvg: number | null = null;
+    let porcentajeCursoMayorAsistencia: number | null = null;
+
+    bySubject.forEach((entry) => {
+      const avgGrade = this.average(entry.grades);
+      const avgProgress = this.average(entry.progress);
+      if (
+        avgGrade != null &&
+        (mejorAsignaturaAvg == null || avgGrade > mejorAsignaturaAvg)
+      ) {
+        mejorAsignaturaAvg = avgGrade;
+        mejorAsignatura = entry.name;
+      }
+      if (
+        avgProgress != null &&
+        (porcentajeCursoMayorAsistencia == null ||
+          avgProgress > porcentajeCursoMayorAsistencia)
+      ) {
+        porcentajeCursoMayorAsistencia = avgProgress;
+      }
+    });
+
+    const byStudent = new Map<number, { fullName: string; grades: number[] }>();
+    normalized.forEach((item) => {
+      const studentId = item.record.studentId;
+      const existing = byStudent.get(studentId) ?? {
+        fullName:
+          `${item.record.student.nombres} ${item.record.student.apellidos}`.trim(),
+        grades: [],
+      };
+      if (typeof item.gradeValue === 'number')
+        existing.grades.push(item.gradeValue);
+      byStudent.set(studentId, existing);
+    });
+
+    const topStudents = Array.from(byStudent.values())
+      .map((entry) => ({
+        fullName: entry.fullName,
+        average: this.average(entry.grades),
+      }))
+      .filter(
+        (entry): entry is { fullName: string; average: number } =>
+          typeof entry.average === 'number',
+      )
+      .sort((a, b) => b.average - a.average)
+      .slice(0, 3);
+
+    const estudiantesDestacados =
+      topStudents.length > 0
+        ? topStudents
+            .map((entry) => `${entry.fullName} (${entry.average.toFixed(1)})`)
+            .join(', ')
+        : null;
+
+    const variacionPromedio =
+      previous?.promedioGeneral != null && promedioGeneral != null
+        ? Number((promedioGeneral - previous.promedioGeneral).toFixed(2))
+        : null;
+
+    const variacionAprobacion =
+      previous?.aprobacion != null && aprobacion != null
+        ? Number((aprobacion - previous.aprobacion).toFixed(2))
+        : null;
+
+    const previousTotalAusencias =
+      (previous?.inasistenciasJustificadas ?? 0) +
+      (previous?.inasistenciasInjustificadas ?? 0);
+    const reduccionAusencias =
+      previous != null && previousTotalAusencias > 0
+        ? Number(
+            (
+              ((previousTotalAusencias - totalAusencias) /
+                previousTotalAusencias) *
+              100
+            ).toFixed(2),
+          )
+        : null;
+
+    const completedRecoveries = recoveryRows.filter(
+      (row) => row.status === 'COMPLETED',
+    ).length;
+    const recoveryCompletionRate =
+      recoveryRows.length > 0
+        ? Number(((completedRecoveries / recoveryRows.length) * 100).toFixed(2))
+        : null;
+    const subjectsCount = Math.max(1, group.subjects.length);
+    const resourcesPerSubject = Number(
+      (materialsCount / subjectsCount).toFixed(2),
+    );
+    const activeSyllabusRate = Number(
+      ((activeSyllabiCount / subjectsCount) * 100).toFixed(2),
+    );
+
+    const trendSignals = [
+      variacionPromedio != null ? (variacionPromedio > 0 ? 1 : -1) : 0,
+      variacionAprobacion != null ? (variacionAprobacion > 0 ? 1 : -1) : 0,
+      reduccionAusencias != null ? (reduccionAusencias > 0 ? 1 : -1) : 0,
+      recoveryCompletionRate != null
+        ? recoveryCompletionRate >= 60
+          ? 1
+          : -1
+        : 0,
+      resourcesPerSubject >= 1 && activeSyllabusRate >= 50 ? 1 : 0,
+    ].reduce((acc, value) => acc + value, 0);
+
+    const tendenciaGeneral =
+      trendSignals >= 3
+        ? 'POSITIVA'
+        : trendSignals >= 1
+          ? 'ESTABLE'
+          : trendSignals <= -2
+            ? 'EN_RIESGO'
+            : 'MIXTA';
+
+    const updated = await this.prisma.gradePerformance.upsert({
+      where: { groupId },
+      update: {
+        promedioGeneral,
+        asistenciaPromedio,
+        aprobacion,
+        mejorAsignatura,
+        estudiantesDestacados,
+        inasistenciasJustificadas,
+        inasistenciasInjustificadas,
+        porcentajeCursoMayorAsistencia,
+        variacionPromedio,
+        variacionAprobacion,
+        reduccionAusencias,
+        tendenciaGeneral,
+      },
+      create: {
+        groupId,
+        promedioGeneral,
+        asistenciaPromedio,
+        aprobacion,
+        mejorAsignatura,
+        estudiantesDestacados,
+        inasistenciasJustificadas,
+        inasistenciasInjustificadas,
+        porcentajeCursoMayorAsistencia,
+        variacionPromedio,
+        variacionAprobacion,
+        reduccionAusencias,
+        tendenciaGeneral,
+      },
+    });
+
+    const row = updated as unknown as GradePerformanceRow;
+    const scoreBreakdown = this.buildScoreBreakdown({
+      promedioGeneral: row.promedioGeneral,
+      asistenciaPromedio: row.asistenciaPromedio,
+      aprobacion: row.aprobacion,
+      reduccionAusencias: row.reduccionAusencias,
+    });
+    const derivedSignals: DerivedSignals = {
+      recoveryCompletionRate,
+      resourcesPerSubject,
+      activeSyllabusRate,
+    };
+
+    return {
+      ...row,
+      leagueScore: scoreBreakdown.total,
+      scoreBreakdown,
+      derivedSignals,
+    };
   }
 
   private average(values: Array<number | null | undefined>) {
@@ -173,25 +665,15 @@ export class PerformanceService {
     }
   }
 
-  async getByGrade(grade: string) {
+  async getByGrade(actor: Actor, grade: string) {
     const group = await this.findGroupByGradeName(grade);
-    const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-      SELECT *
-      FROM "GradePerformance"
-      WHERE "groupId" = ${group.id}
-      LIMIT 1
-    `;
-    return rows[0] ?? null;
+    await this.ensureCanViewGroupPerformance(actor, group.id);
+    return this.recomputeGroupPerformance(group.id);
   }
 
-  async getByGroup(groupId: number) {
-    const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-      SELECT *
-      FROM "GradePerformance"
-      WHERE "groupId" = ${groupId}
-      LIMIT 1
-    `;
-    return rows[0] ?? null;
+  async getByGroup(actor: Actor, groupId: number) {
+    await this.ensureCanViewGroupPerformance(actor, groupId);
+    return this.recomputeGroupPerformance(groupId);
   }
 
   async upsertByGrade(
@@ -199,68 +681,47 @@ export class PerformanceService {
     grade: string,
     dto: UpsertGradePerformanceDto,
   ) {
+    void dto;
     const group = await this.findGroupByGradeName(grade);
     await this.ensureWriteAccess(actor, group.id);
+    return this.recomputeGroupPerformance(group.id);
+  }
 
-    await this.prisma.$executeRaw`
-      INSERT INTO "GradePerformance" (
-        "groupId",
-        "promedioGeneral",
-        "asistenciaPromedio",
-        "aprobacion",
-        "mejorAsignatura",
-        "estudiantesDestacados",
-        "inasistenciasJustificadas",
-        "inasistenciasInjustificadas",
-        "porcentajeCursoMayorAsistencia",
-        "variacionPromedio",
-        "variacionAprobacion",
-        "reduccionAusencias",
-        "tendenciaGeneral",
-        "createdAt",
-        "updatedAt"
-      )
-      VALUES (
-        ${group.id},
-        ${dto.promedioGeneral ?? null},
-        ${dto.asistenciaPromedio ?? null},
-        ${dto.aprobacion ?? null},
-        ${dto.mejorAsignatura ?? null},
-        ${dto.estudiantesDestacados ?? null},
-        ${dto.inasistenciasJustificadas ?? null},
-        ${dto.inasistenciasInjustificadas ?? null},
-        ${dto.porcentajeCursoMayorAsistencia ?? null},
-        ${dto.variacionPromedio ?? null},
-        ${dto.variacionAprobacion ?? null},
-        ${dto.reduccionAusencias ?? null},
-        ${dto.tendenciaGeneral ?? null},
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT ("groupId")
-      DO UPDATE SET
-        "promedioGeneral" = EXCLUDED."promedioGeneral",
-        "asistenciaPromedio" = EXCLUDED."asistenciaPromedio",
-        "aprobacion" = EXCLUDED."aprobacion",
-        "mejorAsignatura" = EXCLUDED."mejorAsignatura",
-        "estudiantesDestacados" = EXCLUDED."estudiantesDestacados",
-        "inasistenciasJustificadas" = EXCLUDED."inasistenciasJustificadas",
-        "inasistenciasInjustificadas" = EXCLUDED."inasistenciasInjustificadas",
-        "porcentajeCursoMayorAsistencia" = EXCLUDED."porcentajeCursoMayorAsistencia",
-        "variacionPromedio" = EXCLUDED."variacionPromedio",
-        "variacionAprobacion" = EXCLUDED."variacionAprobacion",
-        "reduccionAusencias" = EXCLUDED."reduccionAusencias",
-        "tendenciaGeneral" = EXCLUDED."tendenciaGeneral",
-        "updatedAt" = NOW()
-    `;
+  async getGradeRanking(actor: Actor, gradeId: number) {
+    await this.ensureCanViewGradePerformance(actor, gradeId);
 
-    const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-      SELECT *
-      FROM "GradePerformance"
-      WHERE "groupId" = ${group.id}
-      LIMIT 1
-    `;
-    return rows[0] ?? null;
+    const groups = await this.prisma.group.findMany({
+      where: { gradeId },
+      include: { grade: true },
+      orderBy: { nombre: 'asc' },
+    });
+
+    const rows: GradeRankingRow[] = await Promise.all(
+      groups.map(async (group) => {
+        const perf = await this.recomputeGroupPerformance(group.id);
+        return {
+          groupId: group.id,
+          groupName: group.nombre,
+          gradeId: group.gradeId,
+          gradeName: group.grade.nombre,
+          score: perf.leagueScore,
+          promedioGeneral: perf.promedioGeneral,
+          asistenciaPromedio: perf.asistenciaPromedio,
+          aprobacion: perf.aprobacion,
+          hasStats: perf.promedioGeneral != null || perf.aprobacion != null,
+          scoreBreakdown: perf.scoreBreakdown ?? this.buildEmptyBreakdown(),
+          derivedSignals: perf.derivedSignals ?? this.buildDefaultSignals(),
+        };
+      }),
+    );
+
+    rows.sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.groupName.localeCompare(b.groupName, 'es', { sensitivity: 'base' }),
+    );
+
+    return rows;
   }
 
   async getStudentAcademic(actor: Actor, studentId: number) {

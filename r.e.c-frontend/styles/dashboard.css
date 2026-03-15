@@ -1,1 +1,30 @@
-.dashboard-wrapper{display:flex;gap:0}.dashboard-content{flex:1;min-height:100vh}
+.dashboard-wrapper {
+	display: flex;
+	gap: 0;
+	min-height: 100vh;
+}
+
+.dashboard-content {
+	flex: 1;
+	min-width: 0;
+	min-height: 100vh;
+}
+
+.sidebar-scroll {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+	display: none;
+}
+
+@media (max-width: 1023px) {
+	.dashboard-wrapper {
+		display: block;
+	}
+
+	.dashboard-content {
+		min-height: 100dvh;
+	}
+}
