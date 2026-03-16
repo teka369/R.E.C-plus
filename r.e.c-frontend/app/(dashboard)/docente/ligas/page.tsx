@@ -160,7 +160,7 @@ export default function LigasDocentePage() {
       <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold">Ligas 2.0 · Reporte por Grupo</h1>
+            <h1 className="text-2xl font-bold">Ligas</h1>
             <p className="text-emerald-100 mt-1 text-sm">
               Estadísticas automáticas basadas en gestión académica, recuperaciones y recursos.
             </p>
