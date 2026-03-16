@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "R.E.C",
   description: "Refuerzo Educativo Complementario",
   icons: {
-    icon: '/logo.png'
+    icon: '/logo2.png'
   }
 };
 
