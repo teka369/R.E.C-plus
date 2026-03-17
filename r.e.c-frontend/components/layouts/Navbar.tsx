@@ -76,7 +76,7 @@ export default function Navbar() {
   const initial: string = (firstName || "U").charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-2">
@@ -340,7 +340,7 @@ export default function Navbar() {
       </div>
 
       {/* Mobile drawer */}
-      <div className={`fixed inset-0 z-50 ${mobileOpen ? "" : "pointer-events-none"}`} aria-hidden={!mobileOpen}>
+      <div className={`fixed inset-0 z-[60] md:hidden ${mobileOpen ? "" : "pointer-events-none"}`} aria-hidden={!mobileOpen}>
         <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setMobileOpen(false)} />
         <aside className={`absolute top-0 left-0 h-full w-72 bg-white shadow-lg transition-transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <div className="p-4 border-b flex items-center justify-between">

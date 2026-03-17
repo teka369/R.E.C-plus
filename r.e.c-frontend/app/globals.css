@@ -11,6 +11,7 @@
 	--rec-leaf: #38ad44;
 	--rec-surface: #f5fcf6;
 	--rec-soft: #e6f4e8;
+	--rec-footer-gif-url: none;
 }
 
 html,
@@ -39,5 +40,13 @@ button {
 	background-image:
 		radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--rec-primary) 18%, white 82%) 1px, transparent 0);
 	background-size: 26px 26px;
+}
+
+/* Cambia --rec-footer-gif-url por url('/ruta.gif') para activar GIF en footer */
+.rec-footer-gif {
+	background-image: url('https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTFwcG03eGFyd2VqaHR0b2Vhd2dsZWY1emYxamVsMDdsMDRkZzhmMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/iEZIxyg9iJXwuYEOlt/giphy.gif' );
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
 }
 
