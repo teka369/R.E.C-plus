@@ -270,9 +270,15 @@ export default function EstudianteTemariosPage() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-indigo-50 p-4">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Temarios</h2>
-        <p className="text-sm text-slate-600">Consulta contenidos por materia con una vista mas clara y filtrable.</p>
+      <div
+        className="rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
+        <h2 className="text-2xl font-bold tracking-tight">Temarios</h2>
+        <p className="text-sm text-white/90">Consulta contenidos por materia con una vista mas clara y filtrable.</p>
       </div>
 
       {loading && (

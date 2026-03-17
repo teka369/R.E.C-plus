@@ -214,19 +214,21 @@ export default function EstudianteGestionAcademicaPage() {
   return (
     <section className="space-y-5">
       {/* ── Header ── */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle at 75% 40%, white 0%, transparent 60%)" }}
-        />
-        <div className="relative flex items-center gap-4">
+      <header
+        className="rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
+        <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
             <FiBook className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Mi Gestión Académica</h1>
-            <p className="text-indigo-100 text-sm mt-0.5">
-              Consulta tus notas, simula escenarios y monitorea tu progreso por materia
+            <p className="text-sm mt-0.5 text-white/90">
+              Consulta tus notas, simula escenarios y monitorea tu progreso por materia.
             </p>
           </div>
         </div>

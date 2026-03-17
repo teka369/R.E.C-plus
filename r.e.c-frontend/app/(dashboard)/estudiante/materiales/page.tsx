@@ -324,18 +324,24 @@ function EstudianteMaterialesContent() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Materiales del curso</h2>
+      <div
+        className="rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
+        <h2 className="text-2xl font-bold tracking-tight">Materiales del curso</h2>
         {studentGroup && (
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm text-gray-700">Mi grado–grupo:</span>
+            <span className="text-sm text-white/90">Mi grado–grupo:</span>
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${badgeClasses(studentGroup.groupId)}`}>
               {studentGroup.label}
             </span>
           </div>
         )}
         {!loading && !error && (
-          <div className="mt-2 text-xs text-gray-700">
+          <div className="mt-2 text-xs text-white/90">
             Mostrando {countsFiltered.total} de {countsAll.total} materiales (Grupo: {countsFiltered.group}, Grado: {countsFiltered.grade})
             {" "}· Página {page} de {totalPages}
           </div>

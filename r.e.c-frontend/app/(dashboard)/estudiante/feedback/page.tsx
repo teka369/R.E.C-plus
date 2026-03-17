@@ -75,12 +75,18 @@ export default function FeedbackEstudiantePage() {
   const pendientes = feedback.filter((fb) => fb.estado === "PENDIENTE").length;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
-        <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6">
+        <div
+          className="rounded-2xl border p-4 sm:p-6 text-white"
+          style={{
+            borderColor: "var(--rec-soft)",
+            background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+          }}
+        >
           <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
-          <p className="text-emerald-100 mt-1 text-sm">
+          <p className="text-white/90 mt-1 text-sm">
             Consulta la retroalimentación de tus docentes.
           </p>
           {!loading && pendientes > 0 && (
@@ -288,6 +294,6 @@ export default function FeedbackEstudiantePage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -43,7 +43,7 @@ export default function Home() {
 
         <header className="relative overflow-hidden border-b border-[color:var(--rec-soft)]">
           <BackgroundCarousel />
-          <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--rec-primary)]/90 via-[color:var(--rec-primary)]/78 to-[color:var(--rec-earth)]/45" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/62 via-black/44 to-black/24" />
 
           <section className="relative z-10 mx-auto max-w-6xl px-6 py-20 md:py-28">
             <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_.9fr]">

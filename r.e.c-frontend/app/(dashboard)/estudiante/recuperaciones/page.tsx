@@ -343,21 +343,28 @@ export default function EstudianteRecuperacionesPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div
+        className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Recuperaciones</h1>
-          <p className="mt-1 text-sm text-slate-500">Solicita recuperaciones, revisa tus actividades y comunícate con tu docente.</p>
+          <h1 className="text-2xl font-bold">Recuperaciones</h1>
+          <p className="mt-1 text-sm text-white/90">Solicita recuperaciones, revisa tus actividades y comunícate con tu docente.</p>
         </div>
         <div className="flex items-center gap-3">
           {!periodLoading && (
             <div className="flex flex-col items-end gap-1">
               <span
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${periodActive ? "border-green-300 bg-green-50 text-green-700" : "border-amber-300 bg-amber-50 text-amber-700"}`}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${periodActive ? "text-white" : "border-amber-300 bg-amber-50 text-amber-700"}`}
+                style={periodActive ? { borderColor: "rgba(255,255,255,.35)", background: "rgba(255,255,255,.14)" } : undefined}
               >
                 Periodo {periodActive ? "activo" : "inactivo"}
               </span>
               {periodCountdown && (
-                <span className="text-xs font-mono text-slate-500">Cierra en: {periodCountdown}</span>
+                <span className="text-xs font-mono text-white/85">Cierra en: {periodCountdown}</span>
               )}
             </div>
           )}
