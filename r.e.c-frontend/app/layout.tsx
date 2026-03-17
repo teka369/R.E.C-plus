@@ -5,6 +5,9 @@ import { AuthProvider } from "@/context/AuthContext";
 export const metadata: Metadata = {
   title: "R.E.C",
   description: "Refuerzo Educativo Complementario",
+  icons: {
+    icon: '/logo2.png'
+  }
 };
 
 export default function RootLayout({
