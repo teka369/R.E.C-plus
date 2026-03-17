@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import Footer from "@/components/layouts/Footer";
+import Navbar from "@/components/layouts/Navbar";
 
 export const metadata = {
   title: "Portafolio | R.E.C",
@@ -62,59 +63,70 @@ const projects = [
 export default function PortafolioPage() {
   return (
     <div className="min-h-screen">
-      {/* Hero (imagen de fondo + overlay gradiente, título grande) */}
+      <Navbar />
+
+      {/* Hero */}
       <section
-        className="relative flex items-center justify-center text-center text-white mb-16 h-[80vh] rounded-b-[30px] shadow-2xl overflow-hidden"
+        className="relative flex items-center justify-center text-center text-white h-[72vh] overflow-hidden"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
+            "url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/80 to-slate-800/90" />
-        <div className="relative z-10 max-w-3xl px-5">
-          <h1 className="text-[4rem] font-extrabold mb-6 drop-shadow-lg md:text-[3.5rem] sm:text-[2.5rem]">Equipo de Desarrollo</h1>
-          <p className="text-[1.5rem] opacity-90 md:text-[1.3rem] sm:text-[1.2rem]">Transformando ideas en soluciones digitales innovadoras</p>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--rec-primary-strong) 90%, transparent) 0%, color-mix(in srgb, var(--rec-ink) 80%, transparent) 100%)" }} />
+        <div className="relative z-10 max-w-3xl px-6">
+          <span className="inline-block mb-4 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase" style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}>Portafolio del Equipo</span>
+          <h1 className="text-5xl sm:text-4xl font-extrabold mb-5 leading-tight drop-shadow-lg">Equipo de Desarrollo</h1>
+          <p className="text-lg opacity-85 max-w-xl mx-auto">Transformando ideas en soluciones digitales innovadoras para la educación colombiana</p>
+          <div className="mt-8 flex flex-wrap gap-4 justify-center">
+            <a href="#equipo" className="rounded-full px-6 py-3 text-sm font-semibold text-white transition" style={{ background: "var(--rec-cta)" }}>Ver equipo</a>
+            <a href="#stack" className="rounded-full px-6 py-3 text-sm font-semibold transition" style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.35)", color: "white" }}>Stack tecnológico</a>
+          </div>
         </div>
       </section>
 
       {/* Nuestro Equipo */}
-      {/* Equipo (retrato 250x400 con zoom y badges acento) */}
-      <section className="mx-auto max-w-6xl px-6 py-20 relative">
-        <div className="text-center mb-12">
-          <h2 className="text-[2.5rem] font-bold text-slate-900">Nuestro Equipo</h2>
-          <div className="h-1 w-[70px] mx-auto bg-gradient-to-r from-indigo-600 to-indigo-300 rounded" />
-          <p className="mt-4 text-slate-600 max-w-[700px] mx-auto">Profesionales apasionados por la tecnología y la innovación</p>
+      <section id="equipo" className="mx-auto max-w-6xl px-6 py-24">
+        <div className="text-center mb-14">
+          <span className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>Quiénes somos</span>
+          <h2 className="text-4xl font-extrabold mb-3" style={{ color: "var(--rec-title)" }}>Nuestro Equipo</h2>
+          <div className="h-1 w-16 mx-auto rounded-full" style={{ background: "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))" }} />
+          <p className="mt-4 text-slate-600 max-w-2xl mx-auto">Profesionales apasionados por la tecnología y la educación, construyendo la plataforma que merece tu institución</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {teamMembers.map((member) => (
             <article
               key={member.name}
-              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition"
+              className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border transition hover:shadow-xl"
+              style={{ borderColor: "var(--rec-soft)" }}
             >
+              {/* Barra superior decorativa */}
+              <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))" }} />
               <div className="p-6">
                 <div className="flex flex-col items-center text-center">
-                  <div className="group h-[400px] w-[250px] rounded-[10px] overflow-hidden shadow-xl mb-6">
+                  <div className="h-[340px] w-[220px] rounded-2xl overflow-hidden shadow-lg mb-6 ring-4 ring-[color:var(--rec-soft)]">
                     <Image
                       src={member.image}
                       alt={member.name}
-                      width={500}
-                      height={800}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.15]"
+                      width={440}
+                      height={680}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">{member.name}</h3>
-                  <p className="text-slate-500 text-lg mb-3">{member.role}</p>
-                  <p className="text-slate-700">{member.bio}</p>
+                  <h3 className="text-xl font-bold mb-1" style={{ color: "var(--rec-title)" }}>{member.name}</h3>
+                  <p className="text-sm font-medium mb-3" style={{ color: "var(--rec-primary)" }}>{member.role}</p>
+                  <p className="text-sm text-slate-600 leading-relaxed">{member.bio}</p>
                 </div>
 
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {member.technologies.map((tech) => (
                     <span
                       key={tech}
-                      className="inline-flex items-center rounded-full bg-indigo-600 text-white px-3 py-2 text-xs"
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                      style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}
                     >
                       {tech}
                     </span>
@@ -125,10 +137,10 @@ export default function PortafolioPage() {
                   <Link
                     href={member.github}
                     target="_blank"
-                    className="inline-flex items-center gap-3 rounded-full border border-indigo-600 text-indigo-700 px-4 py-2 text-sm font-bold shadow-sm hover:bg-indigo-50"
+                    className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                    style={{ background: "var(--rec-primary)" }}
                   >
-                    <span className="inline-block">GitHub</span>
-                    <span aria-hidden>↗</span>
+                    Ver en GitHub ↗
                   </Link>
                 </div>
               </div>
@@ -138,112 +150,111 @@ export default function PortafolioPage() {
       </section>
 
       {/* Proyectos */}
-      <section className="mx-auto max-w-6xl px-6 py-20 bg-slate-50">
-        <div className="text-center mb-12">
-          <h2 className="text-[2.5rem] font-bold text-slate-900">Practicas</h2>
-          <div className="h-1 w-[70px] mx-auto bg-gradient-to-r from-indigo-600 to-indigo-300 rounded" />
-          <p className="mt-4 text-slate-600">Practicas creativas a mano</p>
-        </div>
+      <section className="py-20" style={{ background: "var(--rec-soft)" }}>
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="text-center mb-14">
+            <span className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-white" style={{ color: "var(--rec-primary-strong)" }}>Proyectos</span>
+            <h2 className="text-4xl font-extrabold mb-3" style={{ color: "var(--rec-title)" }}>Prácticas y Proyectos</h2>
+            <div className="h-1 w-16 mx-auto rounded-full" style={{ background: "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))" }} />
+            <p className="mt-4 text-slate-600">Trabajos realizados durante el proceso formativo</p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <article
-              key={project.title}
-              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition"
-            >
-              <div className="relative h-[400px] overflow-hidden">
-                {/* Para imagen externa usamos <img> para evitar config de dominios */}
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.15]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/80 to-indigo-700/90 opacity-0 group-hover:opacity-100 transition" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                  <Link
-                    href={project.repoUrl}
-                    target="_blank"
-                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow hover:bg-slate-100"
-                  >
-                    Repositorio ↗
-                  </Link>
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-slate-900">{project.title}</h3>
-                <p className="mt-1 text-slate-600">{project.description}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {project.technologies.map((tech) => (
-                    <span
-                      key={tech}
-                      className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 px-3 py-1 text-xs"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project) => (
+              <article
+                key={project.title}
+                className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border transition hover:shadow-xl"
+                style={{ borderColor: "var(--rec-soft)" }}
+              >
+                <div className="relative h-52 overflow-hidden">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--rec-primary-strong) 82%, transparent)" }}>
+                    <Link
+                      href={project.repoUrl}
+                      target="_blank"
+                      className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold shadow-lg transition hover:opacity-90"
+                      style={{ color: "var(--rec-primary-strong)" }}
                     >
-                      {tech}
-                    </span>
-                  ))}
+                      Ver repositorio ↗
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+                <div className="p-5">
+                  <h3 className="text-base font-semibold mb-1" style={{ color: "var(--rec-title)" }}>{project.title}</h3>
+                  <p className="text-sm text-slate-600 mb-4">{project.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.technologies.map((tech) => (
+                      <span
+                        key={tech}
+                        className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Stack Tecnológico */}
-      {/* Tecnología (patrón de fondo + tarjetas absolutas + conectores) */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-50 to-indigo-100" />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(#a5b4fc_1px,transparent_1px),radial-gradient(#a5b4fc_1px,transparent_1px)] bg-[length:40px_40px] bg-[position:0_0,20px_20px]" />
-
+      <section id="stack" className="relative py-24 overflow-hidden rec-grid-bg">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-[2.5rem] font-bold text-slate-900">Nuestro Stack Tecnológico</h2>
-            <div className="h-1 w-[70px] mx-auto bg-gradient-to-r from-indigo-600 to-indigo-300 rounded" />
-            <p className="mt-4 text-slate-700">Visualiza la arquitectura tecnológica que impulsa nuestra plataforma</p>
+          <div className="text-center mb-14">
+            <span className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>Tecnología</span>
+            <h2 className="text-4xl font-extrabold mb-3" style={{ color: "var(--rec-title)" }}>Nuestro Stack Tecnológico</h2>
+            <div className="h-1 w-16 mx-auto rounded-full" style={{ background: "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))" }} />
+            <p className="mt-4 text-slate-600">La arquitectura tecnológica que impulsa nuestra plataforma educativa</p>
           </div>
 
-          <div className="relative mx-auto max-w-[1000px] h-[600px]">
-            {/* Frontend */}
-            <div className="absolute top-[50px] left-[50px] w-[280px] min-h-[200px] rounded-2xl border border-black/10 bg-white p-6 shadow-2xl text-center transition hover:scale-[1.08]">
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Frontend</h3>
-              <div className="flex flex-wrap justify-center gap-3">
-                {["React", "CSS", "HTML5", "TypeScript", "Bootstrap"].map((t) => (
-                  <span key={t} className="rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 px-3 py-1 text-xs">
-                    {t}
-                  </span>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+            {[
+              { title: "Frontend", icon: "🖥️", techs: ["Next.js", "React", "TypeScript", "Tailwind CSS", "HTML5", "CSS3"] },
+              { title: "Backend", icon: "⚙️", techs: ["NestJS", "Node.js", "Prisma ORM", "JWT", "REST API"] },
+              { title: "Base de Datos", icon: "🗄️", techs: ["PostgreSQL", "MySQL", "Migrations", "Seeds"] },
+            ].map((layer) => (
+              <div
+                key={layer.title}
+                className="rec-glass rounded-2xl p-7 text-center shadow-sm hover:shadow-md transition"
+              >
+                <div className="text-4xl mb-4">{layer.icon}</div>
+                <h3 className="text-lg font-bold mb-4" style={{ color: "var(--rec-title)" }}>{layer.title}</h3>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {layer.techs.map((t) => (
+                    <span key={t} className="rounded-full px-3 py-1 text-xs font-medium" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* Backend */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] min-h-[200px] rounded-2xl border border-black/10 bg-white p-6 shadow-2xl text-center transition hover:scale-[1.08]">
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Backend</h3>
-              <div className="flex flex-wrap justify-center gap-3">
-                {["Node.js", "Express"].map((t) => (
-                  <span key={t} className="rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 px-3 py-1 text-xs">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Database */}
-            <div className="absolute bottom-[50px] right-[50px] w-[280px] min-h-[200px] rounded-2xl border border-black/10 bg-white p-6 shadow-2xl text-center transition hover:scale-[1.08]">
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Base de Datos</h3>
-              <div className="flex flex-wrap justify-center gap-3">
-                {["MySQL"].map((t) => (
-                  <span key={t} className="rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 px-3 py-1 text-xs">
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Conectores */}
-            <div className="absolute left-[320px] top-[150px] h-[4px] w-[160px] bg-gradient-to-r from-indigo-600 to-indigo-700" />
-            <div className="absolute left-[calc(50%+140px)] top-1/2 -translate-y-1/2 h-[4px] w-[160px] bg-gradient-to-r from-indigo-600 to-indigo-700" />
+            ))}
           </div>
         </div>
       </section>
+
+      {/* CTA Final */}
+      <section className="py-20 text-white text-center" style={{ background: "linear-gradient(135deg, var(--rec-primary-strong) 0%, var(--rec-primary) 100%)" }}>
+        <div className="mx-auto max-w-2xl px-6">
+          <h2 className="text-3xl font-extrabold mb-4">¿Listo para conocer más?</h2>
+          <p className="text-white/85 mb-8 text-lg">Explora los certificados del equipo o vuelve a la plataforma educativa</p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link href="/certificados" className="rounded-full px-7 py-3 text-sm font-bold bg-white transition hover:opacity-90" style={{ color: "var(--rec-primary-strong)" }}>
+              Ver certificados
+            </Link>
+            <Link href="/" className="rounded-full px-7 py-3 text-sm font-bold border border-white/50 text-white transition hover:bg-white/10">
+              Volver al inicio
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );

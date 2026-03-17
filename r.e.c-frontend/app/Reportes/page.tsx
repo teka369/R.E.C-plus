@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import Navbar from "@/components/layouts/Navbar";
 
 export default function ReportesPage() {
   const { user } = useAuth();
@@ -17,7 +18,9 @@ export default function ReportesPage() {
           : "/login";
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10">
+    <>
+      <Navbar />
+      <main className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="text-2xl font-semibold text-slate-900">Reportes</h1>
       <p className="mt-2 text-sm text-slate-700">
         En R.E.C 2.0 los reportes académicos se gestionan desde el módulo de rendimiento por rol.
@@ -30,11 +33,13 @@ export default function ReportesPage() {
         </p>
         <Link
           href={reportLink}
-          className="mt-4 inline-flex rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          className="mt-4 inline-flex rounded px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          style={{ background: "var(--rec-primary)" }}
         >
           Ir a rendimiento
         </Link>
       </section>
     </main>
+    </>
   );
 }

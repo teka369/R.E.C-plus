@@ -397,14 +397,20 @@ export default function DocenteHorariosPage() {
 
   return (
     <section className="space-y-4 overflow-x-hidden">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-emerald-50 p-4">
+      <div
+        className="rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Horario docente</h2>
-            <p className="text-sm text-slate-600">Panel semanal para planear clases, publicar notas y coordinar eventos.</p>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight">Horario docente</h2>
+            <p className="text-sm text-white/90">Panel semanal para planear clases, publicar notas y coordinar eventos.</p>
           </div>
           {selectedGroupId && (
-            <div className="text-xs md:text-sm rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-700 w-fit">
+            <div className="text-xs md:text-sm rounded-full border border-white/30 bg-white/15 px-3 py-1.5 text-white w-fit">
               {isDirector ? "Modo gestion activo" : "Modo consulta"}
             </div>
           )}

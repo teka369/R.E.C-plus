@@ -26,22 +26,22 @@ const ESTADO_OPTIONS: { value: FeedbackEstado; label: string }[] = [
 ];
 
 const TIPO_STYLE: Record<FeedbackTipo, string> = {
-  POSITIVA: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+  POSITIVA: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
   NEGATIVA: "bg-red-100 text-red-800 border border-red-200",
-  INFORMATIVA: "bg-blue-100 text-blue-800 border border-blue-200",
+  INFORMATIVA: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
   SEGUIMIENTO: "bg-amber-100 text-amber-800 border border-amber-200",
 };
 
 const TIPO_BORDER: Record<FeedbackTipo, string> = {
-  POSITIVA: "border-l-emerald-400",
+  POSITIVA: "border-l-[color:var(--rec-primary)]",
   NEGATIVA: "border-l-red-400",
-  INFORMATIVA: "border-l-blue-400",
+  INFORMATIVA: "border-l-[color:var(--rec-primary-strong)]",
   SEGUIMIENTO: "border-l-amber-400",
 };
 
 const ESTADO_STYLE: Record<FeedbackEstado, string> = {
   PENDIENTE: "bg-amber-100 text-amber-800 border border-amber-200",
-  ATENDIDA: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+  ATENDIDA: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
 };
 
 type DeleteConfirm = { id: number; title: string } | null;
@@ -111,6 +111,14 @@ export default function DocenteFeedbackPage() {
       return true;
     });
   }, [feedbackList, filterStudentId, filterTipo, filterEstado, filterSearch]);
+
+  const feedbackStats = useMemo(() => {
+    return {
+      total: feedbackList.length,
+      pendientes: feedbackList.filter((fb) => fb.estado === "PENDIENTE").length,
+      atendidas: feedbackList.filter((fb) => fb.estado === "ATENDIDA").length,
+    };
+  }, [feedbackList]);
 
   const studentMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -257,108 +265,148 @@ export default function DocenteFeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
-        <div className="max-w-5xl mx-auto flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
-            <p className="text-emerald-100 mt-1 text-sm">
-              Registra retroalimentación y observaciones para tus estudiantes.
-            </p>
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6">
+        <div
+          className="rounded-2xl border p-4 sm:p-6 text-white"
+          style={{
+            borderColor: "var(--rec-soft)",
+            background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+          }}
+        >
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
+              <p className="text-white/90 mt-1 text-sm">
+                Registra retroalimentación y observaciones para tus estudiantes.
+              </p>
+            </div>
+            {selectedGroupId && (
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-medium shadow hover:opacity-90 transition-colors"
+                style={{ color: "var(--rec-primary-strong)" }}
+              >
+                <FiPlus className="w-4 h-4" />
+                Nuevo feedback
+              </button>
+            )}
           </div>
-          {selectedGroupId && (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-emerald-700 rounded-lg text-sm font-medium shadow hover:bg-emerald-50 transition-colors"
-            >
-              <FiPlus className="w-4 h-4" />
-              Nuevo feedback
-            </button>
-          )}
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
-        {/* Group selector */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <label className="block text-xs font-medium text-slate-500 mb-1">Grupo</label>
-          <select
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            value={selectedGroupId ?? ""}
-            onChange={(e) => setSelectedGroupId(Number(e.target.value) || null)}
-          >
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
-            ))}
-          </select>
+        {/* Control panel */}
+        <div className="bg-white rounded-xl p-4 shadow-sm space-y-4" style={{ border: "1px solid var(--rec-soft)" }}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm font-semibold" style={{ color: "var(--rec-title)" }}>Control del grupo</p>
+            {!loading && (
+              <span className="text-xs rounded-full px-2.5 py-1" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
+                {feedbackStats.total} feedback total
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Grupo</label>
+              <select
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
+                value={selectedGroupId ?? ""}
+                onChange={(e) => setSelectedGroupId(Number(e.target.value) || null)}
+              >
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg border px-3 py-2 text-center bg-white" style={{ borderColor: "var(--rec-soft)" }}>
+                <p className="text-[11px] text-slate-500">Total</p>
+                <p className="text-sm font-bold" style={{ color: "var(--rec-title)" }}>{feedbackStats.total}</p>
+              </div>
+              <div className="rounded-lg border px-3 py-2 text-center bg-amber-50 border-amber-200">
+                <p className="text-[11px] text-amber-700">Pend.</p>
+                <p className="text-sm font-bold text-amber-700">{feedbackStats.pendientes}</p>
+              </div>
+              <div className="rounded-lg px-3 py-2 text-center" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)" }}>
+                <p className="text-[11px]" style={{ color: "var(--rec-primary-strong)" }}>Atend.</p>
+                <p className="text-sm font-bold" style={{ color: "var(--rec-primary-strong)" }}>{feedbackStats.atendidas}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Tipo summary chips */}
-        {!loading && feedbackList.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {(["POSITIVA", "NEGATIVA", "INFORMATIVA", "SEGUIMIENTO"] as FeedbackTipo[]).map((tipo) => {
-              const count = feedbackList.filter((fb) => fb.tipo === tipo).length;
-              return (
-                <button
-                  key={tipo}
-                  onClick={() => setFilterTipo(filterTipo === tipo ? "" : tipo)}
-                  className={`rounded-xl p-3 border text-left transition-all ${
-                    filterTipo === tipo
-                      ? TIPO_STYLE[tipo] + " ring-2 ring-offset-1 ring-current"
-                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <p className="text-lg font-bold">{count}</p>
-                  <p className="text-xs">{tipo.charAt(0) + tipo.slice(1).toLowerCase()}</p>
-                </button>
-              );
-            })}
+        <div className="bg-white rounded-xl p-4 shadow-sm space-y-3" style={{ border: "1px solid var(--rec-soft)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--rec-title)" }}>Filtros y segmentación</p>
+          {!loading && feedbackList.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {(["POSITIVA", "NEGATIVA", "INFORMATIVA", "SEGUIMIENTO"] as FeedbackTipo[]).map((tipo) => {
+                const count = feedbackList.filter((fb) => fb.tipo === tipo).length;
+                return (
+                  <button
+                    key={tipo}
+                    onClick={() => setFilterTipo(filterTipo === tipo ? "" : tipo)}
+                    className={`rounded-xl p-3 border text-left transition-all ${
+                      filterTipo === tipo
+                        ? TIPO_STYLE[tipo] + " ring-2 ring-offset-1 ring-current"
+                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <p className="text-lg font-bold">{count}</p>
+                    <p className="text-xs">{tipo.charAt(0) + tipo.slice(1).toLowerCase()}</p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <select
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+              style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
+              value={filterStudentId}
+              onChange={(e) => setFilterStudentId(e.target.value)}
+            >
+              <option value="">Todos los estudiantes</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.nombres} {s.apellidos}</option>
+              ))}
+            </select>
+            <select
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+              style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+            >
+              <option value="">Todos los tipos</option>
+              {TIPO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+              style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              {ESTADO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <input
+              type="text"
+              placeholder="Buscar…"
+              className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] flex-1 min-w-[140px]"
+              style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+            />
           </div>
-        )}
-
-        {/* Filters */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-wrap gap-3">
-          <select
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            value={filterStudentId}
-            onChange={(e) => setFilterStudentId(e.target.value)}
-          >
-            <option value="">Todos los estudiantes</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>{s.nombres} {s.apellidos}</option>
-            ))}
-          </select>
-          <select
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            value={filterTipo}
-            onChange={(e) => setFilterTipo(e.target.value)}
-          >
-            <option value="">Todos los tipos</option>
-            {TIPO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <select
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            value={filterEstado}
-            onChange={(e) => setFilterEstado(e.target.value)}
-          >
-            <option value="">Todos los estados</option>
-            {ESTADO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <input
-            type="text"
-            placeholder="Buscar…"
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300 flex-1 min-w-[140px]"
-            value={filterSearch}
-            onChange={(e) => setFilterSearch(e.target.value)}
-          />
         </div>
 
         {error && !modalOpen && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
         )}
         {ok && !modalOpen && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-700">{ok}</div>
+          <div className="rounded-xl p-4 text-sm" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)", color: "var(--rec-primary-strong)" }}>{ok}</div>
         )}
 
         {loading ? (
@@ -393,14 +441,16 @@ export default function DocenteFeedbackPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setDetailFeedback(fb)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[color:var(--rec-soft)] transition-colors"
+                        style={{ color: "var(--rec-primary-strong)" }}
                         title="Ver detalle"
                       >
                         <FiEye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => openEdit(fb)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[color:var(--rec-soft)] transition-colors"
+                        style={{ color: "var(--rec-primary-strong)" }}
                         title="Editar"
                       >
                         <FiEdit2 className="w-4 h-4" />
@@ -425,11 +475,11 @@ export default function DocenteFeedbackPage() {
                   {(fb.strengths?.items?.length ?? 0) > 0 || (fb.improvements?.items?.length ?? 0) > 0 ? (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {(fb.strengths?.items?.length ?? 0) > 0 && (
-                        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-emerald-800 mb-1.5">Fortalezas</p>
+                        <div className="rounded-lg p-3" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)" }}>
+                          <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--rec-primary-strong)" }}>Fortalezas</p>
                           <ul className="space-y-1">
                             {fb.strengths!.items.map((item, i) => (
-                              <li key={i} className="flex items-start gap-1.5 text-xs text-emerald-700">
+                              <li key={i} className="flex items-start gap-1.5 text-xs" style={{ color: "var(--rec-primary-strong)" }}>
                                 <FiCheck className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                                 {item}
                               </li>
@@ -478,7 +528,8 @@ export default function DocenteFeedbackPage() {
                     <label className="block text-xs font-medium text-slate-600 mb-1">Estudiante *</label>
                     <select
                       required
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                      style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                       value={form.studentId}
                       onChange={(e) => setForm((f) => ({ ...f, studentId: e.target.value }))}
                     >
@@ -491,7 +542,8 @@ export default function DocenteFeedbackPage() {
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Materia</label>
                     <select
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                      style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                       value={form.subjectId}
                       onChange={(e) => setForm((f) => ({ ...f, subjectId: e.target.value }))}
                     >
@@ -507,7 +559,8 @@ export default function DocenteFeedbackPage() {
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label>
                   <select
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                    style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                     value={form.tipo}
                     onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as FeedbackTipo }))}
                   >
@@ -517,7 +570,8 @@ export default function DocenteFeedbackPage() {
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Estado</label>
                   <select
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                    style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                     value={form.estado}
                     onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value as FeedbackEstado }))}
                   >
@@ -529,7 +583,8 @@ export default function DocenteFeedbackPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">Título *</label>
                 <input
                   required
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                  style={{ borderColor: "var(--rec-soft)" }}
                   placeholder="Ej. Buen desempeño en matemáticas"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -540,7 +595,8 @@ export default function DocenteFeedbackPage() {
                 <textarea
                   required
                   rows={4}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 resize-none"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] resize-none"
+                  style={{ borderColor: "var(--rec-soft)" }}
                   placeholder="Describe la observación o retroalimentación…"
                   value={form.content}
                   onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
@@ -550,7 +606,8 @@ export default function DocenteFeedbackPage() {
                 <label className="block text-xs font-medium text-emerald-700 mb-1">Fortalezas (una por línea)</label>
                 <textarea
                   rows={3}
-                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-emerald-50 resize-none"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] resize-none"
+                  style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}
                   placeholder={"Participación activa\nExcelente presentación"}
                   value={form.strengthsText}
                   onChange={(e) => setForm((f) => ({ ...f, strengthsText: e.target.value }))}
@@ -580,7 +637,8 @@ export default function DocenteFeedbackPage() {
                 type="submit"
                 form="feedback-form"
                 disabled={saving}
-                className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
+                style={{ background: "var(--rec-primary)" }}
               >
                 {saving ? "Guardando…" : editingId ? "Actualizar" : "Crear feedback"}
               </button>
@@ -611,11 +669,11 @@ export default function DocenteFeedbackPage() {
               <h3 className="text-lg font-semibold text-slate-900">{detailFeedback.title}</h3>
               <p className="text-sm text-slate-700 whitespace-pre-wrap">{detailFeedback.content}</p>
               {(detailFeedback.strengths?.items?.length ?? 0) > 0 && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-emerald-800 mb-1.5">Fortalezas</p>
+                <div className="rounded-lg p-3" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)" }}>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--rec-primary-strong)" }}>Fortalezas</p>
                   <ul className="space-y-1">
                     {detailFeedback.strengths!.items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-sm text-emerald-700">
+                      <li key={i} className="flex items-start gap-1.5 text-sm" style={{ color: "var(--rec-primary-strong)" }}>
                         <FiCheck className="w-4 h-4 mt-0.5 shrink-0" />
                         {item}
                       </li>
@@ -640,7 +698,8 @@ export default function DocenteFeedbackPage() {
             <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end">
               <button
                 onClick={() => setDetailFeedback(null)}
-                className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                className="px-4 py-2 text-sm text-white rounded-lg hover:opacity-90 transition-colors"
+                style={{ background: "var(--rec-primary)" }}
               >
                 Cerrar
               </button>
@@ -675,6 +734,6 @@ export default function DocenteFeedbackPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

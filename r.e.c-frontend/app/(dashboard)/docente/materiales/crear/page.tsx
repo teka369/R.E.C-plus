@@ -65,7 +65,7 @@ export default function CrearMaterialPage() {
   }, [assignments]);
 
   const canSubmit = !!form.title && !!form.groupId && !!form.subjectId && !!form.type && !!form.visibility;
-  const inputClass = "mt-1 w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200";
+  const inputClass = "mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]";
   const selectedGroupLabel = groupOptions.find((g) => g.id === Number(form.groupId))?.label;
   const selectedSubjectLabel = subjectOptions.find((s) => s.id === Number(form.subjectId))?.nombre;
   const previewImage = localImageDataUrl || (isImageUrl(form.imageUrl) ? form.imageUrl : null);
@@ -134,13 +134,13 @@ export default function CrearMaterialPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Crear material</h2>
+          <h2 className="text-xl font-semibold" style={{ color: "var(--rec-title)" }}>Crear material</h2>
           <p className="text-sm text-gray-600">Publica recursos para tus estudiantes con miniatura y vista previa.</p>
         </div>
-        <Link href="/docente/materiales" prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Volver</Link>
+        <Link href="/docente/materiales" prefetch={false} className="px-3 py-1.5 rounded-md text-sm border text-gray-700 hover:bg-gray-100" style={{ borderColor: "var(--rec-soft)" }}>Volver</Link>
       </div>
 
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-800 flex flex-wrap gap-2">
+      <div className="rounded-xl border px-3 py-2 text-xs flex flex-wrap gap-2" style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
         <span className="font-medium">Resumen:</span>
         <span>{selectedGroupLabel ?? "Sin grupo"}</span>
         <span>•</span>
@@ -152,7 +152,7 @@ export default function CrearMaterialPage() {
       </div>
 
       {error && <p className="text-sm text-red-700 border border-red-200 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
-      {ok && <p className="text-sm text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg px-3 py-2">{ok}</p>}
+      {ok && <p className="text-sm rounded-lg px-3 py-2" style={{ color: "var(--rec-primary-strong)", border: "1px solid var(--rec-soft)", background: "var(--rec-soft)" }}>{ok}</p>}
 
       {loadingAssignments ? (
         <div className="space-y-4 animate-pulse" aria-label="Cargando formulario">
@@ -179,7 +179,7 @@ export default function CrearMaterialPage() {
         </div>
       ) : (
       <form className="space-y-4" onSubmit={onSubmit}>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="rounded-xl border bg-white p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
           <h3 className="text-sm font-semibold text-slate-900">Asignacion academica</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -211,7 +211,7 @@ export default function CrearMaterialPage() {
         </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="rounded-xl border bg-white p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
           <h3 className="text-sm font-semibold text-slate-900">Contenido del material</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -285,7 +285,7 @@ export default function CrearMaterialPage() {
         </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="rounded-xl border bg-white p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
           <h3 className="text-sm font-semibold text-slate-900">Miniatura y visibilidad</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -370,8 +370,8 @@ export default function CrearMaterialPage() {
         </div>
         </div>
 
-        <div className="flex justify-end">
-          <button disabled={!canSubmit || saving} className="px-4 py-2 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <div className="rounded-xl border bg-white p-3 flex justify-end" style={{ borderColor: "var(--rec-soft)" }}>
+          <button disabled={!canSubmit || saving} className="px-4 py-2 rounded-md text-sm text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "var(--rec-primary)" }}>
             {saving ? "Guardando..." : "Crear material"}
           </button>
         </div>
@@ -402,7 +402,8 @@ export default function CrearMaterialPage() {
               </button>
               <button
                 type="button"
-                className="px-3 py-1.5 rounded-md text-sm bg-amber-600 text-white hover:bg-amber-700"
+                className="px-3 py-1.5 rounded-md text-sm text-white hover:opacity-90"
+                style={{ background: "var(--rec-primary)" }}
                 onClick={() => {
                   readThumbnailFile(pendingThumbnailFile);
                   setShowHeavyImageModal(false);
