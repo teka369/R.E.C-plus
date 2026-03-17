@@ -8,50 +8,45 @@ export default function Footer() {
 
   const footerLinks = [
     {
-      title: "Producto",
+      title: "Plataforma",
       links: [
-        { label: "Características", href: "#" },
-        { label: "Precios", href: "#" },
-        { label: "Seguridad", href: "#" },
-        { label: "Roadmap", href: "#" },
+        { label: "Inicio", href: "/" },
+        { label: "Tutorial", href: "/tutorial" },
+        { label: "Informacion", href: "/Informacion" },
+        { label: "Contacto", href: "/Contacto" },
       ],
     },
     {
       title: "Recursos",
       links: [
-        { label: "Documentación", href: "#" },
-        { label: "Guías", href: "#" },
-        { label: "API", href: "#" },
-        { label: "Comunidad", href: "#" },
+        { label: "Portafolio", href: "/portafolio" },
+        { label: "Certificados", href: "/certificados" },
+        { label: "Reportes", href: "/Reportes" },
+        { label: "Login", href: "/login" },
       ],
     },
     {
-      title: "Empresa",
+      title: "Accesos",
       links: [
-        { label: "Acerca de", href: "#" },
-        { label: "Blog", href: "#" },
-        { label: "Contacto", href: "#" },
-        { label: "Empleos", href: "#" },
-      ],
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Privacidad", href: "#" },
-        { label: "Términos", href: "#" },
-        { label: "Cookies", href: "#" },
-        { label: "Licencia", href: "#" },
+        { label: "Acceso Secretaria", href: "/acceso-secretaria" },
+        { label: "Panel Docente", href: "/docente" },
+        { label: "Panel Estudiante", href: "/estudiante" },
+        { label: "Cerrar sesion", href: "/logout" },
       ],
     },
   ];
 
   return (
-    <footer className="w-full bg-gradient-to-b from-[color:var(--rec-primary-strong)] to-[color:var(--rec-primary)] text-white border-t border-white/15">
-      <div className="mx-auto max-w-6xl px-4 py-16">
+    <footer className="relative w-full overflow-hidden border-t border-white/15 bg-gradient-to-b from-[#26323d] to-[#2f3e4b] text-white">
+      <div className="rec-footer-gif pointer-events-none absolute inset-0 opacity-20" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-black/10" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_15%,rgba(0,0,0,0.18),transparent_55%)]" aria-hidden="true" />
+
+      <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-14 md:py-16">
         {/* Grid Principal */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-12">
+        <div className="mb-10 grid grid-cols-1 gap-10 sm:gap-12 md:grid-cols-2 lg:grid-cols-4">
           {/* Columna de Marca */}
-          <div className="col-span-1 flex flex-col gap-4">
+          <div className="col-span-1 flex flex-col gap-4 lg:col-span-1">
             <div className="flex items-center gap-2">
               <Image
                 src="/logo.png"
@@ -70,7 +65,7 @@ export default function Footer() {
             {/* Social Icons */}
             <div className="flex gap-3 pt-4">
               <a
-                href="#"
+                href="https://github.com/"
                 aria-label="GitHub"
                 className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
               >
@@ -118,11 +113,11 @@ export default function Footer() {
         <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mb-8" />
 
         {/* Bottom Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           {/* Copyright & Info */}
           <div className="flex flex-col gap-2">
             <p className="text-sm text-white/80">
-              © {currentYear} Institución Educativa Javier Alonso Barrios Sevilla. Todos los derechos reservados.
+              © {currentYear} Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-2 text-xs text-white/70">
               <FiMapPin className="h-3 w-3" />
@@ -131,7 +126,7 @@ export default function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm sm:gap-4">
             <Link
               href="/"
               prefetch={false}
@@ -141,34 +136,34 @@ export default function Footer() {
             </Link>
             <span className="text-white/45">•</span>
             <Link
-              href="#"
+              href="/tutorial"
               prefetch={false}
               className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
-              Ayuda
+              Tutorial
             </Link>
             <span className="text-white/45">•</span>
             <Link
-              href="#"
+              href="/Contacto"
               prefetch={false}
               className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
-              Estado
+              Contacto
             </Link>
             <span className="text-white/45">•</span>
             <Link
-              href="#"
+              href="/Reportes"
               prefetch={false}
               className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
-              Feedback
+              Reportes
             </Link>
           </div>
         </div>
       </div>
 
       {/* Subtle Footer Accent */}
-      <div className="h-px bg-gradient-to-r from-emerald-500/0 via-[color:var(--rec-accent)]/30 to-emerald-500/0" />
+      <div className="h-px bg-gradient-to-r from-slate-300/0 via-white/30 to-slate-300/0" />
     </footer>
   );
 }
