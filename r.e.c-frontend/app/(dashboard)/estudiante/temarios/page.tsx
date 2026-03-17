@@ -146,6 +146,7 @@ export default function EstudianteTemariosPage() {
   const [filterHasContent, setFilterHasContent] = useState<"all" | "with" | "without">("all");
   const [filterHasDuration, setFilterHasDuration] = useState<"all" | "with" | "without">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title_asc" | "title_desc" | "updated">("newest");
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,6 +252,18 @@ export default function EstudianteTemariosPage() {
     syllabi,
   ]);
 
+  const activeFiltersCount = useMemo(() => {
+    let total = 0;
+    if (selectedSubjectId > 0) total += 1;
+    if (filterStatus !== "ALL") total += 1;
+    if (filterPeriod) total += 1;
+    if (filterHasContent !== "all") total += 1;
+    if (filterHasDuration !== "all") total += 1;
+    if (sortBy !== "newest") total += 1;
+    if (search.trim()) total += 1;
+    return total;
+  }, [filterHasContent, filterHasDuration, filterPeriod, filterStatus, search, selectedSubjectId, sortBy]);
+
   const toggleExpand = (id: number) => {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -276,101 +289,154 @@ export default function EstudianteTemariosPage() {
         <>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
             <p className="text-xs text-slate-500">Grupo actual: <span className="font-medium text-slate-700">{groupLabel || "Sin grupo"}</span></p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-              <select
-                className="border border-slate-300 rounded-lg p-2 text-sm"
-                value={selectedSubjectId}
-                onChange={(event) => setSelectedSubjectId(Number(event.target.value))}
-              >
-                <option value={0}>Todas las materias</option>
-                {subjects.map((item) => (
-                  <option key={item.id} value={item.subject.id}>
-                    {item.subject.nombre}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="border border-slate-300 rounded-lg p-2 text-sm"
-                value={filterStatus}
-                onChange={(event) => setFilterStatus(event.target.value as "ALL" | "BORRADOR" | "ACTIVO" | "ARCHIVADO")}
-              >
-                <option value="ALL">Todos los estados</option>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="border border-slate-300 rounded-lg p-2 text-sm"
-                value={filterPeriod}
-                onChange={(event) => setFilterPeriod(event.target.value)}
-              >
-                <option value="">Todos los periodos</option>
-                {periodOptions.map((period) => (
-                  <option key={period} value={period}>
-                    {period}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="border border-slate-300 rounded-lg p-2 text-sm"
-                value={filterHasContent}
-                onChange={(event) => setFilterHasContent(event.target.value as "all" | "with" | "without")}
-              >
-                <option value="all">Contenido: todos</option>
-                <option value="with">Con contenido</option>
-                <option value="without">Sin contenido</option>
-              </select>
-
-              <select
-                className="border border-slate-300 rounded-lg p-2 text-sm"
-                value={filterHasDuration}
-                onChange={(event) => setFilterHasDuration(event.target.value as "all" | "with" | "without")}
-              >
-                <option value="all">Duración: todos</option>
-                <option value="with">Con duración</option>
-                <option value="without">Sin duración</option>
-              </select>
-
-              <select
-                className="border border-slate-300 rounded-lg p-2 text-sm"
-                value={sortBy}
-                onChange={(event) => setSortBy(event.target.value as "newest" | "oldest" | "title_asc" | "title_desc" | "updated")}
-              >
-                <option value="newest">Orden: más recientes</option>
-                <option value="oldest">Orden: más antiguos</option>
-                <option value="updated">Orden: última edición</option>
-                <option value="title_asc">Orden: título A-Z</option>
-                <option value="title_desc">Orden: título Z-A</option>
-              </select>
-
-              <input
-                className="border border-slate-300 rounded-lg p-2 text-sm sm:col-span-2 xl:col-span-2"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por título, materia, periodo, duración o contenido"
-              />
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedSubjectId(0);
-                  setFilterStatus("ALL");
-                  setFilterPeriod("");
-                  setFilterHasContent("all");
-                  setFilterHasDuration("all");
-                  setSortBy("newest");
-                  setSearch("");
-                }}
-                className="border border-slate-300 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-100"
-              >
-                Limpiar filtros
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-sm font-medium text-slate-800">Filtros de búsqueda</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFiltersExpanded((prev) => !prev)}
+                  className="inline-flex items-center gap-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                  aria-expanded={filtersExpanded}
+                  aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+                >
+                  <span>{filtersExpanded ? "Ocultar" : "Mostrar"}</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 transition-transform ${filtersExpanded ? "rotate-180" : "rotate-0"}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                <span className="text-xs rounded-full bg-white border border-slate-200 px-2 py-1 text-slate-600">
+                  {activeFiltersCount} activo(s)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSubjectId(0);
+                    setFilterStatus("ALL");
+                    setFilterPeriod("");
+                    setFilterHasContent("all");
+                    setFilterHasDuration("all");
+                    setSortBy("newest");
+                    setSearch("");
+                  }}
+                  disabled={activeFiltersCount === 0}
+                  className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
             </div>
+
+            {filtersExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <label className="text-xs text-slate-600 space-y-1">
+                <span className="block">Materia</span>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  value={selectedSubjectId}
+                  onChange={(event) => setSelectedSubjectId(Number(event.target.value))}
+                >
+                  <option value={0}>Todas las materias</option>
+                  {subjects.map((item) => (
+                    <option key={item.id} value={item.subject.id}>
+                      {item.subject.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-xs text-slate-600 space-y-1">
+                <span className="block">Estado</span>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  value={filterStatus}
+                  onChange={(event) => setFilterStatus(event.target.value as "ALL" | "BORRADOR" | "ACTIVO" | "ARCHIVADO")}
+                >
+                  <option value="ALL">Todos los estados</option>
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-xs text-slate-600 space-y-1">
+                <span className="block">Periodo</span>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  value={filterPeriod}
+                  onChange={(event) => setFilterPeriod(event.target.value)}
+                >
+                  <option value="">Todos los periodos</option>
+                  {periodOptions.map((period) => (
+                    <option key={period} value={period}>
+                      {period}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-xs text-slate-600 space-y-1">
+                <span className="block">Contenido</span>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  value={filterHasContent}
+                  onChange={(event) => setFilterHasContent(event.target.value as "all" | "with" | "without")}
+                >
+                  <option value="all">Todos</option>
+                  <option value="with">Con contenido</option>
+                  <option value="without">Sin contenido</option>
+                </select>
+              </label>
+
+              <label className="text-xs text-slate-600 space-y-1">
+                <span className="block">Duración</span>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  value={filterHasDuration}
+                  onChange={(event) => setFilterHasDuration(event.target.value as "all" | "with" | "without")}
+                >
+                  <option value="all">Todos</option>
+                  <option value="with">Con duración</option>
+                  <option value="without">Sin duración</option>
+                </select>
+              </label>
+
+              <label className="text-xs text-slate-600 space-y-1 xl:col-span-1">
+                <span className="block">Ordenar por</span>
+                <select
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as "newest" | "oldest" | "title_asc" | "title_desc" | "updated")}
+                >
+                  <option value="newest">Más recientes</option>
+                  <option value="oldest">Más antiguos</option>
+                  <option value="updated">Última edición</option>
+                  <option value="title_asc">Título A-Z</option>
+                  <option value="title_desc">Título Z-A</option>
+                </select>
+              </label>
+
+              <label className="text-xs text-slate-600 space-y-1 sm:col-span-2 xl:col-span-2">
+                <span className="block">Búsqueda rápida</span>
+                <input
+                  className="w-full border border-slate-300 rounded-lg p-2 text-sm"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Ej: título, materia, periodo, duración o contenido"
+                />
+              </label>
+            </div>
+            )}
 
             <div className="flex items-center justify-between text-xs text-slate-500">
               <p>{visibleSyllabi.length} resultado(s)</p>

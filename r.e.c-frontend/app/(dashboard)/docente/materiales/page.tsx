@@ -39,6 +39,7 @@ function DocenteMaterialesContent() {
   const [typeFilter, setTypeFilter] = useState<"ALL" | StudyMaterial["type"]>("ALL");
   const [visibilityFilter, setVisibilityFilter] = useState<"ALL" | StudyMaterial["visibility"]>("ALL");
   const [subjectFilter, setSubjectFilter] = useState<number | "ALL">("ALL");
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
   // Paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
@@ -211,15 +212,18 @@ function DocenteMaterialesContent() {
   };
   const countsAll = useMemo(() => computeCounts(items), [items]);
   const countsFiltered = useMemo(() => computeCounts(filteredItems), [filteredItems]);
-  const hasActiveFilters = useMemo(() => {
-    return Boolean(
-      query.trim() ||
-      (typeFilter !== "ALL") ||
-      (visibilityFilter !== "ALL") ||
-      (subjectFilter !== "ALL") ||
-      (selectedGroupId !== "")
-    );
-  }, [query, typeFilter, visibilityFilter, subjectFilter, selectedGroupId]);
+  const activeFiltersCount = useMemo(() => {
+    let total = 0;
+    if (query.trim()) total += 1;
+    if (typeFilter !== "ALL") total += 1;
+    if (visibilityFilter !== "ALL") total += 1;
+    if (subjectFilter !== "ALL") total += 1;
+    if (selectedGroupId !== "") total += 1;
+    if (pageSize !== 12) total += 1;
+    return total;
+  }, [pageSize, query, selectedGroupId, subjectFilter, typeFilter, visibilityFilter]);
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   // Paginación derivada
   const totalFiltered = filteredItems.length;
@@ -268,8 +272,8 @@ function DocenteMaterialesContent() {
     return null;
   };
   const badgePalette = [
-    "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    "bg-indigo-50 text-indigo-700 border border-indigo-200",
+    "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
+    "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
     "bg-amber-50 text-amber-700 border border-amber-200",
     "bg-rose-50 text-rose-700 border border-rose-200",
     "bg-sky-50 text-sky-700 border border-sky-200",
@@ -279,8 +283,8 @@ function DocenteMaterialesContent() {
   ];
   const badgeClasses = (key: number) => badgePalette[key % badgePalette.length];
   const cardPalette = [
-    "bg-emerald-50 border border-emerald-200",
-    "bg-indigo-50 border border-indigo-200",
+    "bg-[color:var(--rec-soft)] border border-[color:var(--rec-soft)]",
+    "bg-[color:var(--rec-soft)] border border-[color:var(--rec-soft)]",
     "bg-amber-50 border border-amber-200",
     "bg-rose-50 border border-rose-200",
     "bg-sky-50 border border-sky-200",
@@ -309,104 +313,171 @@ function DocenteMaterialesContent() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Materiales</h2>
-          <p className="text-sm text-gray-600">Listado de materiales creados por el docente según asignaciones.</p>
-          {!loading && !error && (
-            <div className="mt-1 text-xs text-gray-700">
-              Mostrando {countsFiltered.total} de {countsAll.total} materiales (Grupo: {countsFiltered.group}, Grado: {countsFiltered.grade})
-              {" "}· Página {page} de {totalPages}
-            </div>
-          )}
+      <div
+        className="rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Materiales</h1>
+            <p className="text-sm text-white/90">Listado de materiales creados por el docente según asignaciones.</p>
+            {!loading && !error && (
+              <div className="mt-1 text-xs text-white/90">
+                Mostrando {countsFiltered.total} de {countsAll.total} materiales (Grupo: {countsFiltered.group}, Grado: {countsFiltered.grade})
+                {" "}· Página {page} de {totalPages}
+              </div>
+            )}
+          </div>
+          <Link
+            href="/docente/materiales/crear"
+            prefetch={false}
+            className="w-full sm:w-auto text-center px-3 py-1.5 rounded-md text-sm font-semibold bg-white hover:opacity-90"
+            style={{ color: "var(--rec-primary-strong)" }}
+          >
+            Crear material
+          </Link>
         </div>
-        <Link href="/docente/materiales/crear" prefetch={false} className="w-full sm:w-auto text-center px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700">Crear material</Link>
       </div>
 
-      <div className="flex items-end gap-3 flex-wrap rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
-        <div className="w-full sm:flex-1 sm:max-w-xs">
-          <label className="block text-xs text-gray-600">Grado–Grupo asignado</label>
-          <select
-            className="mt-1 w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            value={String(selectedGroupId)}
-            onChange={(e) => setSelectedGroupId(e.target.value ? Number(e.target.value) : "")}
-          >
-            <option value="">Todos</option>
-            {groupOptions.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
-            ))}
-          </select>
+      <div className="rounded-2xl border bg-white p-3 shadow-sm space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2" style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium" style={{ color: "var(--rec-title)" }}>Filtros de materiales</p>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-white text-slate-700 border" style={{ borderColor: "var(--rec-soft)" }}>
+              {activeFiltersCount} activo(s)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFiltersExpanded((prev) => !prev)}
+              className="inline-flex items-center gap-1 border rounded-lg px-2.5 py-1.5 text-sm text-slate-700 hover:opacity-90"
+              style={{ borderColor: "var(--rec-soft)", background: "white" }}
+              aria-expanded={filtersExpanded}
+              aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+            >
+              <span>{filtersExpanded ? "Ocultar" : "Mostrar"}</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`h-4 w-4 transition-transform ${filtersExpanded ? "rotate-180" : "rotate-0"}`}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              disabled={!hasActiveFilters}
+              className="px-3 py-1.5 text-sm border rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ borderColor: "var(--rec-soft)", background: "white" }}
+            >
+              Limpiar filtros
+            </button>
+          </div>
         </div>
-        <div className="w-full sm:flex-1 sm:min-w-[220px]">
-          <label className="block text-xs text-gray-600">Buscar
-            {countsAll.total > 0 && (
-              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
-                Resultados: {countsFiltered.total}
-              </span>
-            )}
-          </label>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Título o descripción"
-            className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-600">Tipo</label>
-          <select
-            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
-          >
-            <option value="ALL">Todos</option>
-            <option value="PDF">PDF</option>
-            <option value="VIDEO">Video</option>
-            <option value="LINK">Link</option>
-            <option value="DOC">Doc</option>
-            <option value="OTHER">Otro</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-600">Visibilidad</label>
-          <select
-            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            value={visibilityFilter}
-            onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
-          >
-            <option value="ALL">Todas</option>
-            <option value="GROUP">Grupo</option>
-            <option value="GRADE">Grado</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-600">Materia</label>
-          <select
-            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            value={subjectFilter}
-            onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
-          >
-            <option value="ALL">Todas</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.nombre}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-600">Por página</label>
-          <select
-            className="mt-1 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-          >
-            <option value={6}>6</option>
-            <option value={12}>12</option>
-            <option value={24}>24</option>
-          </select>
-        </div>
+
+        {filtersExpanded && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            <label className="text-xs text-gray-600 space-y-1">
+              <span className="block">Grado-Grupo asignado</span>
+              <select
+                className="w-full border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                value={String(selectedGroupId)}
+                onChange={(e) => setSelectedGroupId(e.target.value ? Number(e.target.value) : "")}
+              >
+                <option value="">Todos</option>
+                {groupOptions.map((g) => (
+                  <option key={g.id} value={g.id}>{g.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-xs text-gray-600 space-y-1">
+              <span className="block">Tipo</span>
+              <select
+                className="w-full border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
+              >
+                <option value="ALL">Todos</option>
+                <option value="PDF">PDF</option>
+                <option value="VIDEO">Video</option>
+                <option value="LINK">Link</option>
+                <option value="DOC">Doc</option>
+                <option value="OTHER">Otro</option>
+              </select>
+            </label>
+
+            <label className="text-xs text-gray-600 space-y-1">
+              <span className="block">Visibilidad</span>
+              <select
+                className="w-full border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                value={visibilityFilter}
+                onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
+              >
+                <option value="ALL">Todas</option>
+                <option value="GROUP">Grupo</option>
+                <option value="GRADE">Grado</option>
+              </select>
+            </label>
+
+            <label className="text-xs text-gray-600 space-y-1">
+              <span className="block">Materia</span>
+              <select
+                className="w-full border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
+              >
+                <option value="ALL">Todas</option>
+                {subjects.map((s) => (
+                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-xs text-gray-600 space-y-1">
+              <span className="block">Por página</span>
+              <select
+                className="w-full border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+              >
+                <option value={6}>6</option>
+                <option value={12}>12</option>
+                <option value={24}>24</option>
+              </select>
+            </label>
+
+            <label className="text-xs text-gray-600 space-y-1 sm:col-span-2 xl:col-span-1">
+              <span className="block">Búsqueda rápida</span>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Título o descripción"
+                className="w-full border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "white" }}
+              />
+            </label>
+          </div>
+        )}
+
         <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
+          <div className="inline-flex rounded-lg border bg-white/90 p-1 shadow-sm" style={{ borderColor: "var(--rec-soft)" }}>
             <button
               type="button"
               onClick={() => setViewMode("list")}
@@ -422,18 +493,16 @@ function DocenteMaterialesContent() {
               Cuadro
             </button>
           </div>
+          {countsAll.total > 0 && (
+            <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
+              Resultados: {countsFiltered.total}
+            </span>
+          )}
           {hasActiveFilters && (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
               Filtros activos
             </span>
           )}
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="mt-1 w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
-          >
-            Limpiar filtros
-          </button>
         </div>
       </div>
 
@@ -528,7 +597,8 @@ function DocenteMaterialesContent() {
                               onClick={() => {
                                 void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
                               }}
-                              className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                              className="px-3 py-1.5 rounded-md text-sm text-white hover:opacity-90"
+                              style={{ background: "var(--rec-primary)" }}
                             >
                               Abrir recurso
                             </a>
@@ -606,7 +676,8 @@ function DocenteMaterialesContent() {
                             onClick={() => {
                               void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
                             }}
-                            className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                            className="px-3 py-1.5 rounded-md text-sm text-white hover:opacity-90"
+                            style={{ background: "var(--rec-primary)" }}
                           >
                             Abrir recurso
                           </a>
@@ -642,9 +713,9 @@ function DocenteMaterialesContent() {
         }
 
         .mode-active {
-          background: #059669;
+          background: var(--rec-primary);
           color: white;
-          box-shadow: 0 6px 14px -10px rgba(5, 150, 105, 0.75);
+          box-shadow: 0 6px 14px -10px rgba(50, 166, 86, 0.75);
         }
 
         .view-mode-switch {

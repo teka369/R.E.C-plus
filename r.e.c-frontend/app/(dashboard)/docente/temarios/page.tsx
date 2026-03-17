@@ -20,8 +20,8 @@ const STATUS_OPTIONS = [
 
 const STATUS_STYLE: Record<string, string> = {
   BORRADOR: "bg-amber-100 text-amber-800 border-amber-200",
-  ACTIVO: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  ARCHIVADO: "bg-slate-200 text-slate-700 border-slate-300",
+  ACTIVO: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border-[color:var(--rec-soft)]",
+  ARCHIVADO: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 type SyllabusSections = {
@@ -157,6 +157,7 @@ export default function TemariosDocentePage() {
   const [filterHasContent, setFilterHasContent] = useState<"all" | "with" | "without">("all");
   const [filterHasDuration, setFilterHasDuration] = useState<"all" | "with" | "without">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title_asc" | "title_desc" | "updated">("newest");
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const [form, setForm] = useState<CreateSyllabusInput>({
     groupId: 0,
@@ -281,6 +282,19 @@ export default function TemariosDocentePage() {
     sortBy,
     syllabi,
   ]);
+
+  const activeFiltersCount = useMemo(() => {
+    let total = 0;
+    if (filterGroupId > 0) total += 1;
+    if (filterSubjectId > 0) total += 1;
+    if (filterStatus !== "ALL") total += 1;
+    if (filterPeriod) total += 1;
+    if (filterHasContent !== "all") total += 1;
+    if (filterHasDuration !== "all") total += 1;
+    if (sortBy !== "newest") total += 1;
+    if (search.trim()) total += 1;
+    return total;
+  }, [filterGroupId, filterHasContent, filterHasDuration, filterPeriod, filterStatus, filterSubjectId, search, sortBy]);
 
   const readyToCreate = useMemo(
     () => form.groupId > 0 && form.subjectId > 0 && form.title.trim().length > 0,
@@ -407,12 +421,18 @@ export default function TemariosDocentePage() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-indigo-50 p-4">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Temarios</h1>
-        <p className="text-sm text-slate-600">Gestion completa por grupo y materia, con filtros, edicion y control de contenidos.</p>
+      <div
+        className="rounded-2xl border p-4 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
+        <h1 className="text-2xl font-bold tracking-tight">Temarios</h1>
+        <p className="text-sm text-white/90">Gestion completa por grupo y materia, con filtros, edicion y control de contenidos.</p>
       </div>
 
-      {ok && <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">{ok}</p>}
+      {ok && <p className="text-sm rounded-xl px-3 py-2" style={{ color: "var(--rec-primary-strong)", background: "var(--rec-soft)", border: "1px solid var(--rec-soft)" }}>{ok}</p>}
       {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
 
       {loading && (
@@ -425,136 +445,195 @@ export default function TemariosDocentePage() {
 
       {!loading && (
         <>
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3" style={{ border: "1px solid var(--rec-soft)" }}>
               <div className="flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+                  className="px-4 py-2 rounded-lg text-white text-sm font-semibold hover:opacity-90"
+                  style={{ background: "var(--rec-primary)" }}
                 >
                   Crear temario
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={filterGroupId}
-                  onChange={(event) => {
-                    setFilterGroupId(Number(event.target.value));
-                    setFilterSubjectId(0);
-                  }}
-                >
-                  <option value={0}>Todos los grupos</option>
-                  {groupOptions.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={filterSubjectId}
-                  onChange={(event) => setFilterSubjectId(Number(event.target.value))}
-                >
-                  <option value={0}>Todas las materias</option>
-                  {(
-                    filterGroupId
-                      ? (subjectsByGroup.get(filterGroupId) ?? [])
-                      : Array.from(
-                          new Map(
-                            assignments.map((a) => [a.subject.id, { id: a.subject.id, name: a.subject.nombre }]),
-                          ).values(),
-                        )
-                  ).map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={filterStatus}
-                  onChange={(event) => setFilterStatus(event.target.value as "ALL" | "BORRADOR" | "ACTIVO" | "ARCHIVADO")}
-                >
-                  <option value="ALL">Todos los estados</option>
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={filterPeriod}
-                  onChange={(event) => setFilterPeriod(event.target.value)}
-                >
-                  <option value="">Todos los periodos</option>
-                  {periodOptions.map((period) => (
-                    <option key={period} value={period}>
-                      {period}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={filterHasContent}
-                  onChange={(event) => setFilterHasContent(event.target.value as "all" | "with" | "without")}
-                >
-                  <option value="all">Contenido: todos</option>
-                  <option value="with">Con contenido</option>
-                  <option value="without">Sin contenido</option>
-                </select>
-
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={filterHasDuration}
-                  onChange={(event) => setFilterHasDuration(event.target.value as "all" | "with" | "without")}
-                >
-                  <option value="all">Duración: todos</option>
-                  <option value="with">Con duración</option>
-                  <option value="without">Sin duración</option>
-                </select>
-
-                <select
-                  className="border border-slate-300 rounded-lg p-2 text-sm"
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as "newest" | "oldest" | "title_asc" | "title_desc" | "updated")}
-                >
-                  <option value="newest">Orden: más recientes</option>
-                  <option value="oldest">Orden: más antiguos</option>
-                  <option value="updated">Orden: última edición</option>
-                  <option value="title_asc">Orden: título A-Z</option>
-                  <option value="title_desc">Orden: título Z-A</option>
-                </select>
-
-                <input
-                  className="border border-slate-300 rounded-lg p-2 text-sm sm:col-span-2 xl:col-span-2"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar por título, contenido, grupo, materia, periodo o duración"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterGroupId(0);
-                    setFilterSubjectId(0);
-                    setFilterStatus("ALL");
-                    setFilterPeriod("");
-                    setFilterHasContent("all");
-                    setFilterHasDuration("all");
-                    setSortBy("newest");
-                    setSearch("");
-                  }}
-                  className="border border-slate-300 rounded-lg p-2 text-sm text-slate-700 hover:bg-slate-100"
-                >
-                  Limpiar filtros
-                </button>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2" style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--rec-title)" }}>Filtros de búsqueda</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFiltersExpanded((prev) => !prev)}
+                    className="inline-flex items-center gap-1 border rounded-lg px-2.5 py-1.5 text-sm text-slate-700 hover:opacity-90"
+                    style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                    aria-expanded={filtersExpanded}
+                    aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+                  >
+                    <span>{filtersExpanded ? "Ocultar" : "Mostrar"}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`h-4 w-4 transition-transform ${filtersExpanded ? "rotate-180" : "rotate-0"}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  <span className="text-xs rounded-full bg-white border px-2 py-1 text-slate-600" style={{ borderColor: "var(--rec-soft)" }}>
+                    {activeFiltersCount} activo(s)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterGroupId(0);
+                      setFilterSubjectId(0);
+                      setFilterStatus("ALL");
+                      setFilterPeriod("");
+                      setFilterHasContent("all");
+                      setFilterHasDuration("all");
+                      setSortBy("newest");
+                      setSearch("");
+                    }}
+                    disabled={activeFiltersCount === 0}
+                    className="border rounded-lg px-3 py-1.5 text-sm text-slate-700 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ borderColor: "var(--rec-soft)", background: "white" }}
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
               </div>
+
+              {filtersExpanded && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                <label className="text-xs text-slate-600 space-y-1">
+                  <span className="block">Grupo</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={filterGroupId}
+                    onChange={(event) => {
+                      setFilterGroupId(Number(event.target.value));
+                      setFilterSubjectId(0);
+                    }}
+                  >
+                    <option value={0}>Todos los grupos</option>
+                    {groupOptions.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1">
+                  <span className="block">Materia</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={filterSubjectId}
+                    onChange={(event) => setFilterSubjectId(Number(event.target.value))}
+                  >
+                    <option value={0}>Todas las materias</option>
+                    {(
+                      filterGroupId
+                        ? (subjectsByGroup.get(filterGroupId) ?? [])
+                        : Array.from(
+                            new Map(
+                              assignments.map((a) => [a.subject.id, { id: a.subject.id, name: a.subject.nombre }]),
+                            ).values(),
+                          )
+                    ).map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1">
+                  <span className="block">Estado</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={filterStatus}
+                    onChange={(event) => setFilterStatus(event.target.value as "ALL" | "BORRADOR" | "ACTIVO" | "ARCHIVADO")}
+                  >
+                    <option value="ALL">Todos los estados</option>
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1">
+                  <span className="block">Periodo</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={filterPeriod}
+                    onChange={(event) => setFilterPeriod(event.target.value)}
+                  >
+                    <option value="">Todos los periodos</option>
+                    {periodOptions.map((period) => (
+                      <option key={period} value={period}>
+                        {period}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1">
+                  <span className="block">Contenido</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={filterHasContent}
+                    onChange={(event) => setFilterHasContent(event.target.value as "all" | "with" | "without")}
+                  >
+                    <option value="all">Todos</option>
+                    <option value="with">Con contenido</option>
+                    <option value="without">Sin contenido</option>
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1">
+                  <span className="block">Duración</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={filterHasDuration}
+                    onChange={(event) => setFilterHasDuration(event.target.value as "all" | "with" | "without")}
+                  >
+                    <option value="all">Todos</option>
+                    <option value="with">Con duración</option>
+                    <option value="without">Sin duración</option>
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1 xl:col-span-1">
+                  <span className="block">Ordenar por</span>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                    value={sortBy}
+                    onChange={(event) => setSortBy(event.target.value as "newest" | "oldest" | "title_asc" | "title_desc" | "updated")}
+                  >
+                    <option value="newest">Más recientes</option>
+                    <option value="oldest">Más antiguos</option>
+                    <option value="updated">Última edición</option>
+                    <option value="title_asc">Título A-Z</option>
+                    <option value="title_desc">Título Z-A</option>
+                  </select>
+                </label>
+
+                <label className="text-xs text-slate-600 space-y-1 sm:col-span-2 xl:col-span-2">
+                  <span className="block">Búsqueda rápida</span>
+                  <input
+                    className="w-full border border-slate-300 rounded-lg p-2 text-sm"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Ej: título, contenido, grupo, materia, periodo o duración"
+                  />
+                </label>
+              </div>
+              )}
 
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <p>{visibleSyllabi.length} resultado(s)</p>
@@ -593,7 +672,8 @@ export default function TemariosDocentePage() {
                           <div className="flex items-center gap-1 shrink-0">
                             <Link
                               href={`/docente/temarios/${item.id}`}
-                              className="px-2 py-1 rounded text-xs border border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                              className="px-2 py-1 rounded text-xs border hover:opacity-90"
+                              style={{ borderColor: "var(--rec-soft)", color: "var(--rec-primary-strong)", background: "var(--rec-soft)" }}
                             >
                               Ver temario
                             </Link>
@@ -831,7 +911,8 @@ export default function TemariosDocentePage() {
               <button
                 type="submit"
                 disabled={!readyToCreate || saving}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                style={{ background: "var(--rec-primary)" }}
               >
                 {saving ? "Guardando..." : "Crear temario"}
               </button>
@@ -992,7 +1073,7 @@ export default function TemariosDocentePage() {
               <button className="px-4 py-2 rounded-lg border border-slate-300 text-sm" onClick={() => setEditing(null)} disabled={saving}>
                 Cancelar
               </button>
-              <button className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50" onClick={() => void onSaveEdit()} disabled={saving}>
+              <button className="px-4 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90" style={{ background: "var(--rec-primary)" }} onClick={() => void onSaveEdit()} disabled={saving}>
                 {saving ? "Guardando..." : "Guardar cambios"}
               </button>
             </div>

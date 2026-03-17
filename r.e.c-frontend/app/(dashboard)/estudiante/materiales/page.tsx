@@ -45,6 +45,7 @@ function EstudianteMaterialesContent() {
   const [typeFilter, setTypeFilter] = useState<"ALL" | StudyMaterial["type"]>("ALL");
   const [visibilityFilter, setVisibilityFilter] = useState<"ALL" | StudyMaterial["visibility"]>("ALL");
   const [subjectFilter, setSubjectFilter] = useState<number | "ALL">("ALL");
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
   // Paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
@@ -288,14 +289,17 @@ function EstudianteMaterialesContent() {
   };
   const countsAll = useMemo(() => computeCounts(visibleMaterials), [visibleMaterials]);
   const countsFiltered = useMemo(() => computeCounts(filteredMaterials), [filteredMaterials]);
-  const hasActiveFilters = useMemo(() => {
-    return Boolean(
-      query.trim() ||
-      (typeFilter !== "ALL") ||
-      (visibilityFilter !== "ALL") ||
-      (subjectFilter !== "ALL")
-    );
-  }, [query, typeFilter, visibilityFilter, subjectFilter]);
+  const activeFiltersCount = useMemo(() => {
+    let total = 0;
+    if (query.trim()) total += 1;
+    if (typeFilter !== "ALL") total += 1;
+    if (visibilityFilter !== "ALL") total += 1;
+    if (subjectFilter !== "ALL") total += 1;
+    if (pageSize !== 12) total += 1;
+    return total;
+  }, [pageSize, query, subjectFilter, typeFilter, visibilityFilter]);
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   // Paginación derivada
   const totalFiltered = filteredMaterials.length;
@@ -340,77 +344,120 @@ function EstudianteMaterialesContent() {
 
       {/* Filtros */}
       {!loading && !error && (
-        <div className="flex flex-wrap gap-2 items-end rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
-          <div className="w-full sm:flex-1 sm:min-w-[220px]">
-            <label className="block text-xs text-gray-700">Buscar
-              {countsAll.total > 0 && (
-                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
-                  Resultados: {countsFiltered.total}
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Título o descripción"
-              className="mt-1 w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            />
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-slate-800">Filtros de materiales</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-white text-slate-700 border border-slate-200">
+                {activeFiltersCount} activo(s)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFiltersExpanded((prev) => !prev)}
+                className="inline-flex items-center gap-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                aria-expanded={filtersExpanded}
+                aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+              >
+                <span>{filtersExpanded ? "Ocultar" : "Mostrar"}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-4 w-4 transition-transform ${filtersExpanded ? "rotate-180" : "rotate-0"}`}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                disabled={!hasActiveFilters}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Limpiar filtros
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs text-gray-700">Tipo</label>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            >
-              <option value="ALL">Todos</option>
-              <option value="PDF">PDF</option>
-              <option value="VIDEO">Video</option>
-              <option value="LINK">Link</option>
-              <option value="DOC">Doc</option>
-              <option value="OTHER">Otro</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-700">Visibilidad</label>
-            <select
-              value={visibilityFilter}
-              onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            >
-              <option value="ALL">Todas</option>
-              <option value="GROUP">Grupo</option>
-              <option value="GRADE">Grado</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-700">Materia</label>
-            <select
-              value={subjectFilter}
-              onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            >
-              <option value="ALL">Todas</option>
-              {studentSubjects.map((s) => (
-                <option key={s.id} value={s.id}>{s.nombre}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-700">Por página</label>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="mt-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            >
-              <option value={6}>6</option>
-              <option value={12}>12</option>
-              <option value={24}>24</option>
-            </select>
-          </div>
+
+          {filtersExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <label className="text-xs text-gray-700 space-y-1 sm:col-span-2 xl:col-span-1">
+                <span className="block">Búsqueda rápida</span>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Título o descripción"
+                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                />
+              </label>
+
+              <label className="text-xs text-gray-700 space-y-1">
+                <span className="block">Tipo</span>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
+                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="PDF">PDF</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="LINK">Link</option>
+                  <option value="DOC">Doc</option>
+                  <option value="OTHER">Otro</option>
+                </select>
+              </label>
+
+              <label className="text-xs text-gray-700 space-y-1">
+                <span className="block">Visibilidad</span>
+                <select
+                  value={visibilityFilter}
+                  onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
+                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                >
+                  <option value="ALL">Todas</option>
+                  <option value="GROUP">Grupo</option>
+                  <option value="GRADE">Grado</option>
+                </select>
+              </label>
+
+              <label className="text-xs text-gray-700 space-y-1">
+                <span className="block">Materia</span>
+                <select
+                  value={subjectFilter}
+                  onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                >
+                  <option value="ALL">Todas</option>
+                  {studentSubjects.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-xs text-gray-700 space-y-1">
+                <span className="block">Por página</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                >
+                  <option value={6}>6</option>
+                  <option value={12}>12</option>
+                  <option value={24}>24</option>
+                </select>
+              </label>
+            </div>
+          )}
+
           <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
-            <div className="mb-2 inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
+            <div className="inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
@@ -426,18 +473,16 @@ function EstudianteMaterialesContent() {
                 Cuadro
               </button>
             </div>
+            {countsAll.total > 0 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
+                Resultados: {countsFiltered.total}
+              </span>
+            )}
             {hasActiveFilters && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
                 Filtros activos
               </span>
             )}
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100"
-            >
-              Limpiar filtros
-            </button>
           </div>
         </div>
       )}

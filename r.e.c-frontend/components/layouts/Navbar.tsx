@@ -31,7 +31,7 @@ export default function Navbar() {
     return [
       { href: `${base}/temarios`, label: "Temarios" },
       { href: `${base}/materiales`, label: "Materiales" },
-      { href: `${base}/horarios`, label: "Horarios" },
+      { href: role === "PROFESOR" ? "/docente/horarios" : "/estudiante/horario", label: "Horarios" },
     ];
   }, [role]);
 
@@ -82,7 +82,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <Link href="/" prefetch={false} className="flex items-center gap-3" aria-label="Ir a inicio">
             <Image src="/logo.png" alt="Logo R.E.C" width={96} height={96} className="h-12 w-12 object-contain" priority />
-            <span className="text-lg font-bold text-emerald-600">R.E.C</span>
+            <span className="text-lg font-bold text-[color:var(--rec-primary)]">R.E.C</span>
           </Link>
         </div>
 
@@ -91,7 +91,7 @@ export default function Navbar() {
           <Link
             href="/"
             prefetch={false}
-            className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive("/") ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "text-slate-700 hover:bg-slate-100"}`}
+            className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive("/") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-slate-700 hover:bg-slate-100"}`}
           >
             Inicio
           </Link>
@@ -103,7 +103,7 @@ export default function Navbar() {
             <button
               className={`px-3 py-2 rounded-md text-sm transition ease-out ${
                 openDropdown === "mas" || isActive("/portafolio") || isActive("/certificados")
-                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                  ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]"
                   : "text-slate-700 hover:bg-slate-100"
               }`}
               onMouseEnter={() => setOpenDropdown("mas")}
@@ -137,7 +137,7 @@ export default function Navbar() {
                   <Link
                     href="/portafolio"
                     prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/portafolio") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/portafolio") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                   >
                     Portafolio
                   </Link>
@@ -146,7 +146,7 @@ export default function Navbar() {
                   <Link
                     href="/certificados"
                     prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/certificados") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/certificados") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                   >
                     Certificados
                   </Link>
@@ -155,7 +155,7 @@ export default function Navbar() {
                   <Link
                     href="/tutorial"
                     prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/tutorial") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/tutorial") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                   >
                     Tutorial
                   </Link>
@@ -164,7 +164,7 @@ export default function Navbar() {
                   <Link
                     href="/Informacion"
                     prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Informacion") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Informacion") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                   >
                     Información
                   </Link>
@@ -173,7 +173,7 @@ export default function Navbar() {
                   <Link
                     href="/Contacto"
                     prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Contacto") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Contacto") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                   >
                     Contacto
                   </Link>
@@ -182,7 +182,7 @@ export default function Navbar() {
                   <Link
                     href="/Reportes"
                     prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Reportes") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Reportes") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                   >
                     Reportes
                   </Link>
@@ -196,14 +196,14 @@ export default function Navbar() {
               <Link
                 href={role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas"}
                 prefetch={false}
-                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-slate-700 hover:bg-slate-100"}`}
               >
                 Ligas
               </Link>
               <Link
                 href={role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback"}
                 prefetch={false}
-                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-slate-700 hover:bg-slate-100"}`}
               >
                 Feedback
               </Link>
@@ -256,7 +256,7 @@ export default function Navbar() {
                       <Link
                         href={item.href}
                         prefetch={false}
-                        className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive(item.href) ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+                        className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive(item.href) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
                       >
                         {item.label}
                       </Link>
@@ -271,7 +271,7 @@ export default function Navbar() {
             <Link
               href={dashHref}
               prefetch={false}
-              className={`px-3 py-2 rounded-md text-sm transition ${isActive(dashHref) ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`}
+              className={`px-3 py-2 rounded-md text-sm transition ${isActive(dashHref) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
             >
               Panel
             </Link>
@@ -282,8 +282,8 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {!token ? (
             <>
-              <Link href="/login" prefetch={false} className="px-3 py-2 rounded-full border border-emerald-500 text-emerald-700 text-sm hover:bg-emerald-50">Ingresar</Link>
-              <Link href="/acceso-secretaria" prefetch={false} className="px-3 py-2 rounded-full bg-emerald-600 text-white text-sm hover:bg-emerald-700">Acceso Secretaría</Link>
+              <Link href="/login" prefetch={false} className="px-3 py-2 rounded-full border border-[color:var(--rec-primary)] text-[color:var(--rec-primary)] text-sm hover:bg-[color:var(--rec-soft)]">Ingresar</Link>
+              <Link href="/acceso-secretaria" prefetch={false} className="px-3 py-2 rounded-full bg-[color:var(--rec-primary)] text-white text-sm hover:bg-[color:var(--rec-primary-strong)]">Acceso Secretaría</Link>
             </>
           ) : (
             <div
@@ -293,7 +293,7 @@ export default function Navbar() {
               onMouseLeave={() => { if (!profileLocked) setProfileOpen(false); }}
               onClick={() => { setProfileLocked((v) => !v); setProfileOpen(true); }}
             >
-              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 rounded-full bg-[color:var(--rec-primary)] text-white flex items-center justify-center font-semibold">
                 {initial}
               </div>
               <div className="leading-tight">
@@ -344,23 +344,23 @@ export default function Navbar() {
         <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setMobileOpen(false)} />
         <aside className={`absolute top-0 left-0 h-full w-72 bg-white shadow-lg transition-transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <div className="p-4 border-b flex items-center justify-between">
-            <Link href="/" prefetch={false} className="flex items-center gap-2 text-emerald-700" onClick={() => setMobileOpen(false)} aria-label="Ir a inicio">
+            <Link href="/" prefetch={false} className="flex items-center gap-2 text-[color:var(--rec-primary)]" onClick={() => setMobileOpen(false)} aria-label="Ir a inicio">
               <Image src="/logo.png" alt="Logo R.E.C" width={44} height={44} className="h-11 w-11 object-contain" />
               <span className="text-lg font-bold">R.E.C</span>
             </Link>
             <button className="w-9 h-9 rounded-md border border-slate-300" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú">✕</button>
           </div>
           <nav className="p-2 space-y-1">
-            <Link href="/" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Inicio</Link>
+            <Link href="/" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Inicio</Link>
             <details className="group">
               <summary className="px-3 py-2 rounded-md text-sm text-slate-700 cursor-pointer hover:bg-slate-100">Más opciones</summary>
               <div className="mt-1 pl-3 space-y-1">
-                <Link href="/portafolio" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/portafolio") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Portafolio</Link>
-                <Link href="/certificados" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/certificados") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Certificados</Link>
-                <Link href="/tutorial" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/tutorial") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Tutorial</Link>
-                <Link href="/Informacion" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Informacion") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Información</Link>
-                <Link href="/Contacto" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Contacto") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Contacto</Link>
-                <Link href="/Reportes" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Reportes") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Reportes</Link>
+                <Link href="/portafolio" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/portafolio") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Portafolio</Link>
+                <Link href="/certificados" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/certificados") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Certificados</Link>
+                <Link href="/tutorial" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/tutorial") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Tutorial</Link>
+                <Link href="/Informacion" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Informacion") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Información</Link>
+                <Link href="/Contacto" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Contacto") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Contacto</Link>
+                <Link href="/Reportes" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Reportes") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Reportes</Link>
               </div>
             </details>
             {token && (
@@ -368,7 +368,7 @@ export default function Navbar() {
                 <summary className="px-3 py-2 rounded-md text-sm text-slate-700 cursor-pointer hover:bg-slate-100">Académico</summary>
                 <div className="mt-1 pl-3 space-y-1">
                   {academicItems.map((item) => (
-                    <Link key={item.href} href={item.href} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(item.href) ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>
+                    <Link key={item.href} href={item.href} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(item.href) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>
                       {item.label}
                     </Link>
                   ))}
@@ -377,19 +377,19 @@ export default function Navbar() {
             )}
             {token && role !== "SECRETARIA" && (
               <>
-                <Link href={role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Ligas</Link>
-                <Link href={role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Feedback</Link>
+                <Link href={role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Ligas</Link>
+                <Link href={role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Feedback</Link>
               </>
             )}
             {token && (
-              <Link href={dashHref} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(dashHref) ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Panel</Link>
+              <Link href={dashHref} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(dashHref) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Panel</Link>
             )}
 
             <div className="mt-3 border-t pt-3">
               {!token ? (
                 <div className="flex gap-2">
-                  <Link href="/login" prefetch={false} className="flex-1 px-3 py-2 rounded-md border border-emerald-500 text-emerald-700 text-sm hover:bg-emerald-50" onClick={() => setMobileOpen(false)}>Ingresar</Link>
-                  <Link href="/acceso-secretaria" prefetch={false} className="flex-1 px-3 py-2 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700" onClick={() => setMobileOpen(false)}>Acceso Secretaría</Link>
+                  <Link href="/login" prefetch={false} className="flex-1 px-3 py-2 rounded-md border border-[color:var(--rec-primary)] text-[color:var(--rec-primary)] text-sm hover:bg-[color:var(--rec-soft)]" onClick={() => setMobileOpen(false)}>Ingresar</Link>
+                  <Link href="/acceso-secretaria" prefetch={false} className="flex-1 px-3 py-2 rounded-md bg-[color:var(--rec-primary)] text-white text-sm hover:bg-[color:var(--rec-primary-strong)]" onClick={() => setMobileOpen(false)}>Acceso Secretaría</Link>
                 </div>
               ) : (
                 <button className="w-full px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50" onClick={logout}>Salir</button>

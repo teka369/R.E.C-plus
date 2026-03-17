@@ -1,2 +1,43 @@
 @import "tailwindcss";
 
+:root {
+	--rec-ink: #18241b;
+	--rec-primary: #32a656;
+	--rec-primary-strong: #289a4e;
+	--rec-accent: #de4d3f;
+	--rec-earth: #5b3a31;
+	--rec-title: #5b3a31;
+	--rec-cta: #de4d3f;
+	--rec-leaf: #38ad44;
+	--rec-surface: #f5fcf6;
+	--rec-soft: #e6f4e8;
+}
+
+html,
+body {
+	background: linear-gradient(180deg, #f5fcf6 0%, #edf8f0 58%, #e9f4ec 100%);
+	color: var(--rec-ink);
+}
+
+::selection {
+	background: color-mix(in srgb, var(--rec-primary) 36%, white 64%);
+	color: var(--rec-earth);
+}
+
+a,
+button {
+	transition: all 180ms ease;
+}
+
+.rec-glass {
+	background: rgba(255, 255, 255, 0.8);
+	backdrop-filter: blur(8px);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 22%, white 78%);
+}
+
+.rec-grid-bg {
+	background-image:
+		radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--rec-primary) 18%, white 82%) 1px, transparent 0);
+	background-size: 26px 26px;
+}
+

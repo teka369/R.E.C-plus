@@ -180,14 +180,14 @@ function fromRecord(record: StudentAcademicRecord | undefined): SubjectFormState
 
 function gradeColor(value: number | null | undefined): string {
   if (value == null) return "text-slate-400";
-  if (value >= 4.0) return "text-emerald-600";
+  if (value >= 4.0) return "text-[color:var(--rec-primary)]";
   if (value >= 3.0) return "text-amber-500";
   return "text-red-500";
 }
 
 function gradeBadgeClass(value: number | null | undefined): string {
   if (value == null) return "bg-slate-100 text-slate-500";
-  if (value >= 4.0) return "bg-emerald-100 text-emerald-700";
+  if (value >= 4.0) return "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)]";
   if (value >= 3.0) return "bg-amber-100 text-amber-700";
   return "bg-red-100 text-red-600";
 }
@@ -488,7 +488,10 @@ export default function DocenteGestionAcademicaPage() {
   return (
     <section className="space-y-5">
       {/* ── Header ── */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
+      <header
+        className="relative overflow-hidden rounded-2xl p-4 sm:p-6 text-white shadow-lg"
+        style={{ background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))" }}
+      >
         <div
           className="absolute inset-0 opacity-10"
           style={{ backgroundImage: "radial-gradient(circle at 75% 40%, white 0%, transparent 60%)" }}
@@ -499,7 +502,7 @@ export default function DocenteGestionAcademicaPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Gestión Académica</h1>
-            <p className="text-blue-100 text-sm mt-0.5">
+            <p className="text-sm mt-0.5 text-white/85">
               Registra notas personalizadas, inasistencias y observaciones por estudiante y materia
             </p>
           </div>
@@ -508,7 +511,7 @@ export default function DocenteGestionAcademicaPage() {
 
       {/* ── Alertas ── */}
       {message && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="flex items-center gap-2 rounded-xl border px-4 py-3 text-sm" style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
           <FiCheckCircle className="w-4 h-4 flex-shrink-0" />
           <span>{message}</span>
           <button className="ml-auto" onClick={() => setMessage(null)}>
@@ -548,7 +551,8 @@ export default function DocenteGestionAcademicaPage() {
                   Grupo activo
                 </span>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full rounded-xl border px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                  style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                   value={selectedGroupId}
                   onChange={(e) => setSelectedGroupId(e.target.value)}
                 >
@@ -564,7 +568,8 @@ export default function DocenteGestionAcademicaPage() {
                   Filtro por periodo
                 </span>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full rounded-xl border px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                  style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                   value={periodFilter}
                   onChange={(e) => setPeriodFilter(e.target.value)}
                 >
@@ -582,22 +587,22 @@ export default function DocenteGestionAcademicaPage() {
           {groupStats && !loadingOverview && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <StatKpi
-                icon={<FiUsers className="w-5 h-5 text-blue-500" />}
-                bg="bg-blue-50"
+                icon={<FiUsers className="w-5 h-5 text-[color:var(--rec-primary)]" />}
+                bg="bg-[color:var(--rec-soft)]"
                 value={String(groupStats.total)}
                 label="Estudiantes"
                 sub="en el grupo"
               />
               <StatKpi
-                icon={<FiBarChart2 className="w-5 h-5 text-indigo-500" />}
-                bg="bg-indigo-50"
+                icon={<FiBarChart2 className="w-5 h-5 text-[color:var(--rec-primary-strong)]" />}
+                bg="bg-[color:var(--rec-soft)]"
                 value={groupStats.promedio != null ? groupStats.promedio.toFixed(2) : "—"}
                 label="Promedio grupo"
                 sub="nota promedio general"
               />
               <StatKpi
-                icon={<FiCheckCircle className="w-5 h-5 text-emerald-500" />}
-                bg="bg-emerald-50"
+                icon={<FiCheckCircle className="w-5 h-5 text-[color:var(--rec-primary)]" />}
+                bg="bg-[color:var(--rec-soft)]"
                 value={`${groupStats.pctAprobados}%`}
                 label="Tasa de aprobación"
                 sub={`${groupStats.aprobados} de ${groupStats.total}`}
@@ -641,12 +646,12 @@ export default function DocenteGestionAcademicaPage() {
                           <button
                             className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
                               isSelected
-                                ? "bg-blue-50 border-l-4 border-blue-500"
+                                ? "bg-[color:var(--rec-soft)] border-l-4 border-[color:var(--rec-primary)]"
                                 : "border-l-4 border-transparent hover:bg-slate-50"
                             }`}
                             onClick={() => setSelectedStudentId(String(item.student.id))}
                           >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))" }}>
                               {item.student.apellidos.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -735,12 +740,12 @@ function StatKpi({
   sub: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border bg-white p-4 shadow-sm" style={{ borderColor: "var(--rec-soft)" }}>
       <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
         {icon}
       </div>
-      <p className="text-2xl font-bold text-slate-800">{value}</p>
-      <p className="text-xs font-semibold text-slate-600 mt-0.5">{label}</p>
+      <p className="text-2xl font-bold" style={{ color: "var(--rec-title)" }}>{value}</p>
+      <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--rec-primary-strong)" }}>{label}</p>
       <p className="text-xs text-slate-400">{sub}</p>
     </div>
   );
@@ -1045,7 +1050,8 @@ function SubjectEditor({
                 <button
                   type="button"
                   onClick={addGrade}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                  className="flex items-center gap-1 text-xs font-semibold"
+                  style={{ color: "var(--rec-primary-strong)" }}
                 >
                   <FiPlus className="w-3.5 h-3.5" /> Agregar nota
                 </button>
@@ -1068,7 +1074,8 @@ function SubjectEditor({
               {visibleGrades.map(({ grade, index }) => (
                 <div key={index} className="flex items-center gap-2">
                   <select
-                    className="w-28 rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
+                    className="w-28 rounded-xl border px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] disabled:opacity-60"
+                    style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                     value={grade.period ?? ""}
                     onChange={(e) => updateGrade(index, "period", e.target.value)}
                     disabled={disabled}
@@ -1081,7 +1088,8 @@ function SubjectEditor({
                   </select>
                   <input
                     type="text"
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
+                    className="flex-1 rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] disabled:opacity-60"
+                    style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
                     placeholder="Ej: Parcial 1, Periodo 2, Quiz..."
                     value={grade.label}
                     onChange={(e) => updateGrade(index, "label", e.target.value)}
@@ -1092,7 +1100,7 @@ function SubjectEditor({
                     step="0.01"
                     min={0}
                     max={5}
-                    className={`w-24 rounded-xl border px-3 py-2 text-sm text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60 transition-colors ${
+                    className={`w-24 rounded-xl border px-3 py-2 text-sm text-center font-semibold focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] disabled:opacity-60 transition-colors ${
                       toNum(grade.value) == null
                         ? "border-slate-200 bg-slate-50"
                         : (toNum(grade.value) ?? 0) >= 4.0
@@ -1202,7 +1210,7 @@ function SubjectEditor({
                   type="number"
                   min={0}
                   step={1}
-                  className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:opacity-60"
+                  className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] disabled:opacity-60"
                   value={
                     periodFromFilter != null
                       ? form.periodAbsences[periodFromFilter]?.justificadas ?? "0"
@@ -1280,7 +1288,8 @@ function SubjectEditor({
           <div>
             <label className="text-xs text-slate-500 mb-1.5 block">Observaciones pedagógicas</label>
             <textarea
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-60"
+              className="w-full rounded-xl border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] disabled:opacity-60"
+              style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
               rows={2}
               placeholder="Observaciones sobre el desempeño del estudiante en esta materia..."
               value={form.observaciones}
@@ -1293,7 +1302,8 @@ function SubjectEditor({
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 transition-all shadow-sm"
+              className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-all shadow-sm"
+              style={{ background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))" }}
             >
               <FiSave className="w-4 h-4" />
               {saving ? "Guardando..." : "Guardar cambios"}

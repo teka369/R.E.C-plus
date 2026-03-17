@@ -156,46 +156,64 @@ export default function LigasDocentePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
-        <div className="max-w-6xl mx-auto flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold">Ligas 2.0 · Reporte por Grupo</h1>
-            <p className="text-emerald-100 mt-1 text-sm">
-              Estadísticas automáticas basadas en gestión académica, recuperaciones y recursos.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onRefresh}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-emerald-700 rounded-lg text-sm font-medium shadow hover:bg-emerald-50 transition-colors"
-              disabled={!selectedGroupId}
-            >
-              <FiRefreshCcw className="w-4 h-4" /> {refreshing ? "Actualizando..." : "Actualizar"}
-            </button>
+    <div className="space-y-0 pb-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6">
+        <div
+          className="rounded-2xl border p-4 sm:p-6 text-white"
+          style={{
+            borderColor: "var(--rec-soft)",
+            background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+          }}
+        >
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-bold">Ligas 2.0 · Reporte por Grupo</h1>
+              <p className="text-white/90 mt-1 text-sm">
+                Estadísticas automáticas basadas en gestión académica, recuperaciones y recursos.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onRefresh}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-medium shadow hover:opacity-90 transition-colors"
+                style={{ color: "var(--rec-primary-strong)" }}
+                disabled={!selectedGroupId}
+              >
+                <FiRefreshCcw className="w-4 h-4" /> {refreshing ? "Actualizando..." : "Actualizar"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <label className="block text-xs font-medium text-slate-500 mb-1">Grupo</label>
-          <select
-            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            value={selectedGroupId}
-            onChange={(event) => setSelectedGroupId(event.target.value)}
-          >
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.label}
-              </option>
-            ))}
-          </select>
+        <div className="bg-white rounded-xl p-4 shadow-sm space-y-3" style={{ border: "1px solid var(--rec-soft)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--rec-title)" }}>Panel de consulta</p>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Grupo</label>
+              <select
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
+                style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
+                value={selectedGroupId}
+                onChange={(event) => setSelectedGroupId(event.target.value)}
+              >
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="rounded-lg px-3 py-2 text-xs" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
+              Ranking automático por desempeño académico
+            </div>
+          </div>
         </div>
 
         {loading ? <p className="text-sm text-slate-600">Cargando…</p> : null}
         {error ? <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div> : null}
-        <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 text-xs text-cyan-800">
+        <div className="rounded-xl p-4 text-xs" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
           Los valores de Ligas se calculan automáticamente con datos reales del sistema. No se editan manualmente desde esta vista.
         </div>
 
@@ -217,7 +235,7 @@ export default function LigasDocentePage() {
               </article>
               <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
                 <p className="text-xs text-slate-500">Puntaje global</p>
-                <p className="text-2xl font-bold text-emerald-700 mt-1">
+                <p className="text-2xl font-bold mt-1" style={{ color: "var(--rec-primary-strong)" }}>
                   {currentScore != null ? currentScore.toFixed(1) : "N/A"}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">escala de 0 a 100</p>
@@ -245,8 +263,8 @@ export default function LigasDocentePage() {
               />
               <StatCard
                 title="Asistencia"
-                icon={<FiCalendar className="w-5 h-5 text-emerald-600" />}
-                iconWrap="bg-emerald-100"
+                icon={<FiCalendar className="w-5 h-5" style={{ color: "var(--rec-primary-strong)" }} />}
+                iconWrap="bg-[color:var(--rec-soft)]"
                 items={[
                   { label: "Asistencia Promedio", value: valueOrNA(stats?.asistenciaPromedio, "%") },
                   { label: "Inasistencias Justificadas", value: valueOrNA(stats?.inasistenciasJustificadas) },
@@ -276,7 +294,7 @@ export default function LigasDocentePage() {
                   <h3 className="text-sm font-semibold text-slate-900">Trazabilidad del puntaje</h3>
                   <p className="text-xs text-slate-500">Cómo se construye el score total de la liga para este grupo.</p>
                 </div>
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-md px-2 py-1">
+                <span className="text-xs font-semibold rounded-md px-2 py-1" style={{ color: "var(--rec-primary-strong)", background: "var(--rec-soft)" }}>
                   Total {valueOrNA(stats?.scoreBreakdown?.total)}
                 </span>
               </div>
@@ -303,7 +321,7 @@ export default function LigasDocentePage() {
                             <td className="py-2 pr-3 text-slate-700">{row.raw.toFixed(2)}</td>
                             <td className="py-2 pr-3 text-slate-700">{row.normalized.toFixed(2)}</td>
                             <td className="py-2 pr-3 text-slate-700">{(row.weight * 100).toFixed(0)}%</td>
-                            <td className="py-2 font-semibold text-emerald-700">{row.contribution.toFixed(2)}</td>
+                            <td className="py-2 font-semibold" style={{ color: "var(--rec-primary-strong)" }}>{row.contribution.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -317,7 +335,7 @@ export default function LigasDocentePage() {
                     <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
                       Recursos por materia: {valueOrNA(stats.derivedSignals?.resourcesPerSubject)}
                     </div>
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
+                    <div className="rounded-lg px-3 py-2" style={{ border: "1px solid var(--rec-soft)", background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
                       Temarios activos: {valueOrNA(stats.derivedSignals?.activeSyllabusRate, "%")}
                     </div>
                   </div>
@@ -331,7 +349,7 @@ export default function LigasDocentePage() {
                   <h3 className="text-sm font-semibold text-slate-900">Clasificación del grado</h3>
                   <p className="text-xs text-slate-500">Comparativo entre grupos del mismo grado</p>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
                   <FiAward className="w-3.5 h-3.5" /> Ranking 2.0
                 </span>
               </div>
@@ -357,13 +375,13 @@ export default function LigasDocentePage() {
                       {ranking.map((row, index) => {
                         const isCurrent = row.groupId === Number(selectedGroupId);
                         return (
-                          <tr key={row.groupId} className={`border-b border-slate-100 ${isCurrent ? "bg-emerald-50/70" : ""}`}>
+                          <tr key={row.groupId} className={`border-b border-slate-100 ${isCurrent ? "" : ""}`} style={isCurrent ? { background: "var(--rec-soft)" } : undefined}>
                             <td className="py-2 pr-3 font-semibold text-slate-800">#{index + 1}</td>
                             <td className="py-2 pr-3 text-slate-700">
                               {row.groupName}
-                              {isCurrent ? <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Tu grupo</span> : null}
+                              {isCurrent ? <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded" style={{ background: "white", color: "var(--rec-primary-strong)" }}>Tu grupo</span> : null}
                             </td>
-                            <td className="py-2 pr-3 font-semibold text-emerald-700">{row.score.toFixed(1)}</td>
+                            <td className="py-2 pr-3 font-semibold" style={{ color: "var(--rec-primary-strong)" }}>{row.score.toFixed(1)}</td>
                             <td className="py-2 pr-3 text-slate-700">{valueOrNA(row.promedioGeneral)}</td>
                             <td className="py-2 pr-3 text-slate-700">{valueOrNA(row.aprobacion, "%")}</td>
                             <td className="py-2 text-slate-700">{valueOrNA(row.asistenciaPromedio, "%")}</td>

@@ -46,7 +46,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="w-full bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 border-t border-slate-800">
+    <footer className="w-full bg-gradient-to-b from-[color:var(--rec-primary-strong)] to-[color:var(--rec-primary)] text-white border-t border-white/15">
       <div className="mx-auto max-w-6xl px-4 py-16">
         {/* Grid Principal */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-12">
@@ -60,11 +60,11 @@ export default function Footer() {
                 height={96}
                 className="h-10 w-10 object-contain"
               />
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-[color:var(--rec-accent)] to-[color:var(--rec-leaf)] bg-clip-text text-transparent">
                 R.E.C
               </span>
             </div>
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <p className="text-sm text-white/80 leading-relaxed">
               Refuerzo Educativo Complementario. Plataforma moderna para gestionar el aprendizaje de forma integrada.
             </p>
             {/* Social Icons */}
@@ -72,21 +72,21 @@ export default function Footer() {
               <a
                 href="#"
                 aria-label="GitHub"
-                className="h-9 w-9 rounded-lg bg-slate-800 hover:bg-emerald-600 transition flex items-center justify-center text-slate-300 hover:text-white"
+                className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
               >
                 <FiGithub className="h-4 w-4" />
               </a>
               <a
                 href="mailto:info@rec.edu.co"
                 aria-label="Email"
-                className="h-9 w-9 rounded-lg bg-slate-800 hover:bg-emerald-600 transition flex items-center justify-center text-slate-300 hover:text-white"
+                className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
               >
                 <FiMail className="h-4 w-4" />
               </a>
               <a
                 href="tel:+573001234567"
                 aria-label="Teléfono"
-                className="h-9 w-9 rounded-lg bg-slate-800 hover:bg-emerald-600 transition flex items-center justify-center text-slate-300 hover:text-white"
+                className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
               >
                 <FiPhone className="h-4 w-4" />
               </a>
@@ -103,7 +103,7 @@ export default function Footer() {
                     <Link
                       href={link.href}
                       prefetch={false}
-                      className="text-sm text-slate-400 hover:text-emerald-400 transition duration-200"
+                      className="text-sm text-white/85 hover:text-[color:var(--rec-cta)] transition duration-200"
                     >
                       {link.label}
                     </Link>
@@ -115,16 +115,16 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent mb-8" />
+        <div className="h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mb-8" />
 
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           {/* Copyright & Info */}
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-white/80">
               © {currentYear} Institución Educativa Javier Alonso Barrios Sevilla. Todos los derechos reservados.
             </p>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2 text-xs text-white/70">
               <FiMapPin className="h-3 w-3" />
               <span>Colombia</span>
             </div>
@@ -135,31 +135,31 @@ export default function Footer() {
             <Link
               href="/"
               prefetch={false}
-              className="text-slate-400 hover:text-emerald-400 transition"
+              className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
               Inicio
             </Link>
-            <span className="text-slate-700">•</span>
+            <span className="text-white/45">•</span>
             <Link
               href="#"
               prefetch={false}
-              className="text-slate-400 hover:text-emerald-400 transition"
+              className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
               Ayuda
             </Link>
-            <span className="text-slate-700">•</span>
+            <span className="text-white/45">•</span>
             <Link
               href="#"
               prefetch={false}
-              className="text-slate-400 hover:text-emerald-400 transition"
+              className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
               Estado
             </Link>
-            <span className="text-slate-700">•</span>
+            <span className="text-white/45">•</span>
             <Link
               href="#"
               prefetch={false}
-              className="text-slate-400 hover:text-emerald-400 transition"
+              className="text-white/85 hover:text-[color:var(--rec-cta)] transition"
             >
               Feedback
             </Link>
@@ -168,7 +168,8 @@ export default function Footer() {
       </div>
 
       {/* Subtle Footer Accent */}
-      <div className="h-px bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0" />
+      <div className="h-px bg-gradient-to-r from-emerald-500/0 via-[color:var(--rec-accent)]/30 to-emerald-500/0" />
     </footer>
   );
 }
+
