@@ -167,7 +167,7 @@ export default function LigasDocentePage() {
         >
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold">Ligas 2.0 · Reporte por Grupo</h1>
+              <h1 className="text-2xl font-bold">Ligas</h1>
               <p className="text-white/90 mt-1 text-sm">
                 Estadísticas automáticas basadas en gestión académica, recuperaciones y recursos.
               </p>

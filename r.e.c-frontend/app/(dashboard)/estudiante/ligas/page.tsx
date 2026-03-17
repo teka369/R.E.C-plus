@@ -109,7 +109,7 @@ export default function EstudianteLigasPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="bg-gradient-to-r from-emerald-600 to-green-700 text-white px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-2xl font-bold">Ligas 2.0 · Tu Reporte</h1>
+          <h1 className="text-2xl font-bold">Ligas</h1>
           <p className="text-emerald-100 mt-1 text-sm">
             Vista general de rendimiento, asistencia y comparativo de tu grupo.
           </p>
