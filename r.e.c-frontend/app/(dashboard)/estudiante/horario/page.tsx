@@ -166,9 +166,15 @@ export default function EstudianteHorarioPage() {
 
   return (
     <section className="space-y-4 overflow-x-hidden">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-cyan-50 p-4">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Mi horario</h2>
-        <p className="text-sm text-slate-600">Consulta rapidamente clases, eventos y avisos del grupo.</p>
+      <div
+        className="rounded-2xl border p-4 sm:p-6 text-white"
+        style={{
+          borderColor: "var(--rec-soft)",
+          background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
+        }}
+      >
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight">Mi horario</h2>
+        <p className="text-sm text-white/90">Consulta rapidamente clases, eventos y avisos del grupo.</p>
       </div>
 
       {groupLabel && (
