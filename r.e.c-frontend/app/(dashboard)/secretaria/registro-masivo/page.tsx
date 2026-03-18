@@ -379,9 +379,12 @@ export default function RegistroMasivoPage() {
   }
 
   return (
-    <section className="p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Registro Masivo de Usuarios</h1>
+    <section className="sec-page space-y-6">
+      <div className="sec-hero">
+        <div>
+          <h1 className="sec-title">Registro Masivo de Usuarios</h1>
+          <p className="sec-subtitle">Importa archivos, corrige en línea y registra cuentas con validación previa y trazabilidad de resultados.</p>
+        </div>
         <div className="flex items-center gap-3">
           <a href={templateCSV} download="plantilla-usuarios.csv" className="underline text-sm">Descargar plantilla CSV</a>
           {templateXlsxUrl && (
@@ -391,7 +394,7 @@ export default function RegistroMasivoPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border rounded p-4 space-y-3">
+        <div className="sec-card p-4 space-y-3">
           <h2 className="font-medium">Subir archivo</h2>
           <Input type="file" accept=".csv,.json,.xlsx,.xls" onChange={(e) => {
             const file = e.target.files?.[0];
@@ -415,7 +418,7 @@ export default function RegistroMasivoPage() {
           </div>
         </div>
 
-        <div className="md:col-span-2 border rounded p-4">
+        <div className="md:col-span-2 sec-card p-4">
           <h2 className="font-medium mb-3">Vista previa ({items.length} filas)</h2>
           {items.length === 0 ? (
             <p className="text-xs text-gray-600">Sube un archivo para ver la vista previa.</p>
@@ -431,16 +434,16 @@ export default function RegistroMasivoPage() {
               </div>
 
               {uploadProgress && (
-                <div className="border rounded p-2 bg-blue-50">
+                <div className="border rounded p-2 bg-emerald-50">
                   <div className="text-xs font-medium mb-1">Registrando: {uploadProgress.current}/{uploadProgress.total}</div>
                   <div className="w-full border rounded overflow-hidden" style={{ height: "4px" }}>
-                    <div className="bg-blue-500" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
+                    <div className="bg-emerald-500" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
                   </div>
                 </div>
               )}
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-200 text-xs">
+              <div className="overflow-x-auto sec-table">
+                <table className="min-w-full text-xs">
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="p-2 text-left" style={{ width: "32px" }}>Sel.</th>
@@ -590,7 +593,7 @@ export default function RegistroMasivoPage() {
         </div>
       </div>
 
-      <div className="border rounded p-4">
+      <div className="sec-card p-4">
         <h2 className="font-medium mb-2">Resultado</h2>
         {!result ? (
           <p className="text-xs text-gray-600">Se mostrará el resumen después de registrar.</p>

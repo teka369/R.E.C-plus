@@ -37,15 +37,21 @@ export default function DeleteUsuarioPage() {
   };
 
   return (
-    <section className="p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Eliminar usuario #{id}</h2>
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Eliminar Usuario #{id}</h2>
+          <p className="sec-subtitle">Confirmación segura para evitar eliminaciones accidentales de cuentas institucionales.</p>
+        </div>
+        <span className="sec-chip">Acción crítica</span>
+      </div>
       {invalidId && <p className="text-sm text-red-600">ID inválido</p>}
       {loading && <p className="text-sm text-gray-600">Cargando usuario...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!loading && !error && !user ? (
-        <p className="text-sm text-gray-600">Usuario no encontrado.</p>
+        <p className="sec-muted">Usuario no encontrado.</p>
       ) : !loading && user ? (
-        <div className="space-y-3">
+        <div className="sec-card p-4 space-y-3 max-w-xl">
           <p className="text-sm text-gray-700">
             ¿Seguro que deseas eliminar a <span className="font-medium">{user.nombres} {user.apellidos}</span> ({user.email})?
           </p>

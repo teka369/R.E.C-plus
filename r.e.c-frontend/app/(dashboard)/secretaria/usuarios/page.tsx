@@ -25,15 +25,22 @@ export default function UsuariosPage() {
   }, [users, query]);
 
   return (
-    <section className="p-4 space-y-4">
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Usuarios Institucionales</h2>
+          <p className="sec-subtitle">Vista transversal para filtrar por rol, buscar usuarios y acceder a mantenimiento completo.</p>
+        </div>
+        <span className="sec-chip">Control global</span>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Usuarios</h2>
         <Link href="/secretaria/usuarios/create" prefetch={false}>
           <Button>Crear usuario</Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Input
           label="Buscar"
           placeholder="Nombre o correo"
@@ -48,12 +55,13 @@ export default function UsuariosPage() {
             { label: "Todos", value: "ALL" },
             { label: "Estudiante", value: "ESTUDIANTE" },
             { label: "Profesor", value: "PROFESOR" },
+              { label: "Secretaría", value: "SECRETARIA" },
           ]}
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 text-sm">
+      <div className="overflow-x-auto sec-table">
+        <table className="min-w-full text-sm">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-2 text-left">Nombre</th>
@@ -82,7 +90,7 @@ export default function UsuariosPage() {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td className="p-3 text-center" colSpan={4}>Sin resultados</td>
+                <td className="p-3 text-center" colSpan={5}>Sin resultados</td>
               </tr>
             )}
           </tbody>

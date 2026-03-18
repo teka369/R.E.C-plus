@@ -175,18 +175,23 @@ export default function SecretariaPromocionesPage() {
   }
 
   return (
-    <section className="p-4 space-y-6">
-      <h2 className="text-lg font-semibold">Promoción de Grado</h2>
-      <p className="text-sm text-gray-600">Selecciona grado de origen y destino, define el grupo de destino y marca estudiantes que repiten.</p>
+    <section className="sec-page space-y-6">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Promoción de Grado</h2>
+          <p className="sec-subtitle">Simula, valida y ejecuta promociones por grupo con control explícito de estudiantes repetidores.</p>
+        </div>
+        <span className="sec-chip">Cierre de periodo</span>
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="sec-card p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select label="Grado origen" options={[{ label: "Seleccione", value: "" }, ...gradeOptions]} value={sourceGradeId} onChange={(e) => setSourceGradeId(e.target.value)} />
           <Select label="Grado destino" options={[{ label: "Seleccione", value: "" }, ...gradeOptions]} value={targetGradeId} onChange={(e) => setTargetGradeId(e.target.value)} />
         </div>
 
         {sourceGroups.length > 0 && (
-          <div className="space-y-4">
+          <div className="sec-card p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-medium">Mapeo de grupos y selección de repetidores</h3>
               <div className="flex items-center gap-2">
@@ -196,7 +201,7 @@ export default function SecretariaPromocionesPage() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-200 text-sm">
+              <table className="min-w-full text-sm sec-table">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="p-2 text-left" style={{ width: "32px" }}>Sel.</th>
@@ -210,7 +215,7 @@ export default function SecretariaPromocionesPage() {
                     const gm = groupMap[g.id];
                     const isSelected = selectedGroupIds.has(g.id);
                     return (
-                      <tr key={g.id} className={`border-t border-gray-200 align-top ${isSelected ? "bg-blue-50" : ""}`}>
+                      <tr key={g.id} className={`border-t border-gray-200 align-top ${isSelected ? "bg-emerald-50" : ""}`}>
                         <td className="p-2">
                           <input
                             type="checkbox"
@@ -276,10 +281,10 @@ export default function SecretariaPromocionesPage() {
 
         <div className="flex items-center gap-2">
           {promotionProgress && (
-            <div className="flex-1 border rounded p-2 bg-blue-50">
+            <div className="flex-1 border rounded p-2 bg-emerald-50">
               <div className="text-xs font-medium mb-1">Procesando: {promotionProgress.current}/{promotionProgress.total}</div>
               <div className="w-full border rounded overflow-hidden" style={{ height: "4px" }}>
-                <div className="bg-blue-500" style={{ width: `${(promotionProgress.current / promotionProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
+                <div className="bg-emerald-500" style={{ width: `${(promotionProgress.current / promotionProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
               </div>
             </div>
           )}
@@ -288,7 +293,7 @@ export default function SecretariaPromocionesPage() {
         </div>
 
         {result && (
-          <div className="border rounded p-3 space-y-3">
+          <div className="sec-card p-3 space-y-3">
             <h4 className="font-medium">Resumen de simulación</h4>
             {(() => {
               const totalPromoted = result.summary.reduce((acc, s) => acc + s.promotedCount, 0);

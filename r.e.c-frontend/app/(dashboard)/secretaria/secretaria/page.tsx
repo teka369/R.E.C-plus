@@ -22,15 +22,22 @@ export default function SecretariaPersonalPage() {
   }, [users, query]);
 
   return (
-    <section className="p-4 space-y-4">
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Personal de Secretaría</h2>
+          <p className="sec-subtitle">Gestiona el equipo administrativo, con búsqueda rápida y acceso directo a edición y eliminación.</p>
+        </div>
+        <span className="sec-chip">Gestión administrativa</span>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Secretaría</h2>
           <Link href="/secretaria/usuarios/create?role=SECRETARIA" prefetch={false}>
           <Button>Crear usuario</Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           label="Buscar"
           placeholder="Nombre o correo"
@@ -39,8 +46,8 @@ export default function SecretariaPersonalPage() {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 text-sm">
+      <div className="overflow-x-auto sec-table">
+        <table className="min-w-full text-sm">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-2 text-left">Nombre</th>

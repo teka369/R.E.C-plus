@@ -73,14 +73,19 @@ export default function RecoverySchedulePage() {
   };
 
   return (
-    <section className="p-4 space-y-4">
-      <h1 className="text-xl font-semibold">Horario de recuperación</h1>
-      <p className="text-sm text-gray-700">Sube el archivo oficial para consulta de docentes y estudiantes.</p>
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h1 className="sec-title">Horario de Recuperación</h1>
+          <p className="sec-subtitle">Publica y actualiza el archivo oficial para consulta por parte de docentes y estudiantes.</p>
+        </div>
+        <span className="sec-chip">Documento oficial</span>
+      </div>
 
       {message ? <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">{message}</div> : null}
       {error ? <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
 
-      <div className="flex flex-col gap-3 max-w-xl">
+      <div className="sec-card p-4 flex flex-col gap-3 max-w-2xl">
         <input
           type="file"
           onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
@@ -100,7 +105,7 @@ export default function RecoverySchedulePage() {
         </div>
       </div>
 
-      <div className="border rounded bg-white min-h-[400px]">
+      <div className="sec-card min-h-[400px]">
         {loading ? (
           <div className="p-4 text-sm text-gray-600">Cargando archivo...</div>
         ) : scheduleUrl ? (

@@ -140,6 +140,55 @@ export default function Sidebar({ role }: { role: Role }) {
             </svg>
           ),
         },
+        {
+          href: "/secretaria/academico",
+          label: "Académico",
+          description: "Estructura académica",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M3 6l9-4 9 4-9 4-9-4z" />
+              <path d="M3 10l9 4 9-4" />
+              <path d="M3 14l9 4 9-4" />
+            </svg>
+          ),
+        },
+        {
+          href: "/secretaria/promociones",
+          label: "Promociones",
+          description: "Promover y simular grado",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M12 3v18" />
+              <path d="M7 8l5-5 5 5" />
+              <path d="M17 16l-5 5-5-5" />
+            </svg>
+          ),
+        },
+        {
+          href: "/secretaria/registro-masivo",
+          label: "Registro Masivo",
+          description: "Importación de usuarios",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <path d="M7 10l5 5 5-5" />
+              <path d="M12 15V3" />
+            </svg>
+          ),
+        },
+        {
+          href: "/secretaria/usuarios",
+          label: "Usuarios",
+          description: "Vista global por roles",
+          icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          ),
+        },
       ],
       PROFESOR: [
         {
