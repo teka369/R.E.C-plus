@@ -7,13 +7,19 @@ import { usersApi, type UserDTO } from "@/lib/usersApi";
 import Select from "@/components/ui/Select";
 import { academicApi } from "@/lib/academicApi";
 
+type AssignStatus = "idle" | "loading" | "ok" | "error";
+type CurrentGroupInfo = { id: number; label: string } | null;
+
 export default function SecretariaEstudiantesPage() {
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [query, setQuery] = useState("");
   const [groups, setGroups] = useState<{ id: number; label: string }[]>([]);
   const [assignments, setAssignments] = useState<Record<number, string>>({});
-  const [assignStatus, setAssignStatus] = useState<Record<number, "idle" | "loading" | "ok" | "error">>({});
-  const [currentGroup, setCurrentGroup] = useState<Record<number, { label: string } | null>>({});
+  const [assignStatus, setAssignStatus] = useState<Record<number, AssignStatus>>({});
+  const [currentGroup, setCurrentGroup] = useState<Record<number, CurrentGroupInfo>>({});
+  const [selectedStudents, setSelectedStudents] = useState<Record<number, boolean>>({});
+  const [bulkGroupId, setBulkGroupId] = useState("");
+  const [bulkStatus, setBulkStatus] = useState<{ loading: boolean; message?: string; tone?: "ok" | "error" }>({ loading: false });
 
   useEffect(() => {
     usersApi.list("ESTUDIANTE").then(setUsers);
@@ -21,25 +27,30 @@ export default function SecretariaEstudiantesPage() {
   }, []);
 
   useEffect(() => {
-    if (users.length === 0) return;
+    if (users.length === 0 || groups.length === 0) return;
     (async () => {
-      const map: Record<number, { label: string } | null> = {};
-      for (const u of users) {
-        try {
-          const sg = await academicApi.getStudentGroup(Number(u.id));
-          if (sg?.group) {
-            const label = `${sg.group.grade?.nombre ?? sg.group.grade?.id ?? ""}-${sg.group.nombre}`;
-            map[u.id] = { label };
-          } else {
-            map[u.id] = null;
-          }
-        } catch {
-          map[u.id] = null;
+      const map: Record<number, CurrentGroupInfo> = {};
+      const groupResults = await Promise.allSettled(
+        groups.map(async (g) => {
+          const students = await academicApi.listGroupStudents(g.id);
+          return { group: g, students };
+        }),
+      );
+
+      for (const result of groupResults) {
+        if (result.status !== "fulfilled") continue;
+        for (const student of result.value.students) {
+          map[student.id] = { id: result.value.group.id, label: result.value.group.label };
         }
       }
+
+      for (const u of users) {
+        if (!(u.id in map)) map[u.id] = null;
+      }
+
       setCurrentGroup(map);
     })();
-  }, [users]);
+  }, [users, groups]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -48,6 +59,69 @@ export default function SecretariaEstudiantesPage() {
       return matchesQuery;
     });
   }, [users, query]);
+
+  const selectedVisibleIds = useMemo(
+    () => visible.filter((u) => selectedStudents[u.id]).map((u) => u.id),
+    [visible, selectedStudents],
+  );
+
+  async function assignOrChangeStudentGroup(studentId: number, groupId: number) {
+    const current = currentGroup[studentId];
+    if (current?.id) {
+      await academicApi.deleteStudentGroup(studentId);
+    }
+    await academicApi.assignStudentToGroup(studentId, groupId);
+  }
+
+  async function runBulkStudentAssignment() {
+    const groupId = Number(bulkGroupId);
+    if (!groupId || selectedVisibleIds.length === 0) return;
+
+    const groupLabel = groups.find((g) => g.id === groupId)?.label ?? String(groupId);
+    let assigned = 0;
+    let skipped = 0;
+    let failed = 0;
+    const groupUpdates: Record<number, CurrentGroupInfo> = {};
+
+    setBulkStatus({ loading: true });
+    setAssignStatus((prev) => {
+      const next = { ...prev };
+      for (const id of selectedVisibleIds) next[id] = "loading";
+      return next;
+    });
+
+    for (const id of selectedVisibleIds) {
+      const current = currentGroup[id];
+      if (current?.id === groupId) {
+        skipped += 1;
+        setAssignStatus((prev) => ({ ...prev, [id]: "ok" }));
+        continue;
+      }
+
+      try {
+        await assignOrChangeStudentGroup(id, groupId);
+        assigned += 1;
+        groupUpdates[id] = { id: groupId, label: groupLabel };
+        setAssignStatus((prev) => ({ ...prev, [id]: "ok" }));
+      } catch {
+        failed += 1;
+        setAssignStatus((prev) => ({ ...prev, [id]: "error" }));
+      }
+    }
+
+    setCurrentGroup((prev) => ({ ...prev, ...groupUpdates }));
+    setAssignments((prev) => {
+      const next = { ...prev };
+      for (const id of selectedVisibleIds) next[id] = "";
+      return next;
+    });
+    setSelectedStudents({});
+    setBulkStatus({
+      loading: false,
+      tone: failed > 0 ? "error" : "ok",
+      message: `Asignados: ${assigned}. Omitidos: ${skipped}. Fallidos: ${failed}.`,
+    });
+  }
 
   return (
     <section className="p-4 space-y-4">
@@ -67,10 +141,55 @@ export default function SecretariaEstudiantesPage() {
         />
       </div>
 
+      <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">Asignacion rapida masiva</span>
+          <span className="text-xs text-gray-600">{selectedVisibleIds.length} seleccionados en esta vista</span>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-[220px]">
+            <Select
+              label="Grupo destino"
+              options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
+              value={bulkGroupId}
+              onChange={(e) => setBulkGroupId(e.target.value)}
+              disabled={bulkStatus.loading}
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setSelectedStudents((prev) => {
+                const next = { ...prev };
+                for (const u of visible) next[u.id] = true;
+                return next;
+              });
+            }}
+            disabled={visible.length === 0 || bulkStatus.loading}
+          >Seleccionar visibles</Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setSelectedStudents({})}
+            disabled={selectedVisibleIds.length === 0 || bulkStatus.loading}
+          >Limpiar seleccion</Button>
+          <Button
+            size="sm"
+            disabled={!bulkGroupId || selectedVisibleIds.length === 0 || bulkStatus.loading}
+            onClick={runBulkStudentAssignment}
+          >{bulkStatus.loading ? "Asignando..." : "Asignar grupo"}</Button>
+        </div>
+        {bulkStatus.message && (
+          <p className={`text-xs ${bulkStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkStatus.message}</p>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full border border-gray-200 text-sm">
           <thead className="bg-gray-100">
             <tr>
+              <th className="p-2 text-left">Sel.</th>
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
               <th className="p-2 text-left">Documento</th>
@@ -81,6 +200,13 @@ export default function SecretariaEstudiantesPage() {
           <tbody>
             {visible.map((u) => (
               <tr key={u.id} className="border-t border-gray-200">
+                <td className="p-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedStudents[u.id])}
+                    onChange={(e) => setSelectedStudents((prev) => ({ ...prev, [u.id]: e.target.checked }))}
+                  />
+                </td>
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.documento_identidad}</td>
@@ -90,28 +216,35 @@ export default function SecretariaEstudiantesPage() {
                       options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
                       value={assignments[u.id] || ""}
                       onChange={(e) => setAssignments((prev) => ({ ...prev, [u.id]: e.target.value }))}
-                      disabled={Boolean(currentGroup[u.id])}
+                      disabled={assignStatus[u.id] === "loading"}
                     />
                     <Button
                       size="sm"
-                      disabled={Boolean(currentGroup[u.id]) || !assignments[u.id] || assignStatus[u.id] === "loading"}
+                      disabled={
+                        !assignments[u.id]
+                        || assignStatus[u.id] === "loading"
+                        || currentGroup[u.id]?.id === Number(assignments[u.id])
+                      }
                       onClick={async () => {
                         const gid = Number(assignments[u.id]);
                         if (!gid) return;
                         try {
                           setAssignStatus((s) => ({ ...s, [u.id]: "loading" }));
-                          await academicApi.assignStudentToGroup(Number(u.id), gid);
+                          await assignOrChangeStudentGroup(Number(u.id), gid);
                           setAssignStatus((s) => ({ ...s, [u.id]: "ok" }));
                           const grpLabel = groups.find((g) => g.id === gid)?.label || "";
-                          setCurrentGroup((m) => ({ ...m, [u.id]: { label: grpLabel } }));
+                          setCurrentGroup((m) => ({ ...m, [u.id]: { id: gid, label: grpLabel } }));
                           setAssignments((prev) => ({ ...prev, [u.id]: "" }));
                         } catch {
                           setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
                         }
                       }}
-                    >Asignar</Button>
+                    >{currentGroup[u.id] ? "Cambiar" : "Asignar"}</Button>
                     {assignStatus[u.id] === "ok" && <span className="text-xs text-green-600">Asignado</span>}
                     {assignStatus[u.id] === "error" && <span className="text-xs text-red-600">Error</span>}
+                    {currentGroup[u.id]?.id === Number(assignments[u.id]) && assignments[u.id] && (
+                      <span className="text-xs text-amber-700">Ya esta en ese grupo</span>
+                    )}
                     {currentGroup[u.id] && (
                       <div className="mt-2 flex items-center gap-2">
                         <span className="text-xs text-gray-700">Grupo actual: {currentGroup[u.id]?.label}</span>
@@ -120,9 +253,13 @@ export default function SecretariaEstudiantesPage() {
                           variant="secondary"
                           onClick={async () => {
                             try {
+                              setAssignStatus((s) => ({ ...s, [u.id]: "loading" }));
                               await academicApi.deleteStudentGroup(Number(u.id));
                               setCurrentGroup((m) => ({ ...m, [u.id]: null }));
-                            } catch {}
+                              setAssignStatus((s) => ({ ...s, [u.id]: "ok" }));
+                            } catch {
+                              setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
+                            }
                           }}
                         >Quitar asignación</Button>
                       </div>
@@ -141,7 +278,7 @@ export default function SecretariaEstudiantesPage() {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td className="p-3 text-center" colSpan={4}>Sin resultados</td>
+                <td className="p-3 text-center" colSpan={6}>Sin resultados</td>
               </tr>
             )}
           </tbody>
