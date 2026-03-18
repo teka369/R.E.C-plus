@@ -6,6 +6,18 @@ import Select from "@/components/ui/Select";
 import { academicApi, type Grade, type Group, type Subject } from "@/lib/academicApi";
 import { usersApi, type UserDTO } from "@/lib/usersApi";
 
+type GroupSubjectsState = {
+  loaded: boolean;
+  loading: boolean;
+  items: { id: number; subject: Subject }[];
+};
+
+type BulkOperationStatus = {
+  loading: boolean;
+  message?: string;
+  tone?: "ok" | "error";
+};
+
 export default function SecretariaAcademicoPage() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [groups, setGroups] = useState<(Group & { grade?: Grade })[]>([]);
@@ -32,10 +44,21 @@ export default function SecretariaAcademicoPage() {
   const [editingSubjectId, setEditingSubjectId] = useState<number | null>(null);
   const [editingSubjectName, setEditingSubjectName] = useState<string>("");
   const [editingSubjectCode, setEditingSubjectCode] = useState<string>("");
-  const [groupSubjectsByGroup, setGroupSubjectsByGroup] = useState<Record<number, { loaded: boolean; items: { id: number; subject: Subject }[] }>>({});
+  const [groupSubjectsByGroup, setGroupSubjectsByGroup] = useState<Record<number, GroupSubjectsState>>({});
   const [groupsQuery, setGroupsQuery] = useState("");
   const [editingDirectorGroupId, setEditingDirectorGroupId] = useState<number | null>(null);
   const [editingDirectorId, setEditingDirectorId] = useState<string>("");
+
+  // Asignación masiva de materias a grupos
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Record<number, boolean>>({});
+  const [bulkMateriasGroupId, setBulkMateriasGroupId] = useState<string>("");
+  const [bulkMateriasSubjectId, setBulkMateriasSubjectId] = useState<string>("");
+  const [bulkMateriasStatus, setBulkMateriasStatus] = useState<BulkOperationStatus>({ loading: false });
+
+  // Asignación masiva de directores a grupos
+  const [selectedGroupIdsDirector, setSelectedGroupIdsDirector] = useState<Record<number, boolean>>({});
+  const [bulkDirectorId, setBulkDirectorId] = useState<string>("");
+  const [bulkDirectorStatus, setBulkDirectorStatus] = useState<BulkOperationStatus>({ loading: false });
 
   useEffect(() => {
     academicApi.listGrades().then((gs) => setGrades(gs.map((g) => ({ id: g.id, nombre: g.nombre }))));
@@ -43,6 +66,113 @@ export default function SecretariaAcademicoPage() {
     academicApi.listSubjects().then(setSubjects);
     usersApi.list("PROFESOR").then(setTeachers);
   }, []);
+
+  async function loadGroupSubjects(groupId: number): Promise<void> {
+    const cached = groupSubjectsByGroup[groupId];
+    if (cached?.loaded || cached?.loading) return;
+
+    setGroupSubjectsByGroup((prev) => ({
+      ...prev,
+      [groupId]: { loaded: false, loading: true, items: prev[groupId]?.items ?? [] },
+    }));
+
+    try {
+      const items = await academicApi.listGroupSubjects(groupId);
+      setGroupSubjectsByGroup((prev) => ({
+        ...prev,
+        [groupId]: { loaded: true, loading: false, items },
+      }));
+    } catch {
+      setGroupSubjectsByGroup((prev) => ({
+        ...prev,
+        [groupId]: { loaded: false, loading: false, items: prev[groupId]?.items ?? [] },
+      }));
+    }
+  }
+
+  async function runBulkAssignSubjectsToGroups(): Promise<void> {
+    const subjectId = Number(bulkMateriasSubjectId);
+    const selectedIds = Object.entries(selectedGroupIds)
+      .filter(([, checked]) => checked)
+      .map(([id]) => Number(id));
+
+    if (!subjectId || selectedIds.length === 0) return;
+
+    let assigned = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    setBulkMateriasStatus({ loading: true });
+
+    for (const groupId of selectedIds) {
+      try {
+        const existing = groupSubjectsByGroup[groupId]?.items ?? [];
+        const alreadyAssigned = existing.some((item) => item.subject.id === subjectId);
+
+        if (alreadyAssigned) {
+          skipped += 1;
+          continue;
+        }
+
+        const newItem = await academicApi.assignSubjectToGroup(groupId, subjectId);
+        assigned += 1;
+
+        setGroupSubjectsByGroup((prev) => {
+          const current = prev[groupId] || { loaded: false, loading: false, items: [] };
+          return {
+            ...prev,
+            [groupId]: {
+              ...current,
+              items: [...current.items, { id: newItem.id, subject: { id: subjectId, nombre: subjects.find((s) => s.id === subjectId)?.nombre ?? "" } }],
+            },
+          };
+        });
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setSelectedGroupIds({});
+    setBulkMateriasGroupId("");
+    setBulkMateriasSubjectId("");
+    setBulkMateriasStatus({
+      loading: false,
+      tone: failed > 0 ? "error" : "ok",
+      message: `Asignados: ${assigned}. Omitidos: ${skipped}. Fallidos: ${failed}.`,
+    });
+  }
+
+  async function runBulkAssignDirectors(): Promise<void> {
+    const directorId = Number(bulkDirectorId);
+    const selectedIds = Object.entries(selectedGroupIdsDirector)
+      .filter(([, checked]) => checked)
+      .map(([id]) => Number(id));
+
+    if (!directorId || selectedIds.length === 0) return;
+
+    let assigned = 0;
+    let failed = 0;
+
+    setBulkDirectorStatus({ loading: true });
+
+    for (const groupId of selectedIds) {
+      try {
+        const updated = await academicApi.assignGroupDirector(groupId, directorId);
+        assigned += 1;
+        setGroups((prev) => prev.map((g) => (g.id === updated.id ? { ...g, directorId: updated.directorId } : g)));
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setSelectedGroupIdsDirector({});
+    setBulkDirectorId("");
+    setBulkDirectorStatus({
+      loading: false,
+      tone: failed > 0 ? "error" : "ok",
+      message: `Asignados: ${assigned}. Fallidos: ${failed}.`,
+    });
+  }
 
   const gradeOptions = useMemo(() => grades.map((g) => ({ label: g.nombre, value: String(g.id) })), [grades]);
   const groupOptions = useMemo(() => groups.map((g) => {
@@ -150,36 +280,84 @@ export default function SecretariaAcademicoPage() {
           <Select label="Docente" options={[{ label: "Seleccione docente", value: "" }, ...teacherOptions]} value={assignDirectorId} onChange={(e) => setAssignDirectorId(e.target.value)} />
           <Button type="submit" disabled={!assignDirectorGroupId || !assignDirectorId}>Asignar</Button>
         </form>
+
+      <div className="border rounded p-4 space-y-3">
+        <h3 className="font-medium">Asignación masiva de directores</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <Select label="Docente" options={[{ label: "Seleccione docente", value: "" }, ...teacherOptions]} value={bulkDirectorId} onChange={(e) => setBulkDirectorId(e.target.value)} disabled={bulkDirectorStatus.loading} />
+          </div>
+          <div className="flex items-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => { setSelectedGroupIdsDirector((prev) => { const next = { ...prev }; for (const g of groups) next[g.id] = true; return next; }); }} disabled={groups.length === 0 || bulkDirectorStatus.loading}>Seleccionar todos</Button>
+            <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIdsDirector({})} disabled={Object.values(selectedGroupIdsDirector).every((v) => !v) || bulkDirectorStatus.loading}>Limpiar</Button>
+            <Button size="sm" onClick={runBulkAssignDirectors} disabled={!bulkDirectorId || Object.values(selectedGroupIdsDirector).every((v) => !v) || bulkDirectorStatus.loading}>{bulkDirectorStatus.loading ? "Asignando..." : "Asignar directores"}</Button>
+          </div>
+        </div>
+        {bulkDirectorStatus.message && <p className={`text-xs ${bulkDirectorStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkDirectorStatus.message}</p>}
+        <div className="text-xs text-gray-600 max-h-40 overflow-y-auto border rounded p-2">
+          <p className="font-medium mb-2">{Object.values(selectedGroupIdsDirector).filter(Boolean).length} grupos seleccionados:</p>
+          {groups.filter((g) => selectedGroupIdsDirector[g.id]).map((g) => (
+            <div key={g.id} className="flex items-center gap-2 py-1">
+              <input type="checkbox" checked={Boolean(selectedGroupIdsDirector[g.id])} onChange={(e) => setSelectedGroupIdsDirector((prev) => ({ ...prev, [g.id]: e.target.checked }))} />
+              <span>{g.grade?.nombre ?? g.gradeId}-{g.nombre}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <form onSubmit={onAssignSubjectToGroup} className="border rounded p-4 space-y-3">
+      <h3 className="font-medium">Asignar Materia a Grupo (individual)</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Select label="Grupo" options={[{ label: "Seleccione grupo", value: "" }, ...groupOptions]} value={assignGroupId} onChange={(e) => setAssignGroupId(e.target.value)} />
+        <Select label="Materia" options={[{ label: "Seleccione materia", value: "" }, ...subjectOptions]} value={assignSubjectId} onChange={(e) => setAssignSubjectId(e.target.value)} />
+        <div className="flex items-end"><Button type="submit" disabled={!assignGroupId || !assignSubjectId}>Asignar</Button></div>
+      </div>
+    </form>
+
+    <div className="border rounded p-4 space-y-3">
+      <h3 className="font-medium">Asignación masiva de materias</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <Select label="Materia" options={[{ label: "Seleccione materia", value: "" }, ...subjectOptions]} value={bulkMateriasSubjectId} onChange={(e) => setBulkMateriasSubjectId(e.target.value)} disabled={bulkMateriasStatus.loading} />
+        </div>
+        <div className="flex items-end gap-2">
+          <Button variant="secondary" size="sm" onClick={() => { setSelectedGroupIds((prev) => { const next = { ...prev }; for (const g of visibleGroups) next[g.id] = true; return next; }); }} disabled={visibleGroups.length === 0 || bulkMateriasStatus.loading}>Seleccionar visibles</Button>
+          <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds({})} disabled={Object.values(selectedGroupIds).every((v) => !v) || bulkMateriasStatus.loading}>Limpiar</Button>
+          <Button size="sm" onClick={runBulkAssignSubjectsToGroups} disabled={!bulkMateriasSubjectId || Object.values(selectedGroupIds).every((v) => !v) || bulkMateriasStatus.loading}>{bulkMateriasStatus.loading ? "Asignando..." : "Asignar materia"}</Button>
+        </div>
+      </div>
+      {bulkMateriasStatus.message && <p className={`text-xs ${bulkMateriasStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkMateriasStatus.message}</p>}
+      <div className="text-xs text-gray-600 max-h-40 overflow-y-auto border rounded p-2">
+        <p className="font-medium mb-2">{Object.values(selectedGroupIds).filter(Boolean).length} de {visibleGroups.length} grupos seleccionados:</p>
+        {visibleGroups.map((g) => (
+          <div key={g.id} className="flex items-center gap-2 py-1">
+            <input type="checkbox" checked={Boolean(selectedGroupIds[g.id])} onChange={(e) => setSelectedGroupIds((prev) => ({ ...prev, [g.id]: e.target.checked }))} />
+            <span>{g.grade?.nombre ?? g.gradeId}-{g.nombre}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="space-y-2">
+      <h3 className="font-medium">Resumen</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="border rounded p-3">
+          <p className="text-xs text-gray-600">Grados</p>
+          <p className="text-2xl font-semibold">{grades.length}</p>
+        </div>
+        <div className="border rounded p-3">
+          <p className="text-xs text-gray-600">Grupos</p>
+          <p className="text-2xl font-semibold">{groups.length}</p>
+        </div>
+        <div className="border rounded p-3">
+          <p className="text-xs text-gray-600">Materias</p>
+          <p className="text-2xl font-semibold">{subjects.length}</p>
+        </div>
       </div>
 
-      <form onSubmit={onAssignSubjectToGroup} className="border rounded p-4 space-y-3">
-        <h3 className="font-medium">Asignar Materia a Grupo</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Select label="Grupo" options={[{ label: "Seleccione grupo", value: "" }, ...groupOptions]} value={assignGroupId} onChange={(e) => setAssignGroupId(e.target.value)} />
-          <Select label="Materia" options={[{ label: "Seleccione materia", value: "" }, ...subjectOptions]} value={assignSubjectId} onChange={(e) => setAssignSubjectId(e.target.value)} />
-          <div className="flex items-end"><Button type="submit" disabled={!assignGroupId || !assignSubjectId}>Asignar</Button></div>
-        </div>
-      </form>
-
-      <div className="space-y-2">
-        <h3 className="font-medium">Resumen</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="border rounded p-3">
-            <p className="text-xs text-gray-600">Grados</p>
-            <p className="text-2xl font-semibold">{grades.length}</p>
-          </div>
-          <div className="border rounded p-3">
-            <p className="text-xs text-gray-600">Grupos</p>
-            <p className="text-2xl font-semibold">{groups.length}</p>
-          </div>
-          <div className="border rounded p-3">
-            <p className="text-xs text-gray-600">Materias</p>
-            <p className="text-2xl font-semibold">{subjects.length}</p>
-          </div>
-        </div>
-
-        {/* Tabla de Grados */}
-        <div className="border rounded p-4 mt-3">
+      {/* Tabla de Grados */}
+      <div className="border rounded p-4 mt-3">
           <h4 className="font-medium mb-2">Grados</h4>
           <table className="w-full text-sm">
             <thead>
@@ -245,6 +423,7 @@ export default function SecretariaAcademicoPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
+                <th className="py-2">Sel.</th>
                 <th className="py-2">Grupo</th>
                 <th className="py-2">Director</th>
                 <th className="py-2">Materias</th>
@@ -254,6 +433,13 @@ export default function SecretariaAcademicoPage() {
             <tbody>
               {visibleGroups.map((gr) => (
                 <tr key={gr.id} className="border-b align-top">
+                  <td className="py-2">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(selectedGroupIds[gr.id])}
+                      onChange={(e) => setSelectedGroupIds((prev) => ({ ...prev, [gr.id]: e.target.checked }))}
+                    />
+                  </td>
                   <td className="py-2">
                     {editingGroupId === gr.id ? (
                       <input className="border rounded px-2 py-1 w-full" value={editingGroupName} onChange={(e) => setEditingGroupName(e.target.value)} />
@@ -312,14 +498,14 @@ export default function SecretariaAcademicoPage() {
                         <button
                           className="px-2 py-1 border rounded"
                           onClick={async () => {
-                            if (!groupSubjectsByGroup[gr.id]?.loaded) {
-                              const items = await academicApi.listGroupSubjects(gr.id);
-                              setGroupSubjectsByGroup((prev) => ({ ...prev, [gr.id]: { loaded: true, items } }));
-                            } else {
-                              setGroupSubjectsByGroup((prev) => ({ ...prev, [gr.id]: { loaded: !prev[gr.id].loaded, items: prev[gr.id].items } }));
+                            const state = groupSubjectsByGroup[gr.id];
+                            if (state?.loaded) {
+                              setGroupSubjectsByGroup((prev) => ({ ...prev, [gr.id]: { ...prev[gr.id], loaded: !prev[gr.id].loaded } }));
+                              return;
                             }
+                            await loadGroupSubjects(gr.id);
                           }}
-                        >Ver materias</button>
+                        >{groupSubjectsByGroup[gr.id]?.loaded ? "Ocultar materias" : "Ver materias"}</button>
                       </>
                     )}
 
@@ -336,7 +522,7 @@ export default function SecretariaAcademicoPage() {
                                   await academicApi.deleteGroupSubject(gs.id);
                                   setGroupSubjectsByGroup((prev) => ({
                                     ...prev,
-                                    [gr.id]: { loaded: true, items: prev[gr.id].items.filter((x) => x.id !== gs.id) }
+                                    [gr.id]: { ...prev[gr.id], items: prev[gr.id].items.filter((x) => x.id !== gs.id) }
                                   }));
                                 }}
                               >Quitar</button>

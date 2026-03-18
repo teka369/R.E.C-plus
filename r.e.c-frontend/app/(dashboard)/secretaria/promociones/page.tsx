@@ -18,6 +18,8 @@ type GroupMap = {
   loaded: boolean;
 };
 
+type PromotionProgress = { current: number; total: number } | null;
+
 export default function SecretariaPromocionesPage() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [sourceGradeId, setSourceGradeId] = useState<string>("");
@@ -30,6 +32,8 @@ export default function SecretariaPromocionesPage() {
   const [result, setResult] = useState<{ summary: PromotionSummary[] } | null>(
     null,
   );
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set());
+  const [promotionProgress, setPromotionProgress] = useState<PromotionProgress>(null);
 
   useEffect(() => {
     academicApi.listGrades().then((gs) => setGrades(gs.map((g) => ({ id: g.id, nombre: g.nombre }))));
@@ -40,6 +44,7 @@ export default function SecretariaPromocionesPage() {
     if (!sid) {
       setSourceGroups([]);
       setGroupMap({});
+      setSelectedGroupIds(new Set());
       return;
     }
     academicApi.listGrades().then((gs) => {
@@ -47,6 +52,7 @@ export default function SecretariaPromocionesPage() {
       const groups = grade?.groups ?? [];
       setSourceGroups(groups);
       setGroupMap({});
+      setSelectedGroupIds(new Set());
       // Cargar estudiantes por grupo origen
       (async () => {
         const map: Record<number, GroupMap> = {};
@@ -84,21 +90,23 @@ export default function SecretariaPromocionesPage() {
     const sid = Number(sourceGradeId);
     const tid = Number(targetGradeId);
     if (!sid || !tid || sid === tid) return false;
-    if (sourceGroups.length === 0) return false;
-    // Cada grupo origen debe tener grupo destino seleccionado
-    return sourceGroups.every((g) => !!groupMap[g.id]?.targetGroupId);
-  }, [sourceGradeId, targetGradeId, sourceGroups, groupMap]);
+    if (selectedGroupIds.size === 0) return false;
+    // Cada grupo seleccionado debe tener grupo destino seleccionado
+    return Array.from(selectedGroupIds).every((gid) => !!groupMap[gid]?.targetGroupId);
+  }, [sourceGradeId, targetGradeId, selectedGroupIds, groupMap]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
     setResult(null);
+    setPromotionProgress(null);
     try {
+      const selectedGroups = sourceGroups.filter((g) => selectedGroupIds.has(g.id));
       const payload: PromoteGradePayload = {
         sourceGradeId: Number(sourceGradeId),
         targetGradeId: Number(targetGradeId),
-        mappings: sourceGroups.map((g) => {
+        mappings: selectedGroups.map((g) => {
           const gm = groupMap[g.id];
           const repeatIds = Object.entries(gm.repeaters)
             .filter(([, v]) => v)
@@ -110,8 +118,24 @@ export default function SecretariaPromocionesPage() {
           };
         }),
       };
-      const res = await academicApi.promoteGrade(payload);
-      setResult({ summary: res.summary });
+      // Simular progreso si hay múltiples grupos
+      if (selectedGroups.length > 1) {
+        setPromotionProgress({ current: 0, total: selectedGroups.length });
+        const progressInterval = setInterval(() => {
+          setPromotionProgress((prev) => {
+            if (!prev) return null;
+            return { ...prev, current: Math.min(prev.current + 1, prev.total - 1) };
+          });
+        }, 150);
+        const res = await academicApi.promoteGrade(payload);
+        clearInterval(progressInterval);
+        setPromotionProgress({ current: selectedGroups.length, total: selectedGroups.length });
+        setResult({ summary: res.summary });
+        setTimeout(() => setPromotionProgress(null), 1000);
+      } else {
+        const res = await academicApi.promoteGrade(payload);
+        setResult({ summary: res.summary });
+      }
     } catch {
       // noop; se podría mostrar error
     } finally {
@@ -123,11 +147,13 @@ export default function SecretariaPromocionesPage() {
     if (!canSubmit) return;
     setPreviewing(true);
     setResult(null);
+    setPromotionProgress(null);
     try {
+      const selectedGroups = sourceGroups.filter((g) => selectedGroupIds.has(g.id));
       const payload: PromoteGradePayload = {
         sourceGradeId: Number(sourceGradeId),
         targetGradeId: Number(targetGradeId),
-        mappings: sourceGroups.map((g) => {
+        mappings: selectedGroups.map((g) => {
           const gm = groupMap[g.id];
           const repeatIds = Object.entries(gm.repeaters)
             .filter(([, v]) => v)
@@ -161,11 +187,19 @@ export default function SecretariaPromocionesPage() {
 
         {sourceGroups.length > 0 && (
           <div className="space-y-4">
-            <h3 className="font-medium">Mapeo de grupos y selección de repetidores</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">Mapeo de grupos y selección de repetidores</h3>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds(new Set(sourceGroups.map((g) => g.id)))} disabled={selectedGroupIds.size === sourceGroups.length}>Seleccionar todos</Button>
+                <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds(new Set())} disabled={selectedGroupIds.size === 0}>Limpiar selección</Button>
+                {selectedGroupIds.size > 0 && <span className="text-xs text-gray-600">Seleccionados: {selectedGroupIds.size}/{sourceGroups.length}</span>}
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full border border-gray-200 text-sm">
                 <thead className="bg-gray-100">
                   <tr>
+                    <th className="p-2 text-left" style={{ width: "32px" }}>Sel.</th>
                     <th className="p-2 text-left">Grupo origen</th>
                     <th className="p-2 text-left">Grupo destino</th>
                     <th className="p-2 text-left">Estudiantes (marca los que repiten)</th>
@@ -174,8 +208,27 @@ export default function SecretariaPromocionesPage() {
                 <tbody>
                   {sourceGroups.map((g) => {
                     const gm = groupMap[g.id];
+                    const isSelected = selectedGroupIds.has(g.id);
                     return (
-                      <tr key={g.id} className="border-t border-gray-200 align-top">
+                      <tr key={g.id} className={`border-t border-gray-200 align-top ${isSelected ? "bg-blue-50" : ""}`}>
+                        <td className="p-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedGroupIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) {
+                                  next.add(g.id);
+                                } else {
+                                  next.delete(g.id);
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
                         <td className="p-2">{g.nombre}</td>
                         <td className="p-2">
                           <Select
@@ -222,8 +275,16 @@ export default function SecretariaPromocionesPage() {
         )}
 
         <div className="flex items-center gap-2">
+          {promotionProgress && (
+            <div className="flex-1 border rounded p-2 bg-blue-50">
+              <div className="text-xs font-medium mb-1">Procesando: {promotionProgress.current}/{promotionProgress.total}</div>
+              <div className="w-full border rounded overflow-hidden" style={{ height: "4px" }}>
+                <div className="bg-blue-500" style={{ width: `${(promotionProgress.current / promotionProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
+              </div>
+            </div>
+          )}
           <Button type="button" disabled={!canSubmit || previewing} onClick={onPreview}>{previewing ? "Simulando..." : "Simular"}</Button>
-          <Button type="submit" disabled={!canSubmit || submitting || !result}>{submitting ? "Promocionando..." : "Confirmar y Promocionar"}</Button>
+          <Button type="submit" disabled={!canSubmit || submitting || !result}>{submitting ? `Promocionando (${selectedGroupIds.size})...` : `Confirmar y Promocionar (${selectedGroupIds.size})`}</Button>
         </div>
 
         {result && (

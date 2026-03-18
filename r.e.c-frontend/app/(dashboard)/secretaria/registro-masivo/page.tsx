@@ -6,10 +6,12 @@ import { usersApi, type CreateUserDto, type BulkCreateResult } from "@/lib/users
 import * as XLSX from "xlsx";
 import { getErrorMessage } from "@/lib/errors";
 
-type PreviewItem = CreateUserDto & { _row?: number; _error?: string };
+type PreviewItem = CreateUserDto & { _row?: number; _error?: string; _selected?: boolean };
 type ValidationIssue = { field: string; message: string; severity: "error" | "warning" };
 type RowValidation = { row: number; issues: ValidationIssue[]; isValid: boolean };
 type SupportedRole = NonNullable<CreateUserDto["role"]>;
+
+type EditingRow = { rowIndex: number; field: keyof Omit<CreateUserDto, "role">; value: string };
 
 function parseRole(value: string): SupportedRole | undefined {
   const normalized = value.trim().toUpperCase();
@@ -95,6 +97,12 @@ export default function RegistroMasivoPage() {
   const [existingEmails, setExistingEmails] = useState<Set<string>>(new Set());
   const [existingDocs, setExistingDocs] = useState<Set<string>>(new Set());
 
+  // Mejoras estructurales
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [editingRow, setEditingRow] = useState<EditingRow | null>(null);
+  const [showErrorsOnly, setShowErrorsOnly] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+
   const onFile = useCallback(async (file: File) => {
     setError(null);
     setResult(null);
@@ -142,10 +150,24 @@ export default function RegistroMasivoPage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setUploadProgress(null);
     try {
-      const source: PreviewItem[] = registerOnlyValid
-        ? items.filter((_, idx) => validation[idx]?.isValid)
-        : items;
+      // Si hay filas seleccionadas explícitamente, usar solo esas; si no, usar lógica anterior
+      let source: PreviewItem[] = [];
+      if (selectedRows.size > 0) {
+        source = items.filter((_, idx) => selectedRows.has(idx));
+      } else if (registerOnlyValid) {
+        source = items.filter((_, idx) => validation[idx]?.isValid);
+      } else {
+        source = items;
+      }
+      
+      if (source.length === 0) {
+        setError("No hay filas válidas o seleccionadas para registrar");
+        setLoading(false);
+        return;
+      }
+
       const payload: CreateUserDto[] = source.map((item) => ({
         nombres: item.nombres,
         apellidos: item.apellidos,
@@ -155,14 +177,28 @@ export default function RegistroMasivoPage() {
         password: item.password,
         role: item.role,
       }));
+
+      // Simular progreso durante la carga
+      setUploadProgress({ current: 0, total: payload.length });
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (!prev) return null;
+          return { ...prev, current: Math.min(prev.current + 1, prev.total - 1) };
+        });
+      }, 100);
+
       const res = await usersApi.bulkCreate(payload);
+      clearInterval(progressInterval);
+      setUploadProgress({ current: payload.length, total: payload.length });
       setResult(res);
+      setSelectedRows(new Set());
     } catch (error: unknown) {
       setError(getErrorMessage(error, "Error al registrar"));
     } finally {
       setLoading(false);
+      setTimeout(() => setUploadProgress(null), 1000);
     }
-  }, [items, registerOnlyValid, validation]);
+  }, [items, registerOnlyValid, validation, selectedRows]);
 
   const templateCSV = useMemo(() => {
     const rows = [
@@ -298,6 +334,50 @@ export default function RegistroMasivoPage() {
   const invalidCount = validation.filter((v) => !v.isValid).length;
   const validCount = items.length - invalidCount;
 
+  // Mejoras: filas a mostrar (normal o solo errores)
+  const displayedItems = useMemo(() => {
+    if (!showErrorsOnly) return items.slice(0, 20);
+    return items.filter((_, idx) => !validation[idx]?.isValid).slice(0, 20);
+  }, [items, validation, showErrorsOnly]);
+
+  // Función para alternar selección de una fila
+  function toggleRowSelection(idx: number) {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  }
+
+  // Seleccionar todas las filas mostradas
+  function selectAllDisplayed() {
+    const next = new Set(selectedRows);
+    displayedItems.forEach((_, idx) => {
+      const actualIdx = items.indexOf(displayedItems[idx]);
+      if (actualIdx >= 0) next.add(actualIdx);
+    });
+    setSelectedRows(next);
+  }
+
+  // Deseleccionar todas
+  function clearSelection() {
+    setSelectedRows(new Set());
+  }
+
+  // Editar campo de una fila
+  function updateItemField(idx: number, field: keyof Omit<CreateUserDto, "role">, value: string) {
+    setItems((prev) => [
+      ...prev.slice(0, idx),
+      { ...prev[idx], [field]: value || undefined },
+      ...prev.slice(idx + 1),
+    ]);
+    setEditingRow(null);
+  }
+
   return (
     <section className="p-4 space-y-6">
       <div className="flex items-center justify-between">
@@ -323,58 +403,159 @@ export default function RegistroMasivoPage() {
             <label className="text-xs flex items-center gap-2">
               <input type="checkbox" checked={registerOnlyValid} onChange={(e) => setRegisterOnlyValid(e.target.checked)} /> Registrar sólo filas válidas
             </label>
-            <Button onClick={onSubmit} disabled={(items.length === 0) || loading || (registerOnlyValid && invalidCount > 0)}>
-              {loading ? "Procesando..." : (registerOnlyValid ? `Registrar (${validCount} válidas)` : "Registrar en lote")}
+            <Button 
+              onClick={onSubmit} 
+              disabled={(items.length === 0) || loading || (registerOnlyValid && invalidCount > 0 && selectedRows.size === 0)}
+            >
+              {loading ? "Procesando..." : (() => {
+                const count = selectedRows.size > 0 ? selectedRows.size : (registerOnlyValid ? validCount : items.length);
+                return `Registrar (${count} filas)`;
+              })()}
             </Button>
           </div>
         </div>
 
         <div className="md:col-span-2 border rounded p-4">
-          <h2 className="font-medium mb-2">Vista previa ({items.length} filas)</h2>
+          <h2 className="font-medium mb-3">Vista previa ({items.length} filas)</h2>
           {items.length === 0 ? (
             <p className="text-xs text-gray-600">Sube un archivo para ver la vista previa.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-200 text-xs">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="p-2 text-left">#</th>
-                    <th className="p-2 text-left">Nombres</th>
-                    <th className="p-2 text-left">Apellidos</th>
-                    <th className="p-2 text-left">Correo</th>
-                    <th className="p-2 text-left">Documento</th>
-                    <th className="p-2 text-left">Teléfono</th>
-                    <th className="p-2 text-left">Rol</th>
-                    <th className="p-2 text-left">Errores</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map((it, idx) => {
-                    const v = validation[idx] || { issues: [], isValid: true };
-                    const errText = v.issues.filter((x) => x.severity === "error").map((x) => `${x.field}: ${x.message}`).join("; ");
-                    const warnText = v.issues.filter((x) => x.severity === "warning").map((x) => `${x.field}: ${x.message}`).join("; ");
-                    return (
-                      <tr key={idx} className="border-t border-gray-200">
-                        <td className="p-2">{it._row ?? idx + 1}</td>
-                        <td className="p-2">{it.nombres}</td>
-                        <td className="p-2">{it.apellidos}</td>
-                        <td className="p-2">{it.email}</td>
-                        <td className="p-2">{it.documento_identidad}</td>
-                        <td className="p-2">{it.telefono || ""}</td>
-                        <td className="p-2">{it.role || "ESTUDIANTE"}</td>
-                        <td className="p-2">
-                          {errText && <div className="text-red-600">{errText}</div>}
-                          {warnText && <div className="text-yellow-600">{warnText}</div>}
-                          {!errText && !warnText && <span className="text-green-700">OK</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-xs flex items-center gap-2">
+                  <input type="checkbox" checked={showErrorsOnly} onChange={(e) => setShowErrorsOnly(e.target.checked)} /> 
+                  Solo mostrar filas con errores ({invalidCount})
+                </label>
+                <Button variant="secondary" size="sm" onClick={selectAllDisplayed} disabled={displayedItems.length === 0}>{selectedRows.size > 0 ? "Más filas" : "Seleccionar mostradas"}</Button>
+                <Button variant="secondary" size="sm" onClick={clearSelection} disabled={selectedRows.size === 0}>Limpiar selección ({selectedRows.size})</Button>
+              </div>
+
+              {uploadProgress && (
+                <div className="border rounded p-2 bg-blue-50">
+                  <div className="text-xs font-medium mb-1">Registrando: {uploadProgress.current}/{uploadProgress.total}</div>
+                  <div className="w-full border rounded overflow-hidden" style={{ height: "4px" }}>
+                    <div className="bg-blue-500" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-200 text-xs">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2 text-left" style={{ width: "32px" }}>Sel.</th>
+                      <th className="p-2 text-left">#</th>
+                      <th className="p-2 text-left">Nombres</th>
+                      <th className="p-2 text-left">Apellidos</th>
+                      <th className="p-2 text-left">Correo</th>
+                      <th className="p-2 text-left">Documento</th>
+                      <th className="p-2 text-left">Teléfono</th>
+                      <th className="p-2 text-left">Rol</th>
+                      <th className="p-2 text-left">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedItems.map((it, displayIdx) => {
+                      const actualIdx = items.indexOf(it);
+                      const v = validation[actualIdx] || { issues: [], isValid: true };
+                      const errText = v.issues
+                        .filter((x) => x.severity === "error")
+                        .map((x) => x.message)
+                        .join("; ");
+                      const isEditing = editingRow?.rowIndex === actualIdx;
+                      const rowClass = v.isValid ? "bg-white" : "bg-red-50";
+                      
+                      return (
+                        <tr key={displayIdx} className={`border-t border-gray-200 ${rowClass}`}>
+                          <td className="p-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(actualIdx)}
+                              onChange={() => toggleRowSelection(actualIdx)}
+                            />
+                          </td>
+                          <td className="p-2">{it._row ?? actualIdx + 1}</td>
+                          <td className="p-2">
+                            {isEditing && editingRow.field === "nombres" ? (
+                              <input
+                                autoFocus
+                                className="border rounded px-1 py-0 w-full"
+                                value={editingRow.value}
+                                onChange={(e) => setEditingRow({ ...editingRow, value: e.target.value })}
+                                onBlur={() => updateItemField(actualIdx, "nombres", editingRow.value)}
+                                onKeyDown={(e) => e.key === "Enter" && updateItemField(actualIdx, "nombres", editingRow.value)}
+                              />
+                            ) : (
+                              <span onClick={() => setEditingRow({ rowIndex: actualIdx, field: "nombres", value: it.nombres })}>
+                                {it.nombres}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {isEditing && editingRow.field === "apellidos" ? (
+                              <input
+                                autoFocus
+                                className="border rounded px-1 py-0 w-full"
+                                value={editingRow.value}
+                                onChange={(e) => setEditingRow({ ...editingRow, value: e.target.value })}
+                                onBlur={() => updateItemField(actualIdx, "apellidos", editingRow.value)}
+                                onKeyDown={(e) => e.key === "Enter" && updateItemField(actualIdx, "apellidos", editingRow.value)}
+                              />
+                            ) : (
+                              <span onClick={() => setEditingRow({ rowIndex: actualIdx, field: "apellidos", value: it.apellidos })}>
+                                {it.apellidos}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {isEditing && editingRow.field === "email" ? (
+                              <input
+                                autoFocus
+                                className="border rounded px-1 py-0 w-full"
+                                value={editingRow.value}
+                                onChange={(e) => setEditingRow({ ...editingRow, value: e.target.value })}
+                                onBlur={() => updateItemField(actualIdx, "email", editingRow.value)}
+                                onKeyDown={(e) => e.key === "Enter" && updateItemField(actualIdx, "email", editingRow.value)}
+                              />
+                            ) : (
+                              <span onClick={() => setEditingRow({ rowIndex: actualIdx, field: "email", value: it.email })}>
+                                {it.email}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {isEditing && editingRow.field === "documento_identidad" ? (
+                              <input
+                                autoFocus
+                                className="border rounded px-1 py-0 w-full"
+                                value={editingRow.value}
+                                onChange={(e) => setEditingRow({ ...editingRow, value: e.target.value })}
+                                onBlur={() => updateItemField(actualIdx, "documento_identidad", editingRow.value)}
+                                onKeyDown={(e) => e.key === "Enter" && updateItemField(actualIdx, "documento_identidad", editingRow.value)}
+                              />
+                            ) : (
+                              <span onClick={() => setEditingRow({ rowIndex: actualIdx, field: "documento_identidad", value: it.documento_identidad })}>
+                                {it.documento_identidad}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2">{it.telefono || ""}</td>
+                          <td className="p-2">{it.role || "ESTUDIANTE"}</td>
+                          <td className="p-2">
+                            {errText ? <div className="text-red-600 text-xs">{errText}</div> : <span className="text-green-700 text-xs">✓</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
-          <div className="mt-2 text-xs text-gray-700">Válidas: {validCount} · Inválidas: {invalidCount}</div>
+          <div className="mt-2 text-xs text-gray-700">
+            Válidas: {validCount} · Inválidas: {invalidCount}
+            {selectedRows.size > 0 && ` · Seleccionadas: ${selectedRows.size}`}
+          </div>
           <div className="mt-2 flex items-center gap-3">
             <Button variant="secondary" onClick={() => {
               // Exportar errores a CSV

@@ -7,20 +7,116 @@ import { usersApi, type UserDTO } from "@/lib/usersApi";
 import Select from "@/components/ui/Select";
 import { academicApi } from "@/lib/academicApi";
 
+type AssignStatus = "idle" | "loading" | "ok" | "error";
+
+type TeacherAssignmentItem = {
+  id: number;
+  groupId: number;
+  subjectId: number;
+  groupLabel: string;
+  subjectName: string;
+};
+
+type TeacherAssignmentsState = {
+  loaded: boolean;
+  loading: boolean;
+  expanded: boolean;
+  items: TeacherAssignmentItem[];
+};
+
+type GroupSubjectsState = {
+  loading: boolean;
+  loaded: boolean;
+  options: { id: number; nombre: string }[];
+};
+
 export default function SecretariaDocentesPage() {
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [query, setQuery] = useState("");
   const [groups, setGroups] = useState<{ id: number; label: string }[]>([]);
-  const [subjects, setSubjects] = useState<{ id: number; nombre: string }[]>([]);
   const [assignments, setAssignments] = useState<Record<number, { groupId?: string; subjectId?: string }>>({});
-  const [assignStatus, setAssignStatus] = useState<Record<number, "idle" | "loading" | "ok" | "error">>({});
-  const [teacherAssignmentsMap, setTeacherAssignmentsMap] = useState<Record<number, { loaded: boolean; items: { id: number; groupLabel: string; subjectName: string }[]; expanded?: boolean }>>({});
+  const [assignStatus, setAssignStatus] = useState<Record<number, AssignStatus>>({});
+  const [teacherAssignmentsMap, setTeacherAssignmentsMap] = useState<Record<number, TeacherAssignmentsState>>({});
+  const [groupSubjectsMap, setGroupSubjectsMap] = useState<Record<number, GroupSubjectsState>>({});
+  const [selectedTeachers, setSelectedTeachers] = useState<Record<number, boolean>>({});
+  const [bulkAssignment, setBulkAssignment] = useState<{ groupId: string; subjectId: string }>({ groupId: "", subjectId: "" });
+  const [bulkStatus, setBulkStatus] = useState<{ loading: boolean; message?: string; tone?: "ok" | "error" }>({ loading: false });
 
   useEffect(() => {
     usersApi.list("PROFESOR").then(setUsers);
     academicApi.listGroups().then((gs) => setGroups(gs.map((g) => ({ id: g.id, label: `${g.grade?.nombre ?? g.gradeId}-${g.nombre}` }))));
-    academicApi.listSubjects().then((ss) => setSubjects(ss.map((s) => ({ id: s.id, nombre: s.nombre }))));
   }, []);
+
+  async function ensureGroupSubjects(groupId: number) {
+    if (!groupId) return;
+    const cached = groupSubjectsMap[groupId];
+    if (cached?.loaded || cached?.loading) return;
+
+    setGroupSubjectsMap((prev) => ({
+      ...prev,
+      [groupId]: { loading: true, loaded: false, options: prev[groupId]?.options ?? [] },
+    }));
+
+    try {
+      const list = await academicApi.listGroupSubjects(groupId);
+      const options = list.map((item) => ({ id: item.subject.id, nombre: item.subject.nombre }));
+      setGroupSubjectsMap((prev) => ({
+        ...prev,
+        [groupId]: { loading: false, loaded: true, options },
+      }));
+    } catch {
+      setGroupSubjectsMap((prev) => ({
+        ...prev,
+        [groupId]: { loading: false, loaded: false, options: prev[groupId]?.options ?? [] },
+      }));
+    }
+  }
+
+  async function loadTeacherAssignments(teacherId: number, expandAfterLoad = false): Promise<TeacherAssignmentItem[]> {
+    setTeacherAssignmentsMap((prev) => ({
+      ...prev,
+      [teacherId]: {
+        loaded: prev[teacherId]?.loaded ?? false,
+        loading: true,
+        expanded: expandAfterLoad ? true : (prev[teacherId]?.expanded ?? false),
+        items: prev[teacherId]?.items ?? [],
+      },
+    }));
+
+    try {
+      const list = await academicApi.listTeacherAssignments(teacherId);
+      const items = list.map((a) => ({
+        id: a.id,
+        groupId: a.group.id,
+        subjectId: a.subject.id,
+        groupLabel: `${a.group.grade?.nombre}-${a.group.nombre}`,
+        subjectName: a.subject.nombre,
+      }));
+
+      setTeacherAssignmentsMap((prev) => ({
+        ...prev,
+        [teacherId]: {
+          loaded: true,
+          loading: false,
+          expanded: expandAfterLoad ? true : (prev[teacherId]?.expanded ?? false),
+          items,
+        },
+      }));
+
+      return items;
+    } catch {
+      setTeacherAssignmentsMap((prev) => ({
+        ...prev,
+        [teacherId]: {
+          loaded: prev[teacherId]?.loaded ?? false,
+          loading: false,
+          expanded: prev[teacherId]?.expanded ?? false,
+          items: prev[teacherId]?.items ?? [],
+        },
+      }));
+      return [];
+    }
+  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -29,6 +125,90 @@ export default function SecretariaDocentesPage() {
       return matchesQuery;
     });
   }, [users, query]);
+
+  const selectedVisibleTeacherIds = useMemo(
+    () => visible.filter((u) => selectedTeachers[u.id]).map((u) => u.id),
+    [visible, selectedTeachers],
+  );
+
+  const bulkGroupId = Number(bulkAssignment.groupId || 0);
+  const bulkSubjectOptions = bulkGroupId ? (groupSubjectsMap[bulkGroupId]?.options ?? []) : [];
+
+  async function runBulkTeacherAssignment() {
+    const groupId = Number(bulkAssignment.groupId);
+    const subjectId = Number(bulkAssignment.subjectId);
+    if (!groupId || !subjectId || selectedVisibleTeacherIds.length === 0) return;
+
+    const groupLabel = groups.find((g) => g.id === groupId)?.label ?? String(groupId);
+    const subjectName = bulkSubjectOptions.find((s) => s.id === subjectId)?.nombre ?? String(subjectId);
+    let assigned = 0;
+    let failed = 0;
+
+    setBulkStatus({ loading: true });
+    setAssignStatus((prev) => {
+      const next = { ...prev };
+      for (const id of selectedVisibleTeacherIds) next[id] = "loading";
+      return next;
+    });
+
+    const results = await Promise.allSettled(
+      selectedVisibleTeacherIds.map(async (teacherId) => {
+        const created = await academicApi.assignTeacher(teacherId, groupId, subjectId);
+        return { teacherId, assignmentId: created.id };
+      }),
+    );
+
+    const nextStatus: Record<number, AssignStatus> = {};
+    const updates: Record<number, TeacherAssignmentsState> = {};
+
+    for (let i = 0; i < results.length; i += 1) {
+      const result = results[i];
+      const teacherId = selectedVisibleTeacherIds[i];
+
+      if (result.status === "fulfilled") {
+        assigned += 1;
+        nextStatus[teacherId] = "ok";
+        const prevState = teacherAssignmentsMap[teacherId];
+        if (prevState?.loaded) {
+          updates[teacherId] = {
+            ...prevState,
+            items: [
+              ...prevState.items,
+              {
+                id: result.value.assignmentId,
+                groupId,
+                subjectId,
+                groupLabel,
+                subjectName,
+              },
+            ],
+          };
+        }
+      } else {
+        failed += 1;
+        nextStatus[teacherId] = "error";
+      }
+    }
+
+    setAssignStatus((prev) => ({ ...prev, ...nextStatus }));
+    if (Object.keys(updates).length > 0) {
+      setTeacherAssignmentsMap((prev) => ({ ...prev, ...updates }));
+    }
+
+    setAssignments((prev) => {
+      const next = { ...prev };
+      for (const id of selectedVisibleTeacherIds) {
+        next[id] = { groupId: "", subjectId: "" };
+      }
+      return next;
+    });
+    setSelectedTeachers({});
+    setBulkStatus({
+      loading: false,
+      tone: failed > 0 ? "error" : "ok",
+      message: `Asignados: ${assigned}. Fallidos: ${failed}.`,
+    });
+  }
 
   return (
     <section className="p-4 space-y-4">
@@ -53,10 +233,73 @@ export default function SecretariaDocentesPage() {
         />
       </div>
 
+      <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">Asignacion rapida masiva</span>
+          <span className="text-xs text-gray-600">{selectedVisibleTeacherIds.length} seleccionados en esta vista</span>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-[220px]">
+            <Select
+              label="Grupo"
+              options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
+              value={bulkAssignment.groupId}
+              onChange={(e) => {
+                const nextGroupId = e.target.value;
+                setBulkAssignment({ groupId: nextGroupId, subjectId: "" });
+                if (nextGroupId) {
+                  void ensureGroupSubjects(Number(nextGroupId));
+                }
+              }}
+              disabled={bulkStatus.loading}
+            />
+          </div>
+          <div className="min-w-[220px]">
+            <Select
+              label="Materia"
+              options={[
+                { label: bulkAssignment.groupId ? "Seleccione materia" : "Seleccione un grupo primero", value: "" },
+                ...bulkSubjectOptions.map((s) => ({ label: s.nombre, value: String(s.id) })),
+              ]}
+              value={bulkAssignment.subjectId}
+              onChange={(e) => setBulkAssignment((prev) => ({ ...prev, subjectId: e.target.value }))}
+              disabled={!bulkAssignment.groupId || bulkStatus.loading || Boolean(groupSubjectsMap[bulkGroupId]?.loading)}
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setSelectedTeachers((prev) => {
+                const next = { ...prev };
+                for (const u of visible) next[u.id] = true;
+                return next;
+              });
+            }}
+            disabled={visible.length === 0 || bulkStatus.loading}
+          >Seleccionar visibles</Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setSelectedTeachers({})}
+            disabled={selectedVisibleTeacherIds.length === 0 || bulkStatus.loading}
+          >Limpiar seleccion</Button>
+          <Button
+            size="sm"
+            disabled={!bulkAssignment.groupId || !bulkAssignment.subjectId || selectedVisibleTeacherIds.length === 0 || bulkStatus.loading}
+            onClick={runBulkTeacherAssignment}
+          >{bulkStatus.loading ? "Asignando..." : "Asignar materia"}</Button>
+        </div>
+        {bulkStatus.message && (
+          <p className={`text-xs ${bulkStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkStatus.message}</p>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full border border-gray-200 text-sm">
           <thead className="bg-gray-100">
             <tr>
+              <th className="p-2 text-left">Sel.</th>
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
               <th className="p-2 text-left">Documento</th>
@@ -70,6 +313,13 @@ export default function SecretariaDocentesPage() {
             {visible.map((u) => (
               <React.Fragment key={u.id}>
               <tr className="border-t border-gray-200">
+                <td className="p-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedTeachers[u.id])}
+                    onChange={(e) => setSelectedTeachers((prev) => ({ ...prev, [u.id]: e.target.checked }))}
+                  />
+                </td>
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.documento_identidad}</td>
@@ -77,15 +327,32 @@ export default function SecretariaDocentesPage() {
                   <Select
                     options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
                     value={assignments[u.id]?.groupId || ""}
-                    onChange={(e) => setAssignments((prev) => ({ ...prev, [u.id]: { ...(prev[u.id] || {}), groupId: e.target.value } }))}
+                    onChange={(e) => {
+                      const nextGroupId = e.target.value;
+                      setAssignments((prev) => ({ ...prev, [u.id]: { groupId: nextGroupId, subjectId: "" } }));
+                      if (nextGroupId) {
+                        void ensureGroupSubjects(Number(nextGroupId));
+                      }
+                    }}
                   />
                 </td>
                 <td className="p-2">
+                  {(() => {
+                    const selectedGroupId = Number(assignments[u.id]?.groupId || 0);
+                    const groupSubjects = selectedGroupId ? (groupSubjectsMap[selectedGroupId]?.options ?? []) : [];
+                    const loadingSubjects = selectedGroupId ? Boolean(groupSubjectsMap[selectedGroupId]?.loading) : false;
+                    return (
                   <Select
-                    options={[{ label: "Seleccione materia", value: "" }, ...subjects.map((s) => ({ label: s.nombre, value: String(s.id) }))]}
+                    options={[
+                      { label: selectedGroupId ? "Seleccione materia" : "Seleccione un grupo primero", value: "" },
+                      ...groupSubjects.map((s) => ({ label: s.nombre, value: String(s.id) })),
+                    ]}
                     value={assignments[u.id]?.subjectId || ""}
                     onChange={(e) => setAssignments((prev) => ({ ...prev, [u.id]: { ...(prev[u.id] || {}), subjectId: e.target.value } }))}
+                    disabled={!selectedGroupId || loadingSubjects}
                   />
+                    );
+                  })()}
                 </td>
                 <td className="p-2">
                   <Button
@@ -97,20 +364,28 @@ export default function SecretariaDocentesPage() {
                       if (!gid || !sid) return;
                       try {
                         setAssignStatus((s) => ({ ...s, [u.id]: "loading" }));
+
+                        const cachedAssignments = teacherAssignmentsMap[u.id]?.loaded
+                          ? teacherAssignmentsMap[u.id].items
+                          : await loadTeacherAssignments(Number(u.id), false);
+
+                        const duplicate = cachedAssignments.some((item) => item.groupId === gid && item.subjectId === sid);
+                        if (duplicate) {
+                          setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
+                          return;
+                        }
+
                         const created = await academicApi.assignTeacher(Number(u.id), gid, sid);
-                        // Actualizar vista en tiempo real si las asignaciones están cargadas
                         const groupLabel = groups.find((g) => g.id === gid)?.label ?? String(gid);
-                        const subjectName = subjects.find((s) => s.id === sid)?.nombre ?? String(sid);
+                        const subjectName = (groupSubjectsMap[gid]?.options ?? []).find((s) => s.id === sid)?.nombre ?? String(sid);
                         setTeacherAssignmentsMap((m) => {
                           const current = m[u.id];
-                          const newItem = { id: created.id, groupLabel, subjectName };
+                          const newItem = { id: created.id, groupId: gid, subjectId: sid, groupLabel, subjectName };
                           if (current?.loaded) {
                             return { ...m, [u.id]: { ...current, items: [...current.items, newItem] } };
                           }
-                          // Si no está cargado, preparar una lista con el nuevo elemento y expandir
-                          return { ...m, [u.id]: { loaded: true, items: [newItem], expanded: true } };
+                          return { ...m, [u.id]: { loaded: true, loading: false, items: [newItem], expanded: true } };
                         });
-                        // Limpiar selección para evitar reasignaciones accidentales
                         setAssignments((prev) => ({ ...prev, [u.id]: { groupId: "", subjectId: "" } }));
                         setAssignStatus((s) => ({ ...s, [u.id]: "ok" }));
                       } catch {
@@ -133,19 +408,28 @@ export default function SecretariaDocentesPage() {
                     variant="secondary"
                     size="sm"
                     onClick={async () => {
-                      setTeacherAssignmentsMap((m) => ({ ...m, [u.id]: { ...(m[u.id] || { loaded: false, items: [] }), expanded: !(m[u.id]?.expanded) } }));
-                      if (!teacherAssignmentsMap[u.id]?.loaded) {
-                        const list = await academicApi.listTeacherAssignments(Number(u.id));
-                        const items = list.map((a) => ({ id: a.id, groupLabel: `${a.group.grade?.nombre}-${a.group.nombre}`, subjectName: a.subject.nombre }));
-                        setTeacherAssignmentsMap((m) => ({ ...m, [u.id]: { loaded: true, items, expanded: true } }));
+                      const state = teacherAssignmentsMap[u.id];
+                      if (state?.expanded) {
+                        setTeacherAssignmentsMap((m) => ({
+                          ...m,
+                          [u.id]: { ...(m[u.id] || { loaded: false, loading: false, expanded: false, items: [] }), expanded: false },
+                        }));
+                        return;
                       }
+
+                      if (!state?.loaded) {
+                        await loadTeacherAssignments(Number(u.id), true);
+                        return;
+                      }
+
+                      setTeacherAssignmentsMap((m) => ({ ...m, [u.id]: { ...m[u.id], expanded: true } }));
                     }}
-                  >Ver asignaciones</Button>
+                  >{teacherAssignmentsMap[u.id]?.expanded ? "Ocultar asignaciones" : "Ver asignaciones"}</Button>
                 </td>
               </tr>
               {teacherAssignmentsMap[u.id]?.expanded && (
                 <tr className="border-t border-gray-200">
-                  <td className="p-2 bg-gray-50" colSpan={7}>
+                  <td className="p-2 bg-gray-50" colSpan={8}>
                     <div className="text-sm">
                       <div className="font-medium mb-2">Asignaciones de {u.nombres} {u.apellidos}</div>
                       <div className="overflow-x-auto">
@@ -191,7 +475,7 @@ export default function SecretariaDocentesPage() {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td className="p-3 text-center" colSpan={4}>Sin resultados</td>
+                <td className="p-3 text-center" colSpan={8}>Sin resultados</td>
               </tr>
             )}
           </tbody>

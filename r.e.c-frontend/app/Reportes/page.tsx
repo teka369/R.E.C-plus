@@ -14,7 +14,7 @@ export default function ReportesPage() {
       : role === "ESTUDIANTE"
         ? "/estudiante"
         : role === "SECRETARIA"
-          ? "/secretaria/performance"
+            ? "/secretaria"
           : "/login";
 
   return (
