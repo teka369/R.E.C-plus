@@ -97,11 +97,11 @@ export default function SecretariaRecuperacionesPage() {
       : "bg-blue-400";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="sec-page space-y-6">
+      <div className="sec-hero">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Recuperaciones</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="sec-title">Recuperaciones</h1>
+          <p className="sec-subtitle">
             Administra el periodo de recuperaciones, configura fechas y gestiona el horario oficial.
           </p>
         </div>
@@ -255,6 +255,6 @@ export default function SecretariaRecuperacionesPage() {
           </div>
         </Link>
       </div>
-    </div>
+    </section>
   );
 }

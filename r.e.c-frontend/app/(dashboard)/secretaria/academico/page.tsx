@@ -250,38 +250,44 @@ export default function SecretariaAcademicoPage() {
   }
 
   return (
-    <section className="p-4 space-y-8">
-      <h2 className="text-lg font-semibold">Gestión Académica</h2>
+    <section className="sec-page space-y-6">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Gestión Académica</h2>
+          <p className="sec-subtitle">Configura grados, grupos, materias y directores con operaciones individuales y masivas.</p>
+        </div>
+        <span className="sec-chip">Estructura curricular</span>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <form onSubmit={onCreateGrade} className="border rounded p-4 space-y-3">
+        <form onSubmit={onCreateGrade} className="sec-card p-4 space-y-3">
           <h3 className="font-medium">Crear Grado</h3>
           <Input label="Nombre del grado" value={gradeName} onChange={(e) => setGradeName(e.target.value)} />
           <Button type="submit">Crear</Button>
         </form>
 
-        <form onSubmit={onCreateGroup} className="border rounded p-4 space-y-3">
+        <form onSubmit={onCreateGroup} className="sec-card p-4 space-y-3">
           <h3 className="font-medium">Crear Grupo</h3>
           <Input label="Nombre del grupo" value={groupName} onChange={(e) => setGroupName(e.target.value)} />
           <Select label="Grado" options={[{ label: "Seleccione grado", value: "" }, ...gradeOptions]} value={groupGradeId} onChange={(e) => setGroupGradeId(e.target.value)} />
           <Button type="submit">Crear</Button>
         </form>
 
-        <form onSubmit={onCreateSubject} className="border rounded p-4 space-y-3">
+        <form onSubmit={onCreateSubject} className="sec-card p-4 space-y-3">
           <h3 className="font-medium">Crear Materia</h3>
           <Input label="Nombre de la materia" value={subjectName} onChange={(e) => setSubjectName(e.target.value)} />
           <Input label="Código (opcional)" value={subjectCode} onChange={(e) => setSubjectCode(e.target.value)} />
           <Button type="submit">Crear</Button>
         </form>
 
-        <form onSubmit={onAssignDirector} className="border rounded p-4 space-y-3">
+        <form onSubmit={onAssignDirector} className="sec-card p-4 space-y-3">
           <h3 className="font-medium">Asignar Director de Grupo</h3>
           <Select label="Grupo" options={[{ label: "Seleccione grupo", value: "" }, ...groupOptions]} value={assignDirectorGroupId} onChange={(e) => setAssignDirectorGroupId(e.target.value)} />
           <Select label="Docente" options={[{ label: "Seleccione docente", value: "" }, ...teacherOptions]} value={assignDirectorId} onChange={(e) => setAssignDirectorId(e.target.value)} />
           <Button type="submit" disabled={!assignDirectorGroupId || !assignDirectorId}>Asignar</Button>
         </form>
 
-      <div className="border rounded p-4 space-y-3">
+      <div className="sec-card p-4 space-y-3">
         <h3 className="font-medium">Asignación masiva de directores</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
@@ -306,7 +312,7 @@ export default function SecretariaAcademicoPage() {
       </div>
     </div>
 
-    <form onSubmit={onAssignSubjectToGroup} className="border rounded p-4 space-y-3">
+    <form onSubmit={onAssignSubjectToGroup} className="sec-card p-4 space-y-3">
       <h3 className="font-medium">Asignar Materia a Grupo (individual)</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Select label="Grupo" options={[{ label: "Seleccione grupo", value: "" }, ...groupOptions]} value={assignGroupId} onChange={(e) => setAssignGroupId(e.target.value)} />
@@ -315,7 +321,7 @@ export default function SecretariaAcademicoPage() {
       </div>
     </form>
 
-    <div className="border rounded p-4 space-y-3">
+    <div className="sec-card p-4 space-y-3">
       <h3 className="font-medium">Asignación masiva de materias</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
@@ -339,25 +345,25 @@ export default function SecretariaAcademicoPage() {
       </div>
     </div>
 
-    <div className="space-y-2">
+      <div className="space-y-2">
       <h3 className="font-medium">Resumen</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="border rounded p-3">
+      <div className="sec-grid-cards">
+        <div className="sec-stat">
           <p className="text-xs text-gray-600">Grados</p>
-          <p className="text-2xl font-semibold">{grades.length}</p>
+          <p className="value">{grades.length}</p>
         </div>
-        <div className="border rounded p-3">
+        <div className="sec-stat">
           <p className="text-xs text-gray-600">Grupos</p>
-          <p className="text-2xl font-semibold">{groups.length}</p>
+          <p className="value">{groups.length}</p>
         </div>
-        <div className="border rounded p-3">
+        <div className="sec-stat">
           <p className="text-xs text-gray-600">Materias</p>
-          <p className="text-2xl font-semibold">{subjects.length}</p>
+          <p className="value">{subjects.length}</p>
         </div>
       </div>
 
       {/* Tabla de Grados */}
-      <div className="border rounded p-4 mt-3">
+      <div className="sec-card p-4 mt-3">
           <h4 className="font-medium mb-2">Grados</h4>
           <table className="w-full text-sm">
             <thead>
@@ -415,7 +421,7 @@ export default function SecretariaAcademicoPage() {
         </div>
 
         {/* Tabla de Grupos */}
-        <div className="border rounded p-4 mt-6">
+        <div className="sec-card p-4 mt-6">
           <h4 className="font-medium mb-2">Grupos</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <Input label="Buscar grupo" placeholder="Ej: 10-1-A" value={groupsQuery} onChange={(e) => setGroupsQuery(e.target.value)} />
@@ -539,7 +545,7 @@ export default function SecretariaAcademicoPage() {
         </div>
 
         {/* Tabla de Materias */}
-        <div className="border rounded p-4 mt-6">
+        <div className="sec-card p-4 mt-6">
           <h4 className="font-medium mb-2">Materias</h4>
           <table className="w-full text-sm">
             <thead>

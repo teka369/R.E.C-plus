@@ -67,9 +67,15 @@ function CrearUsuarioContent() {
   };
 
   return (
-    <section className="p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Crear usuario</h2>
-      <form onSubmit={onSubmit} className="space-y-3 max-w-md">
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Crear Usuario</h2>
+          <p className="sec-subtitle">Registra usuarios con validaciones por rol para mantener consistencia institucional.</p>
+        </div>
+        <span className="sec-chip">Alta de usuario</span>
+      </div>
+      <form onSubmit={onSubmit} className="sec-card p-4 space-y-3 max-w-xl">
         <Input label="Nombres" value={nombres} onChange={(e) => setNombres(e.target.value)} />
         <Input label="Apellidos" value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
         <EmailWithDomain label="Correo" email={email} onEmailChange={setEmail} />

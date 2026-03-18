@@ -60,12 +60,18 @@ export default function EditUsuarioPage() {
   };
 
   return (
-    <section className="p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Editar usuario #{id}</h2>
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Editar Usuario #{id}</h2>
+          <p className="sec-subtitle">Actualiza datos personales y rol manteniendo integridad de información.</p>
+        </div>
+        <span className="sec-chip">Edición</span>
+      </div>
       {!user ? (
-        <p className="text-sm text-gray-600">Usuario no encontrado.</p>
+        <p className="sec-muted">Usuario no encontrado.</p>
       ) : (
-        <form onSubmit={onSubmit} className="space-y-3 max-w-md">
+        <form onSubmit={onSubmit} className="sec-card p-4 space-y-3 max-w-xl">
           <Input label="Nombres" value={nombres} onChange={(e) => setNombres(e.target.value)} />
           <Input label="Apellidos" value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
           <Input label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />

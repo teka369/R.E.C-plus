@@ -211,9 +211,16 @@ export default function SecretariaDocentesPage() {
   }
 
   return (
-    <section className="p-4 space-y-4">
+    <section className="sec-page space-y-5">
+      <div className="sec-hero">
+        <div>
+          <h2 className="sec-title">Gestión de Docentes</h2>
+          <p className="sec-subtitle">Controla asignaciones por grupo y materia, con carga inteligente y operaciones masivas seguras.</p>
+        </div>
+        <span className="sec-chip">Asignación docente</span>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Docentes</h2>
         <div className="flex items-center gap-2">
         <Link href="/secretaria/usuarios/create?role=PROFESOR" prefetch={false}>
             <Button>Crear usuario</Button>
@@ -224,7 +231,7 @@ export default function SecretariaDocentesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           label="Buscar"
           placeholder="Nombre o correo"
@@ -233,7 +240,7 @@ export default function SecretariaDocentesPage() {
         />
       </div>
 
-      <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+      <div className="sec-card p-3 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Asignacion rapida masiva</span>
           <span className="text-xs text-gray-600">{selectedVisibleTeacherIds.length} seleccionados en esta vista</span>
@@ -295,8 +302,8 @@ export default function SecretariaDocentesPage() {
         )}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 text-sm">
+      <div className="overflow-x-auto sec-table">
+        <table className="min-w-full text-sm">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-2 text-left">Sel.</th>

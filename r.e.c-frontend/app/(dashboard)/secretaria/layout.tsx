@@ -8,7 +8,7 @@ export default function SecretariaLayout({ children }: { children: React.ReactNo
     <Protected>
       <div className="dashboard-wrapper">
         <Sidebar role="SECRETARIA" />
-        <div className="dashboard-content p-6">{children}</div>
+        <div className="dashboard-content p-3 md:p-5 lg:p-6">{children}</div>
       </div>
     </Protected>
   );
