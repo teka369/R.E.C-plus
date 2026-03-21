@@ -7,6 +7,7 @@ RUN npm ci --include=dev
 
 FROM deps AS build
 COPY prisma ./prisma
+COPY scripts ./scripts
 COPY tsconfig*.json nest-cli.json ./
 COPY src ./src
 RUN npm run prisma:generate
@@ -22,6 +23,7 @@ COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/scripts ./scripts
 
 EXPOSE 4001
 
