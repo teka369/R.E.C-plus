@@ -21,7 +21,6 @@ export class AuthService {
             nombre: true,
             slug: true,
             activa: true,
-            plan: true,
           },
         },
       },
@@ -63,7 +62,7 @@ export class AuthService {
               id: user.institution.id,
               nombre: user.institution.nombre,
               slug: user.institution.slug,
-              plan: user.institution.plan,
+              activa: user.institution.activa,
             }
           : null,
       },
