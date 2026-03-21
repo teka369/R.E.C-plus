@@ -19,7 +19,9 @@ export default function Home() {
   }, []);
 
   const dashboardBase =
-    user?.role === "PROFESOR"
+    user?.role === "SUPER_ADMIN"
+      ? "/super-admin"
+      : user?.role === "PROFESOR"
       ? "/docente"
       : user?.role === "ESTUDIANTE"
       ? "/estudiante"
@@ -27,6 +29,7 @@ export default function Home() {
 
   const featureHref = (feature: Feature) => {
     if (!token) return "/login";
+    if (user?.role === "SUPER_ADMIN") return "/super-admin";
     if (user?.role === "SECRETARIA") return "/secretaria";
     if (feature === "temarios") return `${dashboardBase}/temarios`;
     if (feature === "materiales") return `${dashboardBase}/materiales`;

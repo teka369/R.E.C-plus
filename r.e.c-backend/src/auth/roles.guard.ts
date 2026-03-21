@@ -32,6 +32,9 @@ export class RolesGuard implements CanActivate {
     if (!user) {
       throw new ForbiddenException('No autenticado');
     }
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException('No autorizado');
     }

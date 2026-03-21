@@ -32,6 +32,7 @@ type AuthenticatedRequest = {
   user: {
     userId: number;
     role: UserRole;
+    institutionId?: number | null;
   };
 };
 
@@ -187,8 +188,11 @@ export class MaterialsController {
   // Group Info (Leagues)
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/info')
-  getGroupInfo(@Param('groupId', ParseIntPipe) groupId: number) {
-    return this.materials.getGroupInfo(groupId);
+  getGroupInfo(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.materials.getGroupInfo(req.user, groupId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -204,7 +208,10 @@ export class MaterialsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:gradeId/leagues')
-  listLeagues(@Param('gradeId', ParseIntPipe) gradeId: number) {
-    return this.materials.listGradeLeagues(gradeId);
+  listLeagues(
+    @Param('gradeId', ParseIntPipe) gradeId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.materials.listGradeLeagues(req.user, gradeId);
   }
 }

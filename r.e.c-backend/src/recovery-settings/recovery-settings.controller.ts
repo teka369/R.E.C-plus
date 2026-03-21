@@ -23,6 +23,8 @@ import { SetRecoveryPeriodDto } from './dto/recovery-settings.dto';
 type AuthenticatedRequest = {
   user: {
     userId: number;
+    role: UserRole;
+    institutionId?: number | null;
   };
 };
 
@@ -40,24 +42,27 @@ export class RecoverySettingsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('config')
-  getConfig() {
-    return this.settings.getPeriod();
+  getConfig(@Req() req: AuthenticatedRequest) {
+    return this.settings.getPeriod(req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('config')
   setConfig(
     @Body() dto: SetRecoveryPeriodDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.settings.setPeriod(req.user.userId, dto.startAt, dto.endAt);
+    return this.settings.setPeriod(req.user, dto.startAt, dto.endAt);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('schedule')
-  async getSchedule(@Res({ passthrough: true }) res: Response) {
-    const file = await this.settings.getScheduleFile();
+  async getSchedule(
+    @Req() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const file = await this.settings.getScheduleFile(req.user);
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader(
       'Content-Disposition',
@@ -67,7 +72,7 @@ export class RecoverySettingsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('schedule')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
@@ -77,6 +82,6 @@ export class RecoverySettingsController {
     @UploadedFile() file: UploadedHorarioFile,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.settings.uploadSchedule(req.user.userId, file);
+    return this.settings.uploadSchedule(req.user, file);
   }
 }

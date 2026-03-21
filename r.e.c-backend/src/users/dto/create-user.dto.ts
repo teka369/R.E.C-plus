@@ -1,10 +1,11 @@
 import {
   IsEmail,
+  IsInt,
+  Min,
   IsOptional,
   IsString,
   Length,
   IsEnum,
-  Matches,
   ValidateIf,
 } from 'class-validator';
 import { UserRole } from './user-role.enum';
@@ -19,10 +20,6 @@ export class CreateUserDto {
   apellidos: string;
 
   @IsEmail()
-  @Matches(/@iejavieralondonobarriosevilla\.edu\.co$/, {
-    message:
-      'El email debe ser del dominio institucional @iejavieralondonobarriosevilla.edu.co',
-  })
   email: string;
 
   @IsString()
@@ -44,4 +41,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole; // por defecto ESTUDIANTE en Prisma
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  institutionId?: number;
 }

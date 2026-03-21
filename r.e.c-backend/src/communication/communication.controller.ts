@@ -25,6 +25,7 @@ type AuthenticatedRequest = {
   user: {
     userId: number;
     role: UserRole;
+    institutionId?: number | null;
   };
 };
 
@@ -40,10 +41,7 @@ export class CommunicationController {
     @Body() dto: CreateFeedbackDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.createFeedback(dto, {
-      userId: req.user.userId,
-      role: req.user.role,
-    });
+    return this.service.createFeedback(dto, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -52,10 +50,7 @@ export class CommunicationController {
     @Param('studentId') studentId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.listFeedbackByStudent(Number(studentId), {
-      userId: req.user.userId,
-      role: req.user.role,
-    });
+    return this.service.listFeedbackByStudent(Number(studentId), req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -65,10 +60,7 @@ export class CommunicationController {
     @Param('groupId') groupId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.listFeedbackByGroup(Number(groupId), {
-      userId: req.user.userId,
-      role: req.user.role,
-    });
+    return this.service.listFeedbackByGroup(Number(groupId), req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -79,10 +71,7 @@ export class CommunicationController {
     @Body() dto: UpdateFeedbackDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.updateFeedback(Number(id), dto, {
-      userId: req.user.userId,
-      role: req.user.role,
-    });
+    return this.service.updateFeedback(Number(id), dto, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -91,10 +80,7 @@ export class CommunicationController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.deleteFeedback(Number(id), {
-      userId: req.user.userId,
-      role: req.user.role,
-    });
+    return this.service.deleteFeedback(Number(id), req.user);
   }
 
   // Mensajes
@@ -104,19 +90,19 @@ export class CommunicationController {
     @Body() dto: SendMessageDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.sendMessage(dto, { userId: req.user.userId });
+    return this.service.sendMessage(dto, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('messages/inbox')
   async inbox(@Request() req: AuthenticatedRequest) {
-    return this.service.inbox({ userId: req.user.userId });
+    return this.service.inbox(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('messages/sent')
   async sent(@Request() req: AuthenticatedRequest) {
-    return this.service.sent({ userId: req.user.userId });
+    return this.service.sent(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -125,16 +111,14 @@ export class CommunicationController {
     @Body() dto: ReadMessageDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.markMessageRead(dto.messageId, {
-      userId: req.user.userId,
-    });
+    return this.service.markMessageRead(dto.messageId, req.user);
   }
 
   // Notificaciones
   @UseGuards(JwtAuthGuard)
   @Get('notifications')
   async listNotifications(@Request() req: AuthenticatedRequest) {
-    return this.service.listNotifications({ userId: req.user.userId });
+    return this.service.listNotifications(req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -144,7 +128,7 @@ export class CommunicationController {
     @Body() dto: CreateNotificationDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.createNotification(dto, { role: req.user.role });
+    return this.service.createNotification(dto, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -153,8 +137,6 @@ export class CommunicationController {
     @Body() dto: ReadNotificationDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.service.markNotificationRead(dto.notificationId, {
-      userId: req.user.userId,
-    });
+    return this.service.markNotificationRead(dto.notificationId, req.user);
   }
 }

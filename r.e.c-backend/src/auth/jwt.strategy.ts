@@ -9,6 +9,7 @@ type JwtPayload = {
   sub: number;
   role: UserRole;
   email: string;
+  institutionId?: number | null;
 };
 
 @Injectable()
@@ -50,6 +51,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload) {
-    return { userId: payload.sub, role: payload.role, email: payload.email };
+    if (!payload.sub) {
+      throw new Error('JWT mal formado: falta sub (userId)');
+    }
+    return {
+      userId: payload.sub,
+      role: payload.role,
+      email: payload.email,
+      institutionId: payload.institutionId ?? null,
+    };
   }
 }
