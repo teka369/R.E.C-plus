@@ -74,6 +74,10 @@ export default function SuperAdminDashboardPage() {
 
   const [provisioning, setProvisioning] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [savingInstitutionId, setSavingInstitutionId] = useState<number | null>(null);
+  const [editingInstitutionId, setEditingInstitutionId] = useState<number | null>(null);
+  const [editingInstitutionNombre, setEditingInstitutionNombre] = useState("");
+  const [editingInstitutionSlug, setEditingInstitutionSlug] = useState("");
   const [editingMaxUsersId, setEditingMaxUsersId] = useState<number | null>(null);
   const [editingMaxUsersValue, setEditingMaxUsersValue] = useState<string>("");
 
@@ -262,6 +266,55 @@ export default function SuperAdminDashboardPage() {
       setError(getErrorMessage(err, "No se pudo actualizar el estado"));
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleEditInstitution = (inst: Institution) => {
+    setEditingInstitutionId(inst.id);
+    setEditingInstitutionNombre(inst.nombre);
+    setEditingInstitutionSlug(inst.slug);
+    setSuccess(null);
+    setError(null);
+  };
+
+  const handleCancelEditInstitution = () => {
+    setEditingInstitutionId(null);
+    setEditingInstitutionNombre("");
+    setEditingInstitutionSlug("");
+  };
+
+  const handleSaveInstitution = async (inst: Institution) => {
+    const nombre = editingInstitutionNombre.trim();
+    const slug = normalizeSlug(editingInstitutionSlug);
+
+    if (nombre.length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres");
+      return;
+    }
+    if (!slugPattern.test(slug)) {
+      setError("El slug solo permite minusculas, numeros y guiones (ej: colegio-norte)");
+      return;
+    }
+    if (nombre === inst.nombre && slug === inst.slug) {
+      handleCancelEditInstitution();
+      return;
+    }
+
+    setSavingInstitutionId(inst.id);
+    setSuccess(null);
+    setError(null);
+    try {
+      await api.patch(`/institutions/${inst.id}`, {
+        nombre,
+        slug,
+      });
+      setSuccess("Institucion actualizada correctamente.");
+      handleCancelEditInstitution();
+      await fetchInstitutions();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "No se pudo actualizar la institucion"));
+    } finally {
+      setSavingInstitutionId(null);
     }
   };
 
@@ -507,8 +560,29 @@ export default function SuperAdminDashboardPage() {
                 <tbody>
                   {pagedInstitutions.map((inst) => (
                     <tr key={inst.id} className="border-b border-slate-100 text-slate-700">
-                      <td className="py-3 pr-4">{inst.nombre}</td>
-                      <td className="py-3 pr-4">{inst.slug}</td>
+                      <td className="py-3 pr-4">
+                        {editingInstitutionId === inst.id ? (
+                          <input
+                            value={editingInstitutionNombre}
+                            onChange={(e) => setEditingInstitutionNombre(e.target.value)}
+                            className="w-52 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                            autoFocus
+                          />
+                        ) : (
+                          inst.nombre
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {editingInstitutionId === inst.id ? (
+                          <input
+                            value={editingInstitutionSlug}
+                            onChange={(e) => setEditingInstitutionSlug(normalizeSlug(e.target.value))}
+                            className="w-52 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                          />
+                        ) : (
+                          inst.slug
+                        )}
+                      </td>
                       <td className="py-3 pr-4">{inst.usersCount}</td>
                       <td className="py-3 pr-4">
                         {editingMaxUsersId === inst.id ? (
@@ -547,7 +621,12 @@ export default function SuperAdminDashboardPage() {
                       <td className="py-3 pr-4">
                         <button
                           onClick={() => void handleToggleActive(inst)}
-                          disabled={togglingId === inst.id || editingMaxUsersId === inst.id}
+                          disabled={
+                            togglingId === inst.id ||
+                            editingMaxUsersId === inst.id ||
+                            editingInstitutionId === inst.id ||
+                            savingInstitutionId === inst.id
+                          }
                           className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
                         >
                           {togglingId === inst.id
@@ -557,17 +636,45 @@ export default function SuperAdminDashboardPage() {
                             : "Activar"}
                         </button>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-
-          {!loading && !error && sortedInstitutions.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">No hay instituciones para los filtros aplicados.</p>
-          ) : null}
-
+                          {editingInstitutionId === inst.id ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => void handleSaveInstitution(inst)}
+                                disabled={savingInstitutionId === inst.id}
+                                className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                              >
+                                {savingInstitutionId === inst.id ? "Guardando..." : "Guardar"}
+                              </button>
+                              <button
+                                onClick={handleCancelEditInstitution}
+                                disabled={savingInstitutionId === inst.id}
+                                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEditInstitution(inst)}
+                                disabled={togglingId === inst.id || editingMaxUsersId === inst.id}
+                                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => void handleToggleActive(inst)}
+                                disabled={togglingId === inst.id || editingMaxUsersId === inst.id}
+                                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                              >
+                                {togglingId === inst.id
+                                  ? "Actualizando..."
+                                  : inst.activa
+                                  ? "Inactivar"
+                                  : "Activar"}
+                              </button>
+                            </div>
+                          )}
           {!loading && !error && sortedInstitutions.length > 0 ? (
             <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
