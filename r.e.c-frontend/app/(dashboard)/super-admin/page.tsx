@@ -619,62 +619,66 @@ export default function SuperAdminDashboardPage() {
                       </td>
                       <td className="py-3 pr-4">{inst.activa ? "Activa" : "Inactiva"}</td>
                       <td className="py-3 pr-4">
-                        <button
-                          onClick={() => void handleToggleActive(inst)}
-                          disabled={
-                            togglingId === inst.id ||
-                            editingMaxUsersId === inst.id ||
-                            editingInstitutionId === inst.id ||
-                            savingInstitutionId === inst.id
-                          }
-                          className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
-                        >
-                          {togglingId === inst.id
-                            ? "Actualizando..."
-                            : inst.activa
-                            ? "Inactivar"
-                            : "Activar"}
-                        </button>
+                        {editingInstitutionId === inst.id ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => void handleSaveInstitution(inst)}
+                              disabled={savingInstitutionId === inst.id}
+                              className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                              {savingInstitutionId === inst.id ? "Guardando..." : "Guardar"}
+                            </button>
+                            <button
+                              onClick={handleCancelEditInstitution}
+                              disabled={savingInstitutionId === inst.id}
+                              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditInstitution(inst)}
+                              disabled={
+                                togglingId === inst.id ||
+                                editingMaxUsersId === inst.id ||
+                                savingInstitutionId === inst.id
+                              }
+                              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => void handleToggleActive(inst)}
+                              disabled={
+                                togglingId === inst.id ||
+                                editingMaxUsersId === inst.id ||
+                                editingInstitutionId === inst.id ||
+                                savingInstitutionId === inst.id
+                              }
+                              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                            >
+                              {togglingId === inst.id
+                                ? "Actualizando..."
+                                : inst.activa
+                                ? "Inactivar"
+                                : "Activar"}
+                            </button>
+                          </div>
+                        )}
                       </td>
-                          {editingInstitutionId === inst.id ? (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => void handleSaveInstitution(inst)}
-                                disabled={savingInstitutionId === inst.id}
-                                className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                              >
-                                {savingInstitutionId === inst.id ? "Guardando..." : "Guardar"}
-                              </button>
-                              <button
-                                onClick={handleCancelEditInstitution}
-                                disabled={savingInstitutionId === inst.id}
-                                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEditInstitution(inst)}
-                                disabled={togglingId === inst.id || editingMaxUsersId === inst.id}
-                                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => void handleToggleActive(inst)}
-                                disabled={togglingId === inst.id || editingMaxUsersId === inst.id}
-                                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
-                              >
-                                {togglingId === inst.id
-                                  ? "Actualizando..."
-                                  : inst.activa
-                                  ? "Inactivar"
-                                  : "Activar"}
-                              </button>
-                            </div>
-                          )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {!loading && !error && sortedInstitutions.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500">No hay instituciones para los filtros aplicados.</p>
+          ) : null}
+
           {!loading && !error && sortedInstitutions.length > 0 ? (
             <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
