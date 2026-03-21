@@ -31,10 +31,13 @@ export default function SecretariaPersonalPage() {
         <span className="sec-chip">Gestión administrativa</span>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="sec-toolbar">
+        <div className="sec-toolbar-group">
           <Link href="/secretaria/usuarios/create?role=SECRETARIA" prefetch={false}>
-          <Button>Crear usuario</Button>
-        </Link>
+            <Button>Crear usuario</Button>
+          </Link>
+        </div>
+        <span className="sec-muted">Equipo administrativo con acceso directo a mantenimiento</span>
       </div>
 
       <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -62,7 +65,7 @@ export default function SecretariaPersonalPage() {
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.documento_identidad}</td>
-                <td className="p-2 space-x-2">
+                <td className="p-2 sec-actions">
                     <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
                     <Button variant="secondary" size="sm">Editar</Button>
                   </Link>

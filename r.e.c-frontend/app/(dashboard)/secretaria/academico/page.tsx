@@ -51,7 +51,6 @@ export default function SecretariaAcademicoPage() {
 
   // Asignación masiva de materias a grupos
   const [selectedGroupIds, setSelectedGroupIds] = useState<Record<number, boolean>>({});
-  const [bulkMateriasGroupId, setBulkMateriasGroupId] = useState<string>("");
   const [bulkMateriasSubjectId, setBulkMateriasSubjectId] = useState<string>("");
   const [bulkMateriasStatus, setBulkMateriasStatus] = useState<BulkOperationStatus>({ loading: false });
 
@@ -133,7 +132,6 @@ export default function SecretariaAcademicoPage() {
     }
 
     setSelectedGroupIds({});
-    setBulkMateriasGroupId("");
     setBulkMateriasSubjectId("");
     setBulkMateriasStatus({
       loading: false,
@@ -259,7 +257,16 @@ export default function SecretariaAcademicoPage() {
         <span className="sec-chip">Estructura curricular</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="sec-toolbar">
+        <div className="sec-flow-nav">
+          <a className="sec-flow-link" href="#sec-creacion">1. Creación</a>
+          <a className="sec-flow-link" href="#sec-asignacion">2. Asignación</a>
+          <a className="sec-flow-link" href="#sec-resumen">3. Resumen</a>
+        </div>
+        <span className="sec-muted">Flujo recomendado: crear estructura, asignar responsables y validar resumen</span>
+      </div>
+
+      <div id="sec-creacion" className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <form onSubmit={onCreateGrade} className="sec-card p-4 space-y-3">
           <h3 className="font-medium">Crear Grado</h3>
           <Input label="Nombre del grado" value={gradeName} onChange={(e) => setGradeName(e.target.value)} />
@@ -293,7 +300,7 @@ export default function SecretariaAcademicoPage() {
           <div>
             <Select label="Docente" options={[{ label: "Seleccione docente", value: "" }, ...teacherOptions]} value={bulkDirectorId} onChange={(e) => setBulkDirectorId(e.target.value)} disabled={bulkDirectorStatus.loading} />
           </div>
-          <div className="flex items-end gap-2">
+          <div className="sec-action-cluster">
             <Button variant="secondary" size="sm" onClick={() => { setSelectedGroupIdsDirector((prev) => { const next = { ...prev }; for (const g of groups) next[g.id] = true; return next; }); }} disabled={groups.length === 0 || bulkDirectorStatus.loading}>Seleccionar todos</Button>
             <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIdsDirector({})} disabled={Object.values(selectedGroupIdsDirector).every((v) => !v) || bulkDirectorStatus.loading}>Limpiar</Button>
             <Button size="sm" onClick={runBulkAssignDirectors} disabled={!bulkDirectorId || Object.values(selectedGroupIdsDirector).every((v) => !v) || bulkDirectorStatus.loading}>{bulkDirectorStatus.loading ? "Asignando..." : "Asignar directores"}</Button>
@@ -312,7 +319,7 @@ export default function SecretariaAcademicoPage() {
       </div>
     </div>
 
-    <form onSubmit={onAssignSubjectToGroup} className="sec-card p-4 space-y-3">
+    <form id="sec-asignacion" onSubmit={onAssignSubjectToGroup} className="sec-card p-4 space-y-3">
       <h3 className="font-medium">Asignar Materia a Grupo (individual)</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Select label="Grupo" options={[{ label: "Seleccione grupo", value: "" }, ...groupOptions]} value={assignGroupId} onChange={(e) => setAssignGroupId(e.target.value)} />
@@ -327,7 +334,7 @@ export default function SecretariaAcademicoPage() {
         <div>
           <Select label="Materia" options={[{ label: "Seleccione materia", value: "" }, ...subjectOptions]} value={bulkMateriasSubjectId} onChange={(e) => setBulkMateriasSubjectId(e.target.value)} disabled={bulkMateriasStatus.loading} />
         </div>
-        <div className="flex items-end gap-2">
+        <div className="sec-action-cluster">
           <Button variant="secondary" size="sm" onClick={() => { setSelectedGroupIds((prev) => { const next = { ...prev }; for (const g of visibleGroups) next[g.id] = true; return next; }); }} disabled={visibleGroups.length === 0 || bulkMateriasStatus.loading}>Seleccionar visibles</Button>
           <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds({})} disabled={Object.values(selectedGroupIds).every((v) => !v) || bulkMateriasStatus.loading}>Limpiar</Button>
           <Button size="sm" onClick={runBulkAssignSubjectsToGroups} disabled={!bulkMateriasSubjectId || Object.values(selectedGroupIds).every((v) => !v) || bulkMateriasStatus.loading}>{bulkMateriasStatus.loading ? "Asignando..." : "Asignar materia"}</Button>
@@ -345,7 +352,7 @@ export default function SecretariaAcademicoPage() {
       </div>
     </div>
 
-      <div className="space-y-2">
+      <div id="sec-resumen" className="space-y-2">
       <h3 className="font-medium">Resumen</h3>
       <div className="sec-grid-cards">
         <div className="sec-stat">
@@ -365,6 +372,7 @@ export default function SecretariaAcademicoPage() {
       {/* Tabla de Grados */}
       <div className="sec-card p-4 mt-3">
           <h4 className="font-medium mb-2">Grados</h4>
+          <div className="overflow-x-auto sec-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
@@ -418,6 +426,7 @@ export default function SecretariaAcademicoPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Tabla de Grupos */}
@@ -426,6 +435,7 @@ export default function SecretariaAcademicoPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <Input label="Buscar grupo" placeholder="Ej: 10-1-A" value={groupsQuery} onChange={(e) => setGroupsQuery(e.target.value)} />
           </div>
+          <div className="overflow-x-auto sec-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
@@ -542,11 +552,13 @@ export default function SecretariaAcademicoPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Tabla de Materias */}
         <div className="sec-card p-4 mt-6">
           <h4 className="font-medium mb-2">Materias</h4>
+          <div className="overflow-x-auto sec-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
@@ -604,6 +616,7 @@ export default function SecretariaAcademicoPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </section>

@@ -1,16 +1,6 @@
-import {
-  IsInt,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsInt, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SendMessageDto {
-  @IsOptional()
-  @IsInt()
-  senderId?: number;
-
   @IsInt()
   recipientId: number;
 

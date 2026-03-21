@@ -49,15 +49,22 @@ export class RecoveryService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async isRecoveryPeriodActive() {
+    const activePeriod = await this.prisma.academicPeriod.findFirst({
+      where: { estado: 'ACTIVE' },
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!activePeriod) return false;
+
     const rows = await this.prisma.$queryRaw<{ startAt: Date; endAt: Date }[]>`
       SELECT "startAt", "endAt"
       FROM "RecoveryConfig"
-      WHERE id = 1
+      WHERE "academicPeriodId" = ${activePeriod.id}
       LIMIT 1
     `;
 
     const config = rows[0];
-    if (!config) return true;
+    if (!config) return false;
 
     const now = Date.now();
     return (

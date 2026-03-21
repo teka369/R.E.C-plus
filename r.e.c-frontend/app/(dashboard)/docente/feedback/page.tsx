@@ -203,8 +203,7 @@ export default function DocenteFeedbackPage() {
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const teacherId = Number(user?.id);
-    if (!teacherId || !selectedGroupId) return;
+    if (!user?.id || !selectedGroupId) return;
 
     const strengths = form.strengthsText.split("\n").map((s) => s.trim()).filter(Boolean);
     const improvements = form.improvementsText.split("\n").map((s) => s.trim()).filter(Boolean);
@@ -227,7 +226,6 @@ export default function DocenteFeedbackPage() {
         if (!form.studentId) { setError("Selecciona un estudiante"); setSaving(false); return; }
         if (!form.title.trim() || !form.content.trim()) { setError("Completa título y contenido"); setSaving(false); return; }
         const payload: CreateFeedbackInput = {
-          teacherId,
           studentId: Number(form.studentId),
           groupId: selectedGroupId,
           subjectId: Number(form.subjectId) > 0 ? Number(form.subjectId) : undefined,

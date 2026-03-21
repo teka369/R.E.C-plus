@@ -28,13 +28,34 @@ type RecoveryScheduleMeta = {
 export class RecoverySettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async getActiveAcademicPeriodId() {
+    const period = await this.prisma.academicPeriod.findFirst({
+      where: { estado: 'ACTIVE' },
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return period?.id ?? null;
+  }
+
   async getPeriod(): Promise<RecoveryPeriodView> {
+    const activePeriodId = await this.getActiveAcademicPeriodId();
+    if (!activePeriodId) {
+      const now = new Date();
+      const end = new Date(now);
+      end.setDate(end.getDate() + 7);
+      return {
+        active: true,
+        startAt: now.toISOString(),
+        endAt: end.toISOString(),
+      };
+    }
+
     const configRows = await this.prisma.$queryRaw<
       { startAt: Date; endAt: Date }[]
     >`
       SELECT "startAt", "endAt"
       FROM "RecoveryConfig"
-      WHERE id = 1
+      WHERE "academicPeriodId" = ${activePeriodId}
       LIMIT 1
     `;
     const config = configRows[0];
@@ -63,6 +84,13 @@ export class RecoverySettingsService {
     startAt: string,
     endAt: string,
   ): Promise<RecoveryPeriodView> {
+    const activePeriodId = await this.getActiveAcademicPeriodId();
+    if (!activePeriodId) {
+      throw new BadRequestException(
+        'No existe período académico activo para configurar recuperación',
+      );
+    }
+
     const start = new Date(startAt);
     const end = new Date(endAt);
 
@@ -76,16 +104,35 @@ export class RecoverySettingsService {
       );
     }
 
-    await this.prisma.$executeRaw`
-      INSERT INTO "RecoveryConfig" (id, "startAt", "endAt", "updatedById", "createdAt", "updatedAt")
-      VALUES (1, ${start}, ${end}, ${actorId}, NOW(), NOW())
-      ON CONFLICT (id)
-      DO UPDATE SET
-        "startAt" = EXCLUDED."startAt",
-        "endAt" = EXCLUDED."endAt",
-        "updatedById" = EXCLUDED."updatedById",
-        "updatedAt" = NOW()
-    `;
+    const existingConfig = await this.prisma.recoveryConfig.findUnique({
+      where: { academicPeriodId: activePeriodId },
+      select: { id: true },
+    });
+
+    if (existingConfig) {
+      await this.prisma.recoveryConfig.update({
+        where: { academicPeriodId: activePeriodId },
+        data: {
+          startAt: start,
+          endAt: end,
+          updatedById: actorId,
+        },
+      });
+    } else {
+      const lastConfig = await this.prisma.recoveryConfig.findFirst({
+        orderBy: { id: 'desc' },
+        select: { id: true },
+      });
+      await this.prisma.recoveryConfig.create({
+        data: {
+          id: (lastConfig?.id ?? 0) + 1,
+          startAt: start,
+          endAt: end,
+          updatedById: actorId,
+          academicPeriodId: activePeriodId,
+        },
+      });
+    }
 
     return {
       active: end.getTime() > Date.now(),
@@ -95,10 +142,15 @@ export class RecoverySettingsService {
   }
 
   async getScheduleFile(): Promise<RecoveryScheduleFile> {
+    const activePeriodId = await this.getActiveAcademicPeriodId();
+    if (!activePeriodId) {
+      throw new NotFoundException('No hay período académico activo');
+    }
+
     const fileRows = await this.prisma.$queryRaw<RecoveryScheduleFile[]>`
       SELECT "originalName", "mimeType", "fileContent"
       FROM "RecoverySchedule"
-      WHERE id = 1
+      WHERE "academicPeriodId" = ${activePeriodId}
       LIMIT 1
     `;
     const file = fileRows[0];
@@ -112,6 +164,13 @@ export class RecoverySettingsService {
     actorId: number,
     file: { originalname: string; mimetype: string; buffer: Buffer },
   ): Promise<RecoveryScheduleMeta> {
+    const activePeriodId = await this.getActiveAcademicPeriodId();
+    if (!activePeriodId) {
+      throw new BadRequestException(
+        'No existe período académico activo para cargar el horario',
+      );
+    }
+
     if (!file?.buffer || !file.originalname || !file.mimetype) {
       throw new BadRequestException('Archivo inválido');
     }
@@ -120,27 +179,51 @@ export class RecoverySettingsService {
       throw new BadRequestException('El archivo supera el límite de 10MB');
     }
 
-    await this.prisma.$executeRaw`
-      INSERT INTO "RecoverySchedule" (id, "originalName", "mimeType", "fileContent", "uploadedById", "uploadedAt")
-      VALUES (1, ${file.originalname}, ${file.mimetype}, ${file.buffer}, ${actorId}, NOW())
-      ON CONFLICT (id)
-      DO UPDATE SET
-        "originalName" = EXCLUDED."originalName",
-        "mimeType" = EXCLUDED."mimeType",
-        "fileContent" = EXCLUDED."fileContent",
-        "uploadedById" = EXCLUDED."uploadedById",
-        "uploadedAt" = NOW()
-    `;
+    const fileBytes = Uint8Array.from(file.buffer);
+    const existingSchedule = await this.prisma.recoverySchedule.findUnique({
+      where: { academicPeriodId: activePeriodId },
+      select: { id: true },
+    });
 
-    const savedRows = await this.prisma.$queryRaw<
-      { id: number; originalName: string; mimeType: string; uploadedAt: Date }[]
-    >`
-      SELECT id, "originalName", "mimeType", "uploadedAt"
-      FROM "RecoverySchedule"
-      WHERE id = 1
-      LIMIT 1
-    `;
-    const saved = savedRows[0];
+    const saved = existingSchedule
+      ? await this.prisma.recoverySchedule.update({
+          where: { academicPeriodId: activePeriodId },
+          data: {
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            fileContent: fileBytes,
+            uploadedById: actorId,
+            uploadedAt: new Date(),
+          },
+          select: {
+            id: true,
+            originalName: true,
+            mimeType: true,
+            uploadedAt: true,
+          },
+        })
+      : await (async () => {
+          const lastSchedule = await this.prisma.recoverySchedule.findFirst({
+            orderBy: { id: 'desc' },
+            select: { id: true },
+          });
+          return this.prisma.recoverySchedule.create({
+            data: {
+              id: (lastSchedule?.id ?? 0) + 1,
+              originalName: file.originalname,
+              mimeType: file.mimetype,
+              fileContent: fileBytes,
+              uploadedById: actorId,
+              academicPeriodId: activePeriodId,
+            },
+            select: {
+              id: true,
+              originalName: true,
+              mimeType: true,
+              uploadedAt: true,
+            },
+          });
+        })();
 
     if (!saved) {
       throw new NotFoundException(

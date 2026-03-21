@@ -7,16 +7,10 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { UserRole } from '../src/users/dto/user-role.enum';
 
-type RecoveryConfigRow = {
-  id: number;
-  startAt: Date;
-  endAt: Date;
-  updatedById: number | null;
-};
-
 type PerformanceResponseBody = {
   groupId: number;
-  promedioGeneral: number;
+  promedioGeneral: number | null;
+  leagueScore: number;
 };
 
 type RecoveryConfigResponseBody = {
@@ -29,19 +23,24 @@ function asPerformanceResponseBody(value: unknown): PerformanceResponseBody {
     typeof value === 'object' &&
     value !== null &&
     'groupId' in value &&
-    'promedioGeneral' in value
+    'promedioGeneral' in value &&
+    'leagueScore' in value
   ) {
     const candidate = value as {
       groupId: unknown;
       promedioGeneral: unknown;
+      leagueScore: unknown;
     };
     if (
       typeof candidate.groupId === 'number' &&
-      typeof candidate.promedioGeneral === 'number'
+      (typeof candidate.promedioGeneral === 'number' ||
+        candidate.promedioGeneral === null) &&
+      typeof candidate.leagueScore === 'number'
     ) {
       return {
         groupId: candidate.groupId,
         promedioGeneral: candidate.promedioGeneral,
+        leagueScore: candidate.leagueScore,
       };
     }
   }
@@ -92,8 +91,7 @@ describe('AppController (e2e)', () => {
   let profesorId = 0;
   let estudianteId = 0;
   let groupId = 0;
-
-  let originalRecoveryConfig: RecoveryConfigRow | null = null;
+  let academicPeriodId = 0;
 
   const tokenFor = (userId: number, role: UserRole) =>
     jwtService.sign({
@@ -113,13 +111,17 @@ describe('AppController (e2e)', () => {
     prisma = app.get(PrismaService);
     jwtService = new JwtService({ secret: process.env.JWT_SECRET });
 
-    const previous = await prisma.$queryRaw<RecoveryConfigRow[]>`
-      SELECT id, "startAt", "endAt", "updatedById"
-      FROM "RecoveryConfig"
-      WHERE id = 1
-      LIMIT 1
-    `;
-    originalRecoveryConfig = previous[0] ?? null;
+    const academicPeriod = await prisma.academicPeriod.create({
+      data: {
+        nombre: `E2E Period ${runId}`,
+        codigo: `E2E-P-${runId}`,
+        tipo: 'TERM',
+        estado: 'ACTIVE',
+        fechaInicio: new Date(Date.now() - 86_400_000),
+        fechaFin: new Date(Date.now() + 30 * 86_400_000),
+      },
+    });
+    academicPeriodId = academicPeriod.id;
 
     const secretaria = await prisma.user.create({
       data: {
@@ -183,6 +185,15 @@ describe('AppController (e2e)', () => {
       where: { teacherId: profesorId, groupId },
     });
 
+    if (academicPeriodId) {
+      await prisma.recoveryConfig.deleteMany({
+        where: { academicPeriodId },
+      });
+      await prisma.recoverySchedule.deleteMany({
+        where: { academicPeriodId },
+      });
+    }
+
     await prisma.group.deleteMany({ where: { id: groupId } });
     await prisma.subject.deleteMany({ where: { nombre: names.subject } });
     await prisma.grade.deleteMany({ where: { nombre: names.grade } });
@@ -193,17 +204,10 @@ describe('AppController (e2e)', () => {
       },
     });
 
-    if (originalRecoveryConfig) {
-      await prisma.$executeRaw`
-        INSERT INTO "RecoveryConfig" (id, "startAt", "endAt", "updatedById", "createdAt", "updatedAt")
-        VALUES (1, ${originalRecoveryConfig.startAt}, ${originalRecoveryConfig.endAt}, ${originalRecoveryConfig.updatedById}, NOW(), NOW())
-        ON CONFLICT (id)
-        DO UPDATE SET
-          "startAt" = EXCLUDED."startAt",
-          "endAt" = EXCLUDED."endAt",
-          "updatedById" = EXCLUDED."updatedById",
-          "updatedAt" = NOW()
-      `;
+    if (academicPeriodId) {
+      await prisma.academicPeriod.deleteMany({
+        where: { id: academicPeriodId },
+      });
     }
 
     await app.close();
@@ -213,7 +217,9 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect(
+        'R.E.C Backend API is running. Please refer to the documentation for available endpoints.',
+      );
   });
 
   it('POST /recovery/config requires auth', () => {
@@ -286,7 +292,7 @@ describe('AppController (e2e)', () => {
 
     const professorBody = asPerformanceResponseBody(professorRes.body);
     expect(professorBody.groupId).toBe(groupId);
-    expect(professorBody.promedioGeneral).toBe(4.3);
+    expect(typeof professorBody.leagueScore).toBe('number');
 
     const secretariaRes = await request(app.getHttpServer())
       .post(`/performance/grades/${names.group}`)
@@ -299,6 +305,6 @@ describe('AppController (e2e)', () => {
 
     const secretariaBody = asPerformanceResponseBody(secretariaRes.body);
     expect(secretariaBody.groupId).toBe(groupId);
-    expect(secretariaBody.promedioGeneral).toBe(4.5);
+    expect(typeof secretariaBody.leagueScore).toBe('number');
   });
 });

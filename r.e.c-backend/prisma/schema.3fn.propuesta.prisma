@@ -1,0 +1,758 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  SECRETARIA
+  PROFESOR
+  ESTUDIANTE
+
+  @@map("Role")
+}
+
+enum TipoNotificacion {
+  GENERAL
+  MATERIAL
+  RENDIMIENTO @map("PERFORMANCE")
+  HORARIO     @map("SCHEDULE")
+  MENSAJE     @map("MESSAGE")
+  OBSERVACION @map("FEEDBACK")
+
+  @@map("NotificationType")
+}
+
+enum VisibilidadMaterial {
+  GRUPO @map("GROUP")
+  GRADO @map("GRADE")
+
+  @@map("Visibility")
+}
+
+enum TipoMaterial {
+  PDF
+  VIDEO
+  ENLACE @map("LINK")
+  DOC
+  OTRO   @map("OTHER")
+
+  @@map("MaterialType")
+}
+
+enum TipoSolicitudRecuperacion {
+  RECUPERACION @map("RECOVERY")
+  REFUERZO     @map("REINFORCEMENT")
+
+  @@map("RecoveryRequestType")
+}
+
+enum EstadoSolicitudRecuperacion {
+  PENDIENTE  @map("PENDING")
+  APROBADA   @map("APPROVED")
+  RECHAZADA  @map("REJECTED")
+  COMPLETADA @map("COMPLETED")
+
+  @@map("RecoveryRequestStatus")
+}
+
+enum TipoActividadRecuperacion {
+  TAREA    @map("HOMEWORK")
+  EXAMEN   @map("EXAM")
+  PROYECTO @map("PROJECT")
+  PRACTICA @map("PRACTICE")
+
+  @@map("RecoveryActivityType")
+}
+
+enum EstadoActividadRecuperacion {
+  PENDIENTE   @map("PENDING")
+  EN_PROCESO  @map("IN_PROGRESS")
+  ENTREGADA   @map("SUBMITTED")
+  EVALUADA    @map("EVALUATED")
+
+  @@map("RecoveryActivityStatus")
+}
+
+enum EstadoMatricula {
+  ACTIVA
+  RETIRADA
+  PROMOVIDA
+  REPITENTE
+  CERRADA
+}
+
+enum TipoPeriodoAcademico {
+  LECTIVO
+  RECUPERACION
+  INTERPERIODO
+}
+
+enum EstadoPeriodoAcademico {
+  BORRADOR
+  ACTIVO
+  CERRADO
+}
+
+enum EstadoTemario {
+  BORRADOR
+  PUBLICADO
+  CERRADO
+}
+
+enum TipoEvaluacionAcademica {
+  TAREA
+  QUIZ
+  EXAMEN
+  PROYECTO
+  PARTICIPACION
+  RECUPERACION
+  OTRO
+}
+
+enum EstadoEvaluacionAcademica {
+  BORRADOR
+  PUBLICADA
+  CERRADA
+}
+
+enum CategoriaObservacion {
+  INFORMATIVA
+  ALERTA
+  RECONOCIMIENTO
+  DISCIPLINARIA
+  ACADEMICA
+}
+
+enum EstadoObservacion {
+  PENDIENTE
+  LEIDA
+  CERRADA
+}
+
+enum TipoDetalleObservacion {
+  FORTALEZA
+  MEJORA
+}
+
+model Usuario {
+  id                   Int      @id @default(autoincrement())
+  nombres              String
+  apellidos            String
+  email                String   @unique
+  documentoIdentidad   String   @unique @map("documento_identidad")
+  telefono             String?
+  contrasenaHash       String   @map("password")
+  rol                  Rol      @default(ESTUDIANTE) @map("role")
+  creadoEn             DateTime @default(now()) @map("createdAt")
+  actualizadoEn        DateTime @updatedAt @map("updatedAt")
+
+  matriculasGrupo                        MatriculaGrupo[]                @relation("MatriculaEstudiante")
+  gruposDirigidos                        GrupoAcademico[]                @relation("DirectorGrupo")
+  asignacionesDocentes                   AsignacionDocente[]             @relation("DocenteAsignado")
+  materialesCreados                      MaterialAcademico[]             @relation("MaterialAutor")
+  temariosCreados                        TemarioAcademico[]              @relation("TemarioAutor")
+  observacionesEmitidas                  ObservacionEstudiante[]         @relation("ObservacionDocente")
+  observacionesRecibidas                 ObservacionEstudiante[]         @relation("ObservacionEstudiante")
+  mensajesEnviados                       MensajeDirecto[]                @relation("MensajeRemitente")
+  mensajesRecibidos                      MensajeDirecto[]                @relation("MensajeDestinatario")
+  notificaciones                         NotificacionUsuario[]
+  bloquesHorarioDocente                  BloqueHorarioSemanal[]          @relation("HorarioDocente")
+  notasHorarioDocente                    NotaHorario[]                   @relation("NotaHorarioDocente")
+  eventosHorarioDocente                  EventoHorario[]                 @relation("EventoHorarioDocente")
+  registrosAcademicosActualizados        RegistroAcademico[]             @relation("RegistroActualizadoPor")
+  evaluacionesCalificadas                CalificacionEvaluacion[]        @relation("CalificacionRegistradaPor")
+  actividadesRecuperacionCreadas         ActividadRecuperacion[]         @relation("ActividadRecuperacionDocente")
+  mensajesRecuperacionEnviados           MensajeRecuperacion[]           @relation("MensajeRecuperacionAutor")
+  configuracionesRecuperacionActualizadas ConfiguracionRecuperacion[]    @relation("ConfiguracionRecuperacionActualizadaPor")
+  archivosHorarioRecuperacionCargados    ArchivoHorarioRecuperacion[]    @relation("ArchivoHorarioRecuperacionCargadoPor")
+  archivosActividadCargados              ArchivoActividadRecuperacion[]  @relation("ArchivoActividadCargadoPor")
+  resumenesDestacado                     EstudianteDestacadoGrupo[]      @relation("EstudianteDestacado")
+
+  @@map("User")
+}
+
+model PeriodoAcademico {
+  id                   Int      @id @default(autoincrement())
+  nombre               String
+  codigo               String   @unique
+  tipo                 TipoPeriodoAcademico
+  estado               EstadoPeriodoAcademico @default(BORRADOR)
+  fechaInicio          DateTime
+  fechaFin             DateTime
+  fechaCierre          DateTime?
+  creadoEn             DateTime @default(now())
+  actualizadoEn        DateTime @updatedAt
+
+  matriculasGrupo            MatriculaGrupo[]
+  ofertasGrupoAsignatura     OfertaGrupoAsignatura[]
+  periodosEvaluativos        PeriodoEvaluativo[]
+  configuracionesRecuperacion ConfiguracionRecuperacion[]
+  archivosHorarioRecuperacion ArchivoHorarioRecuperacion[]
+  resumenesRendimiento        ResumenRendimientoGrupo[]
+}
+
+model GradoAcademico {
+  id              Int      @id @default(autoincrement())
+  nombre          String   @unique
+  creadoEn        DateTime @default(now()) @map("createdAt")
+  actualizadoEn   DateTime @updatedAt @map("updatedAt")
+
+  grupos          GrupoAcademico[]
+
+  @@map("Grade")
+}
+
+model GrupoAcademico {
+  id                    Int      @id @default(autoincrement())
+  nombre                String
+  gradoId               Int      @map("gradeId")
+  directorId            Int?     @map("directorId")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+  actualizadoEn         DateTime @updatedAt @map("updatedAt")
+
+  grado                 GradoAcademico          @relation(fields: [gradoId], references: [id], onDelete: Cascade)
+  director              Usuario?                @relation("DirectorGrupo", fields: [directorId], references: [id], onDelete: SetNull)
+  matriculasGrupo       MatriculaGrupo[]
+  ofertasGrupoAsignatura OfertaGrupoAsignatura[]
+  informacionGeneral    InformacionGrupo?
+  observaciones         ObservacionEstudiante[]
+  bloquesHorario        BloqueHorarioSemanal[]
+  notasHorario          NotaHorario[]
+  eventosHorario        EventoHorario[]
+  resumenesRendimiento  ResumenRendimientoGrupo[]
+
+  @@unique([nombre, gradoId])
+  @@map("Group")
+}
+
+model Asignatura {
+  id                       Int      @id @default(autoincrement())
+  nombre                   String   @unique
+  codigo                   String?
+  creadoEn                 DateTime @default(now()) @map("createdAt")
+  actualizadoEn            DateTime @updatedAt @map("updatedAt")
+
+  ofertasGrupoAsignatura   OfertaGrupoAsignatura[]
+  resumenesComoMejorMateria ResumenRendimientoGrupo[] @relation("MejorAsignatura")
+
+  @@map("Subject")
+}
+
+model MatriculaGrupo {
+  id                    Int      @id @default(autoincrement())
+  estudianteId          Int      @map("studentId")
+  grupoId               Int      @map("groupId")
+  periodoAcademicoId    Int
+  estado                EstadoMatricula @default(ACTIVA)
+  esTitular             Boolean  @default(true)
+  fechaIngreso          DateTime @default(now()) @map("createdAt")
+  fechaRetiro           DateTime?
+  observacionCierre     String?
+
+  estudiante            Usuario             @relation("MatriculaEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade)
+  grupo                 GrupoAcademico      @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  periodoAcademico      PeriodoAcademico    @relation(fields: [periodoAcademicoId], references: [id], onDelete: Restrict)
+  registrosAcademicos   RegistroAcademico[]
+  calificaciones        CalificacionEvaluacion[]
+  solicitudesRecuperacion SolicitudRecuperacion[]
+
+  @@unique([estudianteId, grupoId, periodoAcademicoId])
+  @@index([estudianteId, periodoAcademicoId])
+  @@index([grupoId, periodoAcademicoId])
+  @@map("StudentGroup")
+}
+
+model OfertaGrupoAsignatura {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int      @map("groupId")
+  asignaturaId          Int      @map("subjectId")
+  periodoAcademicoId    Int
+  cargaHorariaSemanal   Int?
+  activa                Boolean  @default(true)
+  creadoEn              DateTime @default(now()) @map("createdAt")
+
+  grupo                 GrupoAcademico         @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  asignatura            Asignatura             @relation(fields: [asignaturaId], references: [id], onDelete: Cascade)
+  periodoAcademico      PeriodoAcademico       @relation(fields: [periodoAcademicoId], references: [id], onDelete: Restrict)
+  asignacionesDocentes  AsignacionDocente[]
+  materialesAcademicos  MaterialAcademico[]
+  temariosAcademicos    TemarioAcademico[]
+  evaluacionesAcademicas EvaluacionAcademica[]
+  registrosAcademicos   RegistroAcademico[]
+  observaciones         ObservacionEstudiante[]
+  bloquesHorario        BloqueHorarioSemanal[]
+  eventosHorario        EventoHorario[]
+  solicitudesRecuperacion SolicitudRecuperacion[]
+
+  @@unique([grupoId, asignaturaId, periodoAcademicoId])
+  @@index([periodoAcademicoId, activa])
+  @@map("GroupSubject")
+}
+
+model AsignacionDocente {
+  id                    Int      @id @default(autoincrement())
+  docenteId             Int      @map("teacherId")
+  ofertaId              Int
+  creadoEn              DateTime @default(now()) @map("createdAt")
+
+  docente               Usuario               @relation("DocenteAsignado", fields: [docenteId], references: [id], onDelete: Cascade)
+  oferta                OfertaGrupoAsignatura @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  evaluacionesAcademicas EvaluacionAcademica[]
+  solicitudesRecuperacion SolicitudRecuperacion[]
+
+  @@unique([docenteId, ofertaId])
+  @@index([ofertaId])
+  @@map("TeacherAssignment")
+}
+
+model PeriodoEvaluativo {
+  id                    Int      @id @default(autoincrement())
+  periodoAcademicoId    Int
+  nombre                String
+  orden                 Int
+  pesoPeriodo           Float?
+  fechaInicio           DateTime?
+  fechaFin              DateTime?
+  activo                Boolean  @default(true)
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+
+  periodoAcademico      PeriodoAcademico      @relation(fields: [periodoAcademicoId], references: [id], onDelete: Cascade)
+  evaluacionesAcademicas EvaluacionAcademica[]
+  temariosAcademicos    TemarioAcademico[]
+
+  @@unique([periodoAcademicoId, orden])
+}
+
+model EvaluacionAcademica {
+  id                    Int      @id @default(autoincrement())
+  ofertaId              Int
+  periodoEvaluativoId   Int
+  asignacionDocenteId   Int?
+  titulo                String
+  descripcion           String?
+  tipo                  TipoEvaluacionAcademica
+  porcentaje            Float
+  puntajeMaximo         Float?
+  fechaPublicacion      DateTime?
+  fechaCierre           DateTime?
+  estado                EstadoEvaluacionAcademica @default(BORRADOR)
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+
+  oferta                OfertaGrupoAsignatura @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  periodoEvaluativo     PeriodoEvaluativo     @relation(fields: [periodoEvaluativoId], references: [id], onDelete: Cascade)
+  asignacionDocente     AsignacionDocente?    @relation(fields: [asignacionDocenteId], references: [id], onDelete: SetNull)
+  calificaciones        CalificacionEvaluacion[]
+
+  @@index([ofertaId, periodoEvaluativoId])
+}
+
+model CalificacionEvaluacion {
+  id                    Int      @id @default(autoincrement())
+  evaluacionId          Int
+  matriculaId           Int
+  registradaPorId       Int?
+  nota                  Float?
+  retroalimentacion     String?
+  entregadaEn           DateTime?
+  calificadaEn          DateTime?
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+
+  evaluacion            EvaluacionAcademica @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
+  matricula             MatriculaGrupo      @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  registradaPor         Usuario?            @relation("CalificacionRegistradaPor", fields: [registradaPorId], references: [id], onDelete: SetNull)
+
+  @@unique([evaluacionId, matriculaId])
+  @@index([matriculaId])
+}
+
+model RegistroAcademico {
+  id                           Int      @id @default(autoincrement())
+  matriculaId                  Int      @map("studentId")
+  ofertaId                     Int      @map("subjectId")
+  actualizadoPorId             Int?     @map("updatedByTeacherId")
+  notaFinal                    Float?
+  progresoMateria              Float?
+  inasistenciasJustificadas    Int      @default(0)
+  inasistenciasInjustificadas  Int      @default(0)
+  observaciones                String?
+  creadoEn                     DateTime @default(now()) @map("createdAt")
+  actualizadoEn                DateTime @updatedAt @map("updatedAt")
+
+  matricula                    MatriculaGrupo        @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  oferta                       OfertaGrupoAsignatura @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  actualizadoPor               Usuario?              @relation("RegistroActualizadoPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  @@unique([matriculaId, ofertaId])
+  @@index([ofertaId])
+  @@map("StudentAcademicRecord")
+}
+
+model MaterialAcademico {
+  id                    Int                 @id @default(autoincrement())
+  ofertaId              Int
+  autorId               Int                 @map("teacherId")
+  titulo                String              @map("title")
+  descripcion           String?             @map("description")
+  tipo                  TipoMaterial        @default(ENLACE) @map("type")
+  urlRecurso            String?             @map("resourceUrl")
+  urlImagen             String?             @map("imageUrl")
+  rutaArchivo           String?             @map("filePath")
+  visibilidad           VisibilidadMaterial @default(GRUPO) @map("visibility")
+  vistas                Int                 @default(0) @map("views")
+  descargas             Int                 @default(0) @map("downloads")
+  creadoEn              DateTime            @default(now()) @map("createdAt")
+
+  oferta                OfertaGrupoAsignatura @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  autor                 Usuario               @relation("MaterialAutor", fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([ofertaId])
+  @@index([autorId])
+  @@map("StudyMaterial")
+}
+
+model TemarioAcademico {
+  id                    Int            @id @default(autoincrement())
+  ofertaId              Int
+  autorId               Int            @map("teacherId")
+  periodoEvaluativoId   Int?
+  titulo                String         @map("title")
+  estado                EstadoTemario  @default(BORRADOR)
+  duracionTexto         String?        @map("duration")
+  contenido             String?        @map("content")
+  creadoEn              DateTime       @default(now()) @map("createdAt")
+  actualizadoEn         DateTime       @updatedAt @map("updatedAt")
+
+  oferta                OfertaGrupoAsignatura @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  autor                 Usuario               @relation("TemarioAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  periodoEvaluativo     PeriodoEvaluativo?    @relation(fields: [periodoEvaluativoId], references: [id], onDelete: SetNull)
+
+  @@index([ofertaId])
+  @@index([autorId])
+  @@map("Syllabus")
+}
+
+model InformacionGrupo {
+  grupoId               Int      @id @map("groupId")
+  resumen               String?  @map("summary")
+  actualizadoEn         DateTime @updatedAt @map("updatedAt")
+
+  grupo                 GrupoAcademico             @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  destacados            DestacadoInformacionGrupo[]
+  metricas              MetricaInformacionGrupo[]
+  enlaces               EnlaceInformacionGrupo[]
+
+  @@map("GroupInfo")
+}
+
+model DestacadoInformacionGrupo {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int
+  titulo                String
+  descripcion           String?
+  orden                 Int      @default(0)
+
+  informacionGrupo      InformacionGrupo @relation(fields: [grupoId], references: [grupoId], onDelete: Cascade)
+
+  @@index([grupoId, orden])
+}
+
+model MetricaInformacionGrupo {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int
+  nombre                String
+  valorNumerico         Float?
+  valorTexto            String?
+  tendencia             String?
+  orden                 Int      @default(0)
+
+  informacionGrupo      InformacionGrupo @relation(fields: [grupoId], references: [grupoId], onDelete: Cascade)
+
+  @@index([grupoId, orden])
+}
+
+model EnlaceInformacionGrupo {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int
+  etiqueta              String
+  url                   String
+  descripcion           String?
+  orden                 Int      @default(0)
+
+  informacionGrupo      InformacionGrupo @relation(fields: [grupoId], references: [grupoId], onDelete: Cascade)
+
+  @@index([grupoId, orden])
+}
+
+model ObservacionEstudiante {
+  id                    Int      @id @default(autoincrement())
+  docenteId             Int
+  estudianteId          Int
+  grupoId               Int
+  ofertaId              Int?
+  titulo                String   @map("title")
+  contenido             String   @map("content")
+  categoria             CategoriaObservacion @default(INFORMATIVA)
+  estado                EstadoObservacion @default(PENDIENTE)
+  creadoEn              DateTime @default(now()) @map("createdAt")
+  actualizadoEn         DateTime @updatedAt @map("updatedAt")
+
+  docente               Usuario                @relation("ObservacionDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+  estudiante            Usuario                @relation("ObservacionEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade)
+  grupo                 GrupoAcademico         @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  oferta                OfertaGrupoAsignatura? @relation(fields: [ofertaId], references: [id], onDelete: SetNull)
+  detalles              DetalleObservacion[]
+
+  @@index([estudianteId, creadoEn])
+}
+
+model DetalleObservacion {
+  id                    Int      @id @default(autoincrement())
+  observacionId         Int
+  tipo                  TipoDetalleObservacion
+  descripcion           String
+  orden                 Int      @default(0)
+
+  observacion           ObservacionEstudiante @relation(fields: [observacionId], references: [id], onDelete: Cascade)
+
+  @@index([observacionId, orden])
+}
+
+model MensajeDirecto {
+  id                    Int      @id @default(autoincrement())
+  remitenteId           Int      @map("senderId")
+  destinatarioId        Int      @map("recipientId")
+  contenido             String   @map("content")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+  leidoEn               DateTime? @map("readAt")
+
+  remitente             Usuario  @relation("MensajeRemitente", fields: [remitenteId], references: [id], onDelete: Cascade)
+  destinatario          Usuario  @relation("MensajeDestinatario", fields: [destinatarioId], references: [id], onDelete: Cascade)
+
+  @@index([destinatarioId, creadoEn])
+  @@map("Message")
+}
+
+model NotificacionUsuario {
+  id                    Int               @id @default(autoincrement())
+  usuarioId             Int               @map("userId")
+  titulo                String            @map("title")
+  cuerpo                String            @map("body")
+  tipo                  TipoNotificacion  @default(GENERAL) @map("type")
+  creadoEn              DateTime          @default(now()) @map("createdAt")
+  leidoEn               DateTime?         @map("readAt")
+
+  usuario               Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, creadoEn])
+  @@map("Notification")
+}
+
+model BloqueHorarioSemanal {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int      @map("groupId")
+  docenteId             Int      @map("teacherId")
+  ofertaId              Int?
+  diaSemana             Int      @map("dayOfWeek")
+  minutosInicio         Int      @map("startMinutes")
+  minutosFin            Int      @map("endMinutes")
+  titulo                String?  @map("title")
+  ubicacion             String?  @map("location")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+
+  grupo                 GrupoAcademico         @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  docente               Usuario                @relation("HorarioDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+  oferta                OfertaGrupoAsignatura? @relation(fields: [ofertaId], references: [id], onDelete: SetNull)
+
+  @@index([grupoId, diaSemana])
+  @@map("WeeklyScheduleEntry")
+}
+
+model NotaHorario {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int      @map("groupId")
+  docenteId             Int      @map("teacherId")
+  contenido             String   @map("content")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+
+  grupo                 GrupoAcademico @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  docente               Usuario        @relation("NotaHorarioDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+
+  @@index([grupoId, creadoEn])
+  @@map("ScheduleNote")
+}
+
+model EventoHorario {
+  id                    Int      @id @default(autoincrement())
+  grupoId               Int      @map("groupId")
+  docenteId             Int      @map("teacherId")
+  ofertaId              Int?
+  titulo                String   @map("title")
+  descripcion           String?  @map("description")
+  iniciaEn              DateTime @map("startAt")
+  finalizaEn            DateTime @map("endAt")
+  ubicacion             String?  @map("location")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+
+  grupo                 GrupoAcademico         @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  docente               Usuario                @relation("EventoHorarioDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+  oferta                OfertaGrupoAsignatura? @relation(fields: [ofertaId], references: [id], onDelete: SetNull)
+
+  @@index([grupoId, iniciaEn])
+  @@map("ScheduleEvent")
+}
+
+model ConfiguracionRecuperacion {
+  id                    Int      @id @default(autoincrement())
+  periodoAcademicoId    Int      @unique
+  fechaInicio           DateTime @map("startAt")
+  fechaFin              DateTime @map("endAt")
+  actualizadoPorId      Int?     @map("updatedById")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+  actualizadoEn         DateTime @updatedAt @map("updatedAt")
+
+  periodoAcademico      PeriodoAcademico @relation(fields: [periodoAcademicoId], references: [id], onDelete: Cascade)
+  actualizadoPor        Usuario?         @relation("ConfiguracionRecuperacionActualizadaPor", fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+
+  @@map("RecoveryConfig")
+}
+
+model ArchivoHorarioRecuperacion {
+  id                    Int      @id @default(autoincrement())
+  periodoAcademicoId    Int      @unique
+  nombreOriginal        String   @map("originalName")
+  tipoMime              String   @map("mimeType")
+  contenidoArchivo      Bytes    @map("fileContent")
+  cargadoPorId          Int?     @map("uploadedById")
+  cargadoEn             DateTime @default(now()) @map("uploadedAt")
+
+  periodoAcademico      PeriodoAcademico @relation(fields: [periodoAcademicoId], references: [id], onDelete: Cascade)
+  cargadoPor            Usuario?         @relation("ArchivoHorarioRecuperacionCargadoPor", fields: [cargadoPorId], references: [id], onDelete: SetNull)
+
+  @@map("RecoverySchedule")
+}
+
+model SolicitudRecuperacion {
+  id                    Int                         @id @default(autoincrement())
+  matriculaId           Int
+  ofertaId              Int
+  asignacionDocenteId   Int
+  tipo                  TipoSolicitudRecuperacion  @default(RECUPERACION) @map("type")
+  motivo                String                     @map("reason")
+  estado                EstadoSolicitudRecuperacion @default(PENDIENTE) @map("status")
+  comentarioDocente     String?                    @map("teacherComment")
+  solicitadaEn          DateTime                   @default(now()) @map("requestedAt")
+  respondidaEn          DateTime?                  @map("respondedAt")
+  fechaLimite           DateTime?                  @map("dueDate")
+  notaFinal             Float?                     @map("finalScore")
+
+  matricula             MatriculaGrupo        @relation(fields: [matriculaId], references: [id], onDelete: Cascade)
+  oferta                OfertaGrupoAsignatura @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  asignacionDocente     AsignacionDocente     @relation(fields: [asignacionDocenteId], references: [id], onDelete: Cascade)
+  actividades           ActividadRecuperacion[]
+  mensajes              MensajeRecuperacion[]
+
+  @@index([matriculaId, estado])
+  @@index([ofertaId])
+  @@map("RecoveryRequest")
+}
+
+model ActividadRecuperacion {
+  id                    Int                         @id @default(autoincrement())
+  solicitudId           Int                         @map("requestId")
+  creadaPorDocenteId    Int                         @map("teacherId")
+  titulo                String                      @map("title")
+  descripcion           String                      @map("description")
+  tipo                  TipoActividadRecuperacion   @default(TAREA) @map("activityType")
+  estado                EstadoActividadRecuperacion @default(PENDIENTE) @map("status")
+  iniciaEn              DateTime?                   @map("startAt")
+  venceEn               DateTime                    @map("dueAt")
+  puntaje               Float?                      @map("score")
+  urlAdjunto            String?                     @map("attachmentUrl")
+  creadoEn              DateTime                    @default(now()) @map("createdAt")
+  actualizadoEn         DateTime                    @updatedAt @map("updatedAt")
+
+  solicitud             SolicitudRecuperacion       @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  creadaPorDocente      Usuario                     @relation("ActividadRecuperacionDocente", fields: [creadaPorDocenteId], references: [id], onDelete: Cascade)
+  archivo               ArchivoActividadRecuperacion?
+
+  @@index([solicitudId, estado])
+  @@map("RecoveryActivity")
+}
+
+model ArchivoActividadRecuperacion {
+  id                    Int      @id @default(autoincrement())
+  actividadId           Int      @unique @map("activityId")
+  nombreOriginal        String   @map("originalName")
+  tipoMime              String   @map("mimeType")
+  contenidoArchivo      Bytes    @map("fileContent")
+  cargadoPorId          Int?     @map("uploadedById")
+  cargadoEn             DateTime @default(now()) @map("uploadedAt")
+
+  actividad             ActividadRecuperacion @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  cargadoPor            Usuario?              @relation("ArchivoActividadCargadoPor", fields: [cargadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([cargadoEn])
+  @@map("RecoveryActivityAttachment")
+}
+
+model MensajeRecuperacion {
+  id                    Int      @id @default(autoincrement())
+  solicitudId           Int      @map("requestId")
+  autorId               Int      @map("authorId")
+  contenido             String   @map("body")
+  creadoEn              DateTime @default(now()) @map("createdAt")
+
+  solicitud             SolicitudRecuperacion @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  autor                 Usuario               @relation("MensajeRecuperacionAutor", fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([solicitudId, creadoEn])
+  @@map("RecoveryMessage")
+}
+
+model ResumenRendimientoGrupo {
+  id                              Int      @id @default(autoincrement())
+  grupoId                         Int      @map("groupId")
+  periodoAcademicoId              Int
+  promedioGeneral                 Float?
+  asistenciaPromedio              Float?
+  aprobacion                      Float?
+  mejorAsignaturaId               Int?
+  inasistenciasJustificadas       Int?
+  inasistenciasInjustificadas     Int?
+  porcentajeCursoMayorAsistencia  Float?
+  variacionPromedio               Float?
+  variacionAprobacion             Float?
+  reduccionAusencias              Float?
+  tendenciaGeneral                String?
+  creadoEn                        DateTime @default(now()) @map("createdAt")
+  actualizadoEn                   DateTime @updatedAt @map("updatedAt")
+
+  grupo                           GrupoAcademico       @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  periodoAcademico                PeriodoAcademico     @relation(fields: [periodoAcademicoId], references: [id], onDelete: Cascade)
+  mejorAsignatura                 Asignatura?          @relation("MejorAsignatura", fields: [mejorAsignaturaId], references: [id], onDelete: SetNull)
+  estudiantesDestacados           EstudianteDestacadoGrupo[]
+
+  @@unique([grupoId, periodoAcademicoId])
+  @@map("GradePerformance")
+}
+
+model EstudianteDestacadoGrupo {
+  id                    Int      @id @default(autoincrement())
+  resumenId             Int
+  estudianteId          Int
+  descripcion           String?
+  orden                 Int      @default(0)
+
+  resumen               ResumenRendimientoGrupo @relation(fields: [resumenId], references: [id], onDelete: Cascade)
+  estudiante            Usuario                 @relation("EstudianteDestacado", fields: [estudianteId], references: [id], onDelete: Cascade)
+
+  @@unique([resumenId, estudianteId])
+  @@index([resumenId, orden])
+}

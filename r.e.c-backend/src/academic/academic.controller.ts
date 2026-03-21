@@ -1,12 +1,15 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Header,
   Param,
   ParseIntPipe,
   Post,
   Put,
+  Query,
+  Req,
   UseGuards,
   Delete,
 } from '@nestjs/common';
@@ -18,6 +21,13 @@ import { UserRole } from '../users/dto/user-role.enum';
 import { UpdateStudentGroupDto } from './dto/update-student-group.dto';
 import { AssignGroupDirectorDto } from './dto/assign-group-director.dto';
 import type { PromoteGradeDto } from './dto/promote-grade.dto';
+
+type AuthenticatedRequest = {
+  user: {
+    userId: number;
+    role: UserRole;
+  };
+};
 
 @Controller('academic')
 export class AcademicController {
@@ -205,7 +215,14 @@ export class AcademicController {
   // Obtener grupo actual del estudiante
   @UseGuards(JwtAuthGuard)
   @Get('students/:studentId/group')
-  getStudentGroup(@Param('studentId', ParseIntPipe) studentId: number) {
+  getStudentGroup(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const actor = req.user;
+    if (actor.role !== UserRole.SECRETARIA && actor.userId !== studentId) {
+      throw new ForbiddenException('No autorizado');
+    }
     return this.academic.getStudentGroup(studentId);
   }
 
@@ -218,8 +235,15 @@ export class AcademicController {
   }
   @UseGuards(JwtAuthGuard)
   @Get('students/:studentId/subjects')
-  listStudentSubjects(@Param('studentId') studentId: string) {
-    return this.academic.listStudentSubjects(Number(studentId));
+  listStudentSubjects(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const actor = req.user;
+    if (actor.role !== UserRole.SECRETARIA && actor.userId !== studentId) {
+      throw new ForbiddenException('No autorizado');
+    }
+    return this.academic.listStudentSubjects(studentId);
   }
 
   // Promoción de grado (SECRETARIA)
@@ -259,5 +283,154 @@ export class AcademicController {
   @Delete('teachers/assignments/:id')
   deleteTeacherAssignment(@Param('id', ParseIntPipe) id: number) {
     return this.academic.deleteTeacherAssignment(id);
+  }
+
+  // ─── Ofertas del Profesor ─────────────────────────────────────────────────
+  @UseGuards(JwtAuthGuard)
+  @Get('teachers/:teacherId/offerings')
+  listTeacherOfferings(
+    @Param('teacherId', ParseIntPipe) teacherId: number,
+    @Query('periodId') periodId?: string,
+  ) {
+    return this.academic.listTeacherOfferings(
+      teacherId,
+      periodId ? Number(periodId) : undefined,
+    );
+  }
+
+  // ─── Períodos Académicos ──────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('periods')
+  listAcademicPeriods() {
+    return this.academic.listAcademicPeriods();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('periods/active')
+  getActivePeriod() {
+    return this.academic.getActivePeriod();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('periods/:id')
+  getAcademicPeriod(@Param('id', ParseIntPipe) id: number) {
+    return this.academic.getAcademicPeriod(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA)
+  @Post('periods')
+  createAcademicPeriod(
+    @Body()
+    dto: {
+      nombre: string;
+      codigo: string;
+      tipo?: 'TERM' | 'RECOVERY' | 'INTERSESSION';
+      fechaInicio: string;
+      fechaFin: string;
+      fechaCierre?: string;
+    },
+  ) {
+    return this.academic.createAcademicPeriod(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA)
+  @Put('periods/:id')
+  updateAcademicPeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    dto: {
+      nombre?: string;
+      codigo?: string;
+      tipo?: 'TERM' | 'RECOVERY' | 'INTERSESSION';
+      fechaInicio?: string;
+      fechaFin?: string;
+      fechaCierre?: string;
+    },
+  ) {
+    return this.academic.updateAcademicPeriod(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA)
+  @Put('periods/:id/activate')
+  activateAcademicPeriod(@Param('id', ParseIntPipe) id: number) {
+    return this.academic.activateAcademicPeriod(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA)
+  @Put('periods/:id/close')
+  closeAcademicPeriod(@Param('id', ParseIntPipe) id: number) {
+    return this.academic.closeAcademicPeriod(id);
+  }
+
+  // ─── Ofertas Académicas ───────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('groups/:groupId/offerings')
+  listGroupOfferings(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('periodId') periodId?: string,
+  ) {
+    return this.academic.listGroupOfferings(
+      groupId,
+      periodId ? Number(periodId) : undefined,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('offerings/:offeringId')
+  getOfferingDetail(@Param('offeringId', ParseIntPipe) offeringId: number) {
+    return this.academic.getOfferingDetail(offeringId);
+  }
+
+  // ─── Evaluaciones por Oferta ──────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('offerings/:offeringId/evaluations')
+  listEvaluations(@Param('offeringId', ParseIntPipe) offeringId: number) {
+    return this.academic.listEvaluations(offeringId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Post('offerings/:offeringId/evaluations')
+  createEvaluation(
+    @Param('offeringId', ParseIntPipe) offeringId: number,
+    @Body()
+    dto: {
+      titulo: string;
+      tipo?: string;
+      porcentaje?: number;
+      orden?: number;
+    },
+  ) {
+    return this.academic.createEvaluation(offeringId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Put('evaluations/:evalId')
+  updateEvaluation(
+    @Param('evalId', ParseIntPipe) evalId: number,
+    @Body()
+    dto: {
+      titulo?: string;
+      tipo?: string;
+      porcentaje?: number;
+      orden?: number;
+    },
+  ) {
+    return this.academic.updateEvaluation(evalId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Delete('evaluations/:evalId')
+  deleteEvaluation(@Param('evalId', ParseIntPipe) evalId: number) {
+    return this.academic.deleteEvaluation(evalId);
   }
 }

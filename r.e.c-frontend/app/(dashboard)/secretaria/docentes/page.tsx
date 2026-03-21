@@ -220,15 +220,16 @@ export default function SecretariaDocentesPage() {
         <span className="sec-chip">Asignación docente</span>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-        <Link href="/secretaria/usuarios/create?role=PROFESOR" prefetch={false}>
+      <div className="sec-toolbar">
+        <div className="sec-toolbar-group">
+          <Link href="/secretaria/usuarios/create?role=PROFESOR" prefetch={false}>
             <Button>Crear usuario</Button>
           </Link>
-        <Link href="/secretaria/registro-masivo" prefetch={false}>
+          <Link href="/secretaria/registro-masivo" prefetch={false}>
             <Button variant="secondary">Registro masivo</Button>
           </Link>
         </div>
+        <span className="sec-muted">Asignaciones por grupo y materia en una sola vista</span>
       </div>
 
       <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -245,7 +246,7 @@ export default function SecretariaDocentesPage() {
           <span className="text-sm font-medium">Asignacion rapida masiva</span>
           <span className="text-xs text-gray-600">{selectedVisibleTeacherIds.length} seleccionados en esta vista</span>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="sec-action-cluster">
           <div className="min-w-[220px]">
             <Select
               label="Grupo"
@@ -310,10 +311,8 @@ export default function SecretariaDocentesPage() {
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
               <th className="p-2 text-left">Documento</th>
-              <th className="p-2 text-left">Grupo</th>
-              <th className="p-2 text-left">Materia</th>
-              <th className="p-2 text-left">Asignar</th>
-              <th className="p-2 text-left">Acciones</th>
+              <th className="p-2 text-left">Asignación rápida</th>
+              <th className="p-2 text-left">Gestión</th>
             </tr>
           </thead>
           <tbody>
@@ -331,79 +330,87 @@ export default function SecretariaDocentesPage() {
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.documento_identidad}</td>
                 <td className="p-2">
-                  <Select
-                    options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
-                    value={assignments[u.id]?.groupId || ""}
-                    onChange={(e) => {
-                      const nextGroupId = e.target.value;
-                      setAssignments((prev) => ({ ...prev, [u.id]: { groupId: nextGroupId, subjectId: "" } }));
-                      if (nextGroupId) {
-                        void ensureGroupSubjects(Number(nextGroupId));
-                      }
-                    }}
-                  />
-                </td>
-                <td className="p-2">
-                  {(() => {
-                    const selectedGroupId = Number(assignments[u.id]?.groupId || 0);
-                    const groupSubjects = selectedGroupId ? (groupSubjectsMap[selectedGroupId]?.options ?? []) : [];
-                    const loadingSubjects = selectedGroupId ? Boolean(groupSubjectsMap[selectedGroupId]?.loading) : false;
-                    return (
-                  <Select
-                    options={[
-                      { label: selectedGroupId ? "Seleccione materia" : "Seleccione un grupo primero", value: "" },
-                      ...groupSubjects.map((s) => ({ label: s.nombre, value: String(s.id) })),
-                    ]}
-                    value={assignments[u.id]?.subjectId || ""}
-                    onChange={(e) => setAssignments((prev) => ({ ...prev, [u.id]: { ...(prev[u.id] || {}), subjectId: e.target.value } }))}
-                    disabled={!selectedGroupId || loadingSubjects}
-                  />
-                    );
-                  })()}
-                </td>
-                <td className="p-2">
-                  <Button
-                    size="sm"
-                    disabled={!assignments[u.id]?.groupId || !assignments[u.id]?.subjectId || assignStatus[u.id] === "loading"}
-                    onClick={async () => {
-                      const gid = Number(assignments[u.id]?.groupId);
-                      const sid = Number(assignments[u.id]?.subjectId);
-                      if (!gid || !sid) return;
-                      try {
-                        setAssignStatus((s) => ({ ...s, [u.id]: "loading" }));
+                  <div className="min-w-[360px] space-y-2">
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <div>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Grupo</p>
+                        <Select
+                          options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
+                          value={assignments[u.id]?.groupId || ""}
+                          onChange={(e) => {
+                            const nextGroupId = e.target.value;
+                            setAssignments((prev) => ({ ...prev, [u.id]: { groupId: nextGroupId, subjectId: "" } }));
+                            if (nextGroupId) {
+                              void ensureGroupSubjects(Number(nextGroupId));
+                            }
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Materia</p>
+                        {(() => {
+                          const selectedGroupId = Number(assignments[u.id]?.groupId || 0);
+                          const groupSubjects = selectedGroupId ? (groupSubjectsMap[selectedGroupId]?.options ?? []) : [];
+                          const loadingSubjects = selectedGroupId ? Boolean(groupSubjectsMap[selectedGroupId]?.loading) : false;
+                          return (
+                            <Select
+                              options={[
+                                { label: selectedGroupId ? "Seleccione materia" : "Seleccione un grupo primero", value: "" },
+                                ...groupSubjects.map((s) => ({ label: s.nombre, value: String(s.id) })),
+                              ]}
+                              value={assignments[u.id]?.subjectId || ""}
+                              onChange={(e) => setAssignments((prev) => ({ ...prev, [u.id]: { ...(prev[u.id] || {}), subjectId: e.target.value } }))}
+                              disabled={!selectedGroupId || loadingSubjects}
+                            />
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!assignments[u.id]?.groupId || !assignments[u.id]?.subjectId || assignStatus[u.id] === "loading"}
+                        onClick={async () => {
+                          const gid = Number(assignments[u.id]?.groupId);
+                          const sid = Number(assignments[u.id]?.subjectId);
+                          if (!gid || !sid) return;
+                          try {
+                            setAssignStatus((s) => ({ ...s, [u.id]: "loading" }));
 
-                        const cachedAssignments = teacherAssignmentsMap[u.id]?.loaded
-                          ? teacherAssignmentsMap[u.id].items
-                          : await loadTeacherAssignments(Number(u.id), false);
+                            const cachedAssignments = teacherAssignmentsMap[u.id]?.loaded
+                              ? teacherAssignmentsMap[u.id].items
+                              : await loadTeacherAssignments(Number(u.id), false);
 
-                        const duplicate = cachedAssignments.some((item) => item.groupId === gid && item.subjectId === sid);
-                        if (duplicate) {
-                          setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
-                          return;
-                        }
+                            const duplicate = cachedAssignments.some((item) => item.groupId === gid && item.subjectId === sid);
+                            if (duplicate) {
+                              setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
+                              return;
+                            }
 
-                        const created = await academicApi.assignTeacher(Number(u.id), gid, sid);
-                        const groupLabel = groups.find((g) => g.id === gid)?.label ?? String(gid);
-                        const subjectName = (groupSubjectsMap[gid]?.options ?? []).find((s) => s.id === sid)?.nombre ?? String(sid);
-                        setTeacherAssignmentsMap((m) => {
-                          const current = m[u.id];
-                          const newItem = { id: created.id, groupId: gid, subjectId: sid, groupLabel, subjectName };
-                          if (current?.loaded) {
-                            return { ...m, [u.id]: { ...current, items: [...current.items, newItem] } };
+                            const created = await academicApi.assignTeacher(Number(u.id), gid, sid);
+                            const groupLabel = groups.find((g) => g.id === gid)?.label ?? String(gid);
+                            const subjectName = (groupSubjectsMap[gid]?.options ?? []).find((s) => s.id === sid)?.nombre ?? String(sid);
+                            setTeacherAssignmentsMap((m) => {
+                              const current = m[u.id];
+                              const newItem = { id: created.id, groupId: gid, subjectId: sid, groupLabel, subjectName };
+                              if (current?.loaded) {
+                                return { ...m, [u.id]: { ...current, items: [...current.items, newItem] } };
+                              }
+                              return { ...m, [u.id]: { loaded: true, loading: false, items: [newItem], expanded: true } };
+                            });
+                            setAssignments((prev) => ({ ...prev, [u.id]: { groupId: "", subjectId: "" } }));
+                            setAssignStatus((s) => ({ ...s, [u.id]: "ok" }));
+                          } catch {
+                            setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
                           }
-                          return { ...m, [u.id]: { loaded: true, loading: false, items: [newItem], expanded: true } };
-                        });
-                        setAssignments((prev) => ({ ...prev, [u.id]: { groupId: "", subjectId: "" } }));
-                        setAssignStatus((s) => ({ ...s, [u.id]: "ok" }));
-                      } catch {
-                        setAssignStatus((s) => ({ ...s, [u.id]: "error" }));
-                      }
-                    }}
-                  >Asignar</Button>
-                  {assignStatus[u.id] === "ok" && <span className="ml-2 text-xs text-green-600">Asignado</span>}
-                  {assignStatus[u.id] === "error" && <span className="ml-2 text-xs text-red-600">Error</span>}
+                        }}
+                      >Asignar materia</Button>
+                      {assignStatus[u.id] === "ok" && <span className="text-xs font-medium text-green-700">Asignado correctamente</span>}
+                      {assignStatus[u.id] === "error" && <span className="text-xs font-medium text-red-600">Revisa grupo/materia</span>}
+                    </div>
+                  </div>
                 </td>
-                <td className="p-2 space-x-2">
+                <td className="p-2 sec-actions">
                     <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
                     <Button variant="secondary" size="sm">Editar</Button>
                   </Link>
@@ -436,7 +443,7 @@ export default function SecretariaDocentesPage() {
               </tr>
               {teacherAssignmentsMap[u.id]?.expanded && (
                 <tr className="border-t border-gray-200">
-                  <td className="p-2 bg-gray-50" colSpan={8}>
+                  <td className="p-2 bg-gray-50" colSpan={6}>
                     <div className="text-sm">
                       <div className="font-medium mb-2">Asignaciones de {u.nombres} {u.apellidos}</div>
                       <div className="overflow-x-auto">
@@ -482,7 +489,7 @@ export default function SecretariaDocentesPage() {
             ))}
             {visible.length === 0 && (
               <tr>
-                <td className="p-3 text-center" colSpan={8}>Sin resultados</td>
+                <td className="p-3 text-center" colSpan={6}>Sin resultados</td>
               </tr>
             )}
           </tbody>

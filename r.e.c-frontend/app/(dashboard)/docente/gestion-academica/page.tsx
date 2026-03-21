@@ -460,9 +460,19 @@ export default function DocenteGestionAcademicaPage() {
     const autoPromedio = computeAverage(gradesForJson.map((g) => g.value));
     const notaFinalValue = autoPromedio ?? undefined;
     const totals = getAbsenceTotalsFromMap(form.periodAbsences);
+    const getPeriodAverage = (period: number): number | undefined => {
+      const periodEntries = gradesForJson
+        .filter((entry) => entry.period === period)
+        .map((entry) => entry.value);
+      const average = computeAverage(periodEntries);
+      return average ?? undefined;
+    };
 
     const payload: UpsertStudentAcademicInput = {
-      gradesJson: gradesForJson.length > 0 ? JSON.stringify(gradesForJson) : undefined,
+      parcial1: getPeriodAverage(1),
+      parcial2: getPeriodAverage(2),
+      parcial3: getPeriodAverage(3),
+      parcial4: getPeriodAverage(4),
       notaFinal: notaFinalValue,
       inasistenciasJustificadas: totals.justificadas,
       inasistenciasInjustificadas: totals.injustificadas,

@@ -339,7 +339,7 @@ export default function Home() {
                   "Desde secretaría, el flujo operativo es más ordenado.",
                 ].map((quote) => (
                   <blockquote key={quote} className="rounded-lg border border-[color:var(--rec-soft)] bg-white px-3 py-2 text-sm text-slate-700">
-                    "{quote}"
+                    &quot;{quote}&quot;
                   </blockquote>
                 ))}
               </div>

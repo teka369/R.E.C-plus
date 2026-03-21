@@ -74,13 +74,6 @@ export type UpsertGradePerformanceInput = {
   asistenciaPromedio?: number;
   aprobacion?: number;
   mejorAsignatura?: string;
-  estudiantesDestacados?: string;
-  inasistenciasJustificadas?: number;
-  inasistenciasInjustificadas?: number;
-  porcentajeCursoMayorAsistencia?: number;
-  variacionPromedio?: number;
-  variacionAprobacion?: number;
-  reduccionAusencias?: number;
   tendenciaGeneral?: string;
 };
 
@@ -110,7 +103,6 @@ export type UpsertStudentAcademicInput = {
   parcial2?: number;
   parcial3?: number;
   parcial4?: number;
-  gradesJson?: string;
   notaFinal?: number;
   progresoMateria?: number;
   inasistenciasJustificadas?: number;

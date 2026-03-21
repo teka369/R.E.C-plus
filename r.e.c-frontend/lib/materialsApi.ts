@@ -38,7 +38,15 @@ export type CreateStudyMaterialInput = {
   visibility: StudyMaterial["visibility"];
 };
 
-export type UpdateStudyMaterialInput = Partial<CreateStudyMaterialInput> & { title?: string; description?: string };
+export type UpdateStudyMaterialInput = {
+  title?: string;
+  description?: string;
+  type?: StudyMaterial["type"];
+  resourceUrl?: string;
+  imageUrl?: string;
+  filePath?: string;
+  visibility?: StudyMaterial["visibility"];
+};
 
 export type Syllabus = {
   id: number;
@@ -58,7 +66,6 @@ export type CreateSyllabusInput = {
   subjectId: number;
   groupId: number;
   title: string;
-  period?: string;
   status?: "BORRADOR" | "ACTIVO" | "ARCHIVADO";
   duration?: string;
   content?: string;
@@ -66,7 +73,6 @@ export type CreateSyllabusInput = {
 
 export type UpdateSyllabusInput = Partial<CreateSyllabusInput> & {
   title?: string;
-  period?: string;
   status?: "BORRADOR" | "ACTIVO" | "ARCHIVADO";
   duration?: string;
   content?: string;
@@ -77,7 +83,7 @@ export type GroupInfo = {
   summary: string | null;
   highlights: string[];
   metrics: Record<string, number | string>;
-  links: { label: string; url: string }[];
+  links: string[];
 };
 
 export type UpdateGroupInfoInput = Partial<Omit<GroupInfo, "groupId">>;

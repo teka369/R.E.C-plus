@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useState } from "react";
+import Link from "next/link";
 import Footer from "@/components/layouts/Footer";
 import Navbar from "@/components/layouts/Navbar";
 import { FaCertificate, FaCode, FaUserGraduate, FaSearch, FaCheckCircle } from "react-icons/fa";
@@ -339,12 +340,12 @@ export default function CertificadosPage() {
           <h2 className="text-2xl font-extrabold mb-3">¿Conoces a nuestro equipo?</h2>
           <p className="text-white/80 mb-6">Explora el portafolio completo del equipo de desarrollo</p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <a href="/portafolio" className="rounded-full px-7 py-3 text-sm font-bold bg-white transition hover:opacity-90" style={{ color: "var(--rec-primary-strong)" }}>
+            <Link href="/portafolio" className="rounded-full px-7 py-3 text-sm font-bold bg-white transition hover:opacity-90" style={{ color: "var(--rec-primary-strong)" }}>
               Ver portafolio
-            </a>
-            <a href="/" className="rounded-full px-7 py-3 text-sm font-bold border border-white/50 text-white transition hover:bg-white/10">
+            </Link>
+            <Link href="/" className="rounded-full px-7 py-3 text-sm font-bold border border-white/50 text-white transition hover:bg-white/10">
               Volver al inicio
-            </a>
+            </Link>
           </div>
         </div>
       </section>
