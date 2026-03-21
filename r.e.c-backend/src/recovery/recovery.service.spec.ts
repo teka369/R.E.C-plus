@@ -6,6 +6,7 @@ import { UserRole } from '../users/dto/user-role.enum';
 describe('RecoveryService', () => {
   let service: RecoveryService;
   let prisma: {
+    academicPeriod: { findFirst: jest.Mock };
     recoveryActivity: { findUnique: jest.Mock; delete: jest.Mock };
     recoveryRequest: { findUnique: jest.Mock; delete: jest.Mock };
     group: { findFirst: jest.Mock };
@@ -17,6 +18,7 @@ describe('RecoveryService', () => {
 
   beforeEach(() => {
     prisma = {
+      academicPeriod: { findFirst: jest.fn() },
       recoveryActivity: { findUnique: jest.fn(), delete: jest.fn() },
       recoveryRequest: { findUnique: jest.fn(), delete: jest.fn() },
       group: { findFirst: jest.fn() },
@@ -26,7 +28,13 @@ describe('RecoveryService', () => {
       $executeRaw: jest.fn(),
     };
 
-    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.academicPeriod.findFirst.mockResolvedValue({ id: 1 });
+    prisma.$queryRaw.mockResolvedValue([
+      {
+        startAt: new Date(Date.now() - 60_000),
+        endAt: new Date(Date.now() + 60_000),
+      },
+    ]);
 
     service = new RecoveryService(prisma as unknown as PrismaService);
   });

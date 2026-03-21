@@ -4,7 +4,7 @@ import { Controller, Get } from '@nestjs/common';
 export class AppController {
   @Get('/')
   getRoot(): string {
-    return 'Hello World!';
+    return 'R.E.C Backend API is running. Please refer to the documentation for available endpoints.';
   }
 
   @Get('/health')

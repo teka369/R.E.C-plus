@@ -133,10 +133,13 @@ export default function SecretariaEstudiantesPage() {
         <span className="sec-chip">Operación académica</span>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="sec-toolbar">
+        <div className="sec-toolbar-group">
           <Link href="/secretaria/usuarios/create?role=ESTUDIANTE" prefetch={false}>
-          <Button>Crear usuario</Button>
-        </Link>
+            <Button>Crear usuario</Button>
+          </Link>
+        </div>
+        <span className="sec-muted">Alta rapida y gestion de grupos por estudiante</span>
       </div>
 
       <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -153,7 +156,7 @@ export default function SecretariaEstudiantesPage() {
           <span className="text-sm font-medium">Asignacion rapida masiva</span>
           <span className="text-xs text-gray-600">{selectedVisibleIds.length} seleccionados en esta vista</span>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="sec-action-cluster">
           <div className="min-w-[220px]">
             <Select
               label="Grupo destino"
@@ -273,7 +276,7 @@ export default function SecretariaEstudiantesPage() {
                     )}
                   </div>
                 </td>
-                <td className="p-2 space-x-2">
+                <td className="p-2 sec-actions">
                     <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
                     <Button variant="secondary" size="sm">Editar</Button>
                   </Link>

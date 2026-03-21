@@ -12,6 +12,10 @@ import type { IconType } from "react-icons";
 type DeleteModalState = { id: number; title: string } | null;
 type ContentMode = "sections" | "single";
 
+type SyllabusFormInput = CreateSyllabusInput & {
+  period: string;
+};
+
 const STATUS_OPTIONS = [
   { value: "BORRADOR", label: "Borrador" },
   { value: "ACTIVO", label: "Activo" },
@@ -159,7 +163,7 @@ export default function TemariosDocentePage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title_asc" | "title_desc" | "updated">("newest");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
-  const [form, setForm] = useState<CreateSyllabusInput>({
+  const [form, setForm] = useState<SyllabusFormInput>({
     groupId: 0,
     subjectId: 0,
     title: "",
@@ -352,7 +356,6 @@ export default function TemariosDocentePage() {
         groupId: form.groupId,
         subjectId: form.subjectId,
         title: form.title.trim(),
-        period: form.period?.trim() || undefined,
         status: form.status,
         duration: form.duration?.trim() || undefined,
         content: createContentMode === "single" ? form.content?.trim() || undefined : composeSyllabusContent(formSections),
@@ -382,7 +385,6 @@ export default function TemariosDocentePage() {
     try {
       const payload: UpdateSyllabusInput = {
         title: editing.title.trim(),
-        period: editing.period.trim() || undefined,
         status: editing.status,
         duration: editing.duration.trim() || undefined,
         content: editContentMode === "single" ? editRawContent.trim() || undefined : composeSyllabusContent(editingSections),

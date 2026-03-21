@@ -64,6 +64,53 @@ enum RecoveryActivityStatus {
   EVALUATED
 }
 
+enum EnrollmentStatus {
+  ACTIVE
+  WITHDRAWN
+  PROMOTED
+  REPEATING
+  CLOSED
+}
+
+enum AcademicPeriodType {
+  TERM
+  RECOVERY
+  INTERSESSION
+}
+
+enum AcademicPeriodStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum FeedbackTipo {
+  POSITIVA
+  NEGATIVA
+  INFORMATIVA
+  SEGUIMIENTO
+}
+
+enum FeedbackEstado {
+  PENDIENTE
+  ATENDIDA
+}
+
+enum SyllabusStatus {
+  BORRADOR
+  ACTIVO
+  ARCHIVADO
+}
+
+enum EvaluacionTipo {
+  PARCIAL
+  EXAMEN_FINAL
+  TALLER
+  PROYECTO
+  QUIZ
+  PRACTICA
+}
+
 model User {
   id                 Int      @id @default(autoincrement())
   nombres            String
@@ -78,6 +125,7 @@ model User {
   // Relaciones académicas
   studentGroups      StudentGroup[]
   teacherAssignments TeacherAssignment[]
+  teacherOfferingAssignments TeacherOfferingAssignment[]
   materials          StudyMaterial[]
   syllabi            Syllabus[]
   directedGroups     Group[]  @relation("GroupDirector")
@@ -101,6 +149,27 @@ model User {
 
 // Modelos académicos
 
+model AcademicPeriod {
+  id               Int                  @id @default(autoincrement())
+  nombre           String
+  codigo           String               @unique
+  tipo             AcademicPeriodType   @default(TERM)
+  estado           AcademicPeriodStatus @default(DRAFT)
+  fechaInicio      DateTime
+  fechaFin         DateTime
+  fechaCierre      DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  studentGroups    StudentGroup[]
+  groupSubjects    GroupSubject[]
+  academicOfferings AcademicOffering[]
+  gradePerformances GradePerformance[]
+  recoveryConfigs   RecoveryConfig[]    @relation("RecoveryConfigPeriod")
+  recoverySchedules RecoverySchedule[]  @relation("RecoverySchedulePeriod")
+  syllabi           Syllabus[]
+}
+
 model Grade {
   id        Int      @id @default(autoincrement())
   nombre    String   @unique
@@ -118,6 +187,7 @@ model Group {
   director           User?    @relation("GroupDirector", fields: [directorId], references: [id], onDelete: SetNull)
   students           StudentGroup[]
   subjects           GroupSubject[]
+  academicOfferings  AcademicOffering[]
   teacherAssignments TeacherAssignment[]
   info               GroupInfo?
   studyMaterials     StudyMaterial[]
@@ -128,7 +198,7 @@ model Group {
   scheduleNotes      ScheduleNote[]
   events             ScheduleEvent[]
   recoveryRequests   RecoveryRequest[]
-  performance        GradePerformance?
+  performances       GradePerformance[]
   academicRecords    StudentAcademicRecord[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -138,12 +208,12 @@ model Group {
 
 model GradePerformance {
   id                                Int      @id @default(autoincrement())
-  groupId                           Int      @unique
+  groupId                           Int
+  academicPeriodId                  Int
   promedioGeneral                   Float?
   asistenciaPromedio                Float?
   aprobacion                        Float?
   mejorAsignatura                   String?
-  estudiantesDestacados             String?
   inasistenciasJustificadas         Int?
   inasistenciasInjustificadas       Int?
   porcentajeCursoMayorAsistencia    Float?
@@ -154,7 +224,11 @@ model GradePerformance {
   createdAt                         DateTime @default(now())
   updatedAt                         DateTime @updatedAt
 
-  group                             Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group                             Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  academicPeriod                    AcademicPeriod @relation(fields: [academicPeriodId], references: [id], onDelete: Cascade)
+  topStudents                       PerformanceTopStudent[]
+
+  @@unique([groupId, academicPeriodId])
 }
 
 model Subject {
@@ -162,6 +236,7 @@ model Subject {
   nombre             String   @unique
   codigo             String?
   groupSubjects      GroupSubject[]
+  academicOfferings  AcademicOffering[]
   teacherAssignments TeacherAssignment[]
   studyMaterials     StudyMaterial[]
   syllabi            Syllabus[]
@@ -180,127 +255,189 @@ model StudentAcademicRecord {
   groupId                Int
   subjectId              Int
   updatedByTeacherId     Int?
-  parcial1               Float?
-  parcial2               Float?
-  parcial3               Float?
-  parcial4               Float?
   notaFinal              Float?
   progresoMateria        Float?
   inasistenciasJustificadas   Int  @default(0)
   inasistenciasInjustificadas Int  @default(0)
   observaciones          String?
-    gradesJson             String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  student                User     @relation("AcademicRecordStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  group                  Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  subject                Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  updatedByTeacher       User?    @relation("AcademicRecordTeacher", fields: [updatedByTeacherId], references: [id], onDelete: SetNull)
+  academicOfferingId     Int?
+  student                User              @relation("AcademicRecordStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  group                  Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject                Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  updatedByTeacher       User?             @relation("AcademicRecordTeacher", fields: [updatedByTeacherId], references: [id], onDelete: SetNull)
+  academicOffering       AcademicOffering? @relation(fields: [academicOfferingId], references: [id], onDelete: SetNull)
 
   @@unique([studentId, groupId, subjectId])
   @@index([studentId])
   @@index([groupId])
   @@index([subjectId])
+  @@index([academicOfferingId])
 }
 
 // Asignación de estudiante a grupo
 model StudentGroup {
-  id         Int      @id @default(autoincrement())
-  studentId  Int
-  groupId    Int
-  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id               Int               @id @default(autoincrement())
+  studentId        Int
+  groupId          Int
+  academicPeriodId Int
+  status           EnrollmentStatus  @default(ACTIVE)
+  endedAt          DateTime?
+  student          User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group            Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  academicPeriod   AcademicPeriod    @relation(fields: [academicPeriodId], references: [id], onDelete: Cascade)
+  evaluationGrades EvaluationGrade[]
+  createdAt        DateTime          @default(now())
 
-  @@unique([studentId, groupId])
+  @@unique([studentId, groupId, academicPeriodId])
+  @@index([studentId, academicPeriodId])
+  @@index([groupId, academicPeriodId])
 }
 
 // Materias que tiene un grupo
 model GroupSubject {
-  id         Int      @id @default(autoincrement())
-  groupId    Int
-  subjectId  Int
-  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id               Int             @id @default(autoincrement())
+  groupId          Int
+  subjectId        Int
+  academicPeriodId Int?
+  weeklyHours      Int?
+  isActive         Boolean         @default(true)
+  group            Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject          Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  academicPeriod   AcademicPeriod? @relation(fields: [academicPeriodId], references: [id], onDelete: SetNull)
+  academicOfferings AcademicOffering[]
+  createdAt        DateTime        @default(now())
 
   @@unique([groupId, subjectId])
+  @@index([academicPeriodId])
+}
+
+model AcademicOffering {
+  id               Int             @id @default(autoincrement())
+  groupId          Int
+  subjectId        Int
+  academicPeriodId Int
+  groupSubjectId   Int?
+  weeklyHours      Int?
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  group            Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject          Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  academicPeriod   AcademicPeriod  @relation(fields: [academicPeriodId], references: [id], onDelete: Cascade)
+  groupSubject     GroupSubject?   @relation(fields: [groupSubjectId], references: [id], onDelete: SetNull)
+  teacherAssignments     TeacherAssignment[]
+  teacherOfferingAssignments TeacherOfferingAssignment[]
+  studyMaterials         StudyMaterial[]
+  syllabi                Syllabus[]
+  studentAcademicRecords StudentAcademicRecord[]
+  academicEvaluations    AcademicEvaluation[]
+
+  @@unique([groupId, subjectId, academicPeriodId])
+  @@index([groupSubjectId])
 }
 
 // Asignaciones de profesor: qué grupos y materias enseña
 model TeacherAssignment {
-  id         Int      @id @default(autoincrement())
-  teacherId  Int
-  groupId    Int
-  subjectId  Int
-  teacher    User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id                Int               @id @default(autoincrement())
+  teacherId         Int
+  groupId           Int
+  subjectId         Int
+  academicOfferingId Int?
+  teacher           User              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  group             Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subject           Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  academicOffering  AcademicOffering? @relation(fields: [academicOfferingId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
 
   @@unique([teacherId, groupId, subjectId])
+  @@index([academicOfferingId])
+}
+
+// Fase 4FN: relación canónica Docente <-> Oferta (sin redundancia grupo/materia)
+model TeacherOfferingAssignment {
+  id                Int              @id @default(autoincrement())
+  teacherId         Int
+  academicOfferingId Int
+  createdAt         DateTime         @default(now())
+
+  teacher           User             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academicOffering  AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, academicOfferingId])
+  @@index([academicOfferingId])
 }
 
 // Materiales de estudio
 model StudyMaterial {
-  id          Int           @id @default(autoincrement())
-  subjectId   Int
-  groupId     Int
-  teacherId   Int
-  title       String
-  description String?
-  type        MaterialType  @default(LINK)
-  resourceUrl String?
-  imageUrl    String?
-  filePath    String?
-  visibility  Visibility    @default(GROUP)
-  views       Int           @default(0)
-  downloads   Int           @default(0)
-  createdAt   DateTime      @default(now())
+  id                 Int           @id @default(autoincrement())
+  subjectId          Int
+  groupId            Int
+  teacherId          Int
+  academicOfferingId Int?
+  title              String
+  description        String?
+  type               MaterialType  @default(LINK)
+  resourceUrl        String?
+  imageUrl           String?
+  filePath           String?
+  visibility         Visibility    @default(GROUP)
+  views              Int           @default(0)
+  downloads          Int           @default(0)
+  createdAt          DateTime      @default(now())
 
-  subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  group       Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  teacher     User          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject            Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  group              Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher            User             @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academicOffering   AcademicOffering? @relation(fields: [academicOfferingId], references: [id], onDelete: SetNull)
 
   @@index([groupId])
   @@index([subjectId])
   @@index([teacherId])
+  @@index([academicOfferingId])
 }
 
 // Temarios
 model Syllabus {
-  id          Int      @id @default(autoincrement())
-  subjectId   Int
-  groupId     Int
-  teacherId   Int
-  title       String
-  period      String?
-  status      String   @default("BORRADOR")
-  duration    String?
-  content     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  subjectId          Int
+  groupId            Int
+  teacherId          Int
+  academicOfferingId Int?
+  title              String
+  academicPeriodId   Int?
+  status             SyllabusStatus @default(BORRADOR)
+  duration           String?
+  content            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  teacher     User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject            Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  group              Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher            User              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  academicOffering   AcademicOffering? @relation(fields: [academicOfferingId], references: [id], onDelete: SetNull)
+  academicPeriod     AcademicPeriod?   @relation(fields: [academicPeriodId], references: [id], onDelete: SetNull)
 
   @@index([groupId])
   @@index([subjectId])
   @@index([teacherId])
+  @@index([academicOfferingId])
+  @@index([academicPeriodId])
 }
 
 // Información general del grupo (ligas)
 model GroupInfo {
   groupId    Int      @id
   summary    String?
-  highlights Json?
-  metrics    Json?
-  links      Json?
   updatedAt  DateTime @updatedAt
 
-  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  infoHighlights  GroupInfoHighlight[]
+  infoMetrics     GroupInfoMetric[]
+  infoLinks       GroupInfoLink[]
 }
 
 // Observaciones/Feedback del profesor al estudiante
@@ -312,12 +449,12 @@ model Feedback {
   subjectId    Int?
   title        String
   content      String
-  tipo         String   @default("INFORMATIVA")
-  estado       String   @default("PENDIENTE")
-  strengths    Json?
-  improvements Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  tipo         FeedbackTipo   @default(INFORMATIVA)
+  estado       FeedbackEstado @default(PENDIENTE)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  feedbackStrengths    FeedbackStrength[]
+  feedbackImprovements FeedbackImprovement[]
 
   teacher    User     @relation("FeedbackTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
   student    User     @relation("FeedbackStudent", fields: [studentId], references: [id], onDelete: Cascade)
@@ -503,20 +640,151 @@ model RecoveryMessage {
 
 // Configuración del periodo de recuperaciones (singleton)
 model RecoveryConfig {
-  id          Int      @id @default(1)
-  startAt     DateTime
-  endAt       DateTime
-  updatedById Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               Int             @id @default(autoincrement())
+  startAt          DateTime
+  endAt            DateTime
+  updatedById      Int?
+  academicPeriodId Int             @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  academicPeriod   AcademicPeriod  @relation("RecoveryConfigPeriod", fields: [academicPeriodId], references: [id], onDelete: Cascade)
 }
 
 // Archivo de horario de recuperación (singleton)
 model RecoverySchedule {
-  id          Int      @id @default(1)
-  originalName String
-  mimeType    String
-  fileContent Bytes
-  uploadedById Int?
-  uploadedAt  DateTime @default(now())
+  id               Int             @id @default(autoincrement())
+  originalName     String
+  mimeType         String
+  fileContent      Bytes
+  uploadedById     Int?
+  academicPeriodId Int             @unique
+  uploadedAt       DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  academicPeriod   AcademicPeriod  @relation("RecoverySchedulePeriod", fields: [academicPeriodId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Fase 4: Evaluaciones estructuradas por oferta académica
+// ───────────────────────────────────────────────────────────────────
+
+// Plantilla de evaluación asociada a una oferta académica (reemplaza parcial1-4 fijos)
+model AcademicEvaluation {
+  id                 Int              @id @default(autoincrement())
+  academicOfferingId Int
+  titulo             String
+  tipo               EvaluacionTipo   @default(PARCIAL)
+  porcentaje         Float?
+  orden              Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  academicOffering   AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
+  calificaciones     EvaluationGrade[]
+
+  @@unique([academicOfferingId, orden])
+}
+
+// Nota de un estudiante en una evaluación concreta (reemplaza gradesJson)
+model EvaluationGrade {
+  id                   Int                @id @default(autoincrement())
+  academicEvaluationId Int
+  studentGroupId       Int
+  nota                 Float
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  academicEvaluation   AcademicEvaluation @relation(fields: [academicEvaluationId], references: [id], onDelete: Cascade)
+  studentGroup         StudentGroup       @relation(fields: [studentGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([academicEvaluationId, studentGroupId])
+  @@index([studentGroupId])
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Fase 5: Estudiantes destacados (normaliza GradePerformance.estudiantesDestacados)
+// ───────────────────────────────────────────────────────────────────
+
+model PerformanceTopStudent {
+  id                 Int              @id @default(autoincrement())
+  gradePerformanceId Int
+  fullName           String
+  average            Float
+  rank               Int              @default(1)
+  createdAt          DateTime         @default(now())
+
+  gradePerformance   GradePerformance @relation(fields: [gradePerformanceId], references: [id], onDelete: Cascade)
+
+  @@index([gradePerformanceId])
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Fase 6: Registros hijos de GroupInfo (reemplaza highlights/metrics/links Json)
+// ───────────────────────────────────────────────────────────────────
+
+model GroupInfoHighlight {
+  id        Int       @id @default(autoincrement())
+  groupId   Int
+  texto     String
+  orden     Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  groupInfo GroupInfo @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+model GroupInfoMetric {
+  id        Int       @id @default(autoincrement())
+  groupId   Int
+  etiqueta  String
+  valor     String
+  orden     Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  groupInfo GroupInfo @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+model GroupInfoLink {
+  id        Int       @id @default(autoincrement())
+  groupId   Int
+  titulo    String
+  url       String
+  orden     Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  groupInfo GroupInfo @relation(fields: [groupId], references: [groupId], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Fase 10: Normalización de Feedback.strengths/improvements
+// ─────────────────────────────────────────────────────────────────────
+
+model FeedbackStrength {
+  id         Int      @id @default(autoincrement())
+  feedbackId Int
+  texto      String
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackId])
+}
+
+model FeedbackImprovement {
+  id         Int      @id @default(autoincrement())
+  feedbackId Int
+  texto      String
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackId])
 }

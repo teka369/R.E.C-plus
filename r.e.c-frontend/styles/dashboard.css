@@ -8,10 +8,36 @@
 		linear-gradient(180deg, var(--rec-surface) 0%, color-mix(in srgb, var(--rec-soft) 60%, white 40%) 100%);
 }
 
+.secretaria-theme {
+	--sec-primary: #238f50;
+	--sec-primary-strong: #1d7a44;
+	--sec-surface: #eef7f1;
+	--sec-border: color-mix(in srgb, var(--sec-primary) 18%, white 82%);
+	background:
+		radial-gradient(840px 420px at -8% -16%, color-mix(in srgb, var(--sec-primary) 14%, transparent) 0%, transparent 64%),
+		radial-gradient(740px 360px at 110% -22%, color-mix(in srgb, var(--rec-accent) 11%, transparent) 0%, transparent 66%),
+		linear-gradient(180deg, #edf7f0 0%, #e7f2ea 52%, #e3efe7 100%);
+}
+
 .dashboard-content {
 	flex: 1;
 	min-width: 0;
 	min-height: 100vh;
+}
+
+.secretaria-theme .dashboard-content {
+	position: relative;
+}
+
+.secretaria-theme .dashboard-content::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-image:
+		radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--sec-primary) 15%, transparent) 1px, transparent 0);
+	background-size: 22px 22px;
+	opacity: 0.2;
 }
 
 .sec-page {
@@ -19,6 +45,88 @@
 	margin: 0 auto;
 	padding: 0.25rem;
 	animation: secFadeIn 0.35s ease-out;
+	position: relative;
+	z-index: 1;
+}
+
+.secretaria-theme .sec-page {
+	padding: 0.35rem;
+	gap: 1rem;
+}
+
+.secretaria-theme .sec-page > * {
+	animation: secRiseUp 420ms ease both;
+}
+
+.secretaria-theme .sec-page > *:nth-child(2) {
+	animation-delay: 40ms;
+}
+
+.secretaria-theme .sec-page > *:nth-child(3) {
+	animation-delay: 80ms;
+}
+
+.sec-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.65rem 0.75rem;
+	border: 1px solid var(--sec-border);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--sec-surface) 62%, white 38%);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.sec-toolbar .sec-toolbar-group {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.sec-flow-nav {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.sec-flow-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.3rem 0.65rem;
+	border: 1px solid var(--sec-border);
+	border-radius: 9999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	background: rgba(255, 255, 255, 0.72);
+	color: color-mix(in srgb, var(--sec-primary-strong) 88%, #10271c 12%);
+	text-decoration: none;
+}
+
+.sec-flow-link:hover {
+	background: color-mix(in srgb, var(--sec-surface) 78%, white 22%);
+	transform: translateY(-1px);
+}
+
+.sec-action-cluster {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: flex-end;
+}
+
+.sec-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	flex-wrap: wrap;
+}
+
+.sec-actions .inline-block {
+	display: inline-flex;
 }
 
 .sec-hero {
@@ -33,12 +141,29 @@
 	box-shadow: 0 10px 28px color-mix(in srgb, var(--rec-primary) 12%, transparent);
 }
 
+.secretaria-theme .sec-hero {
+	border-radius: 16px;
+	padding: 1.15rem 1.2rem 1.05rem;
+	border-color: var(--sec-border);
+	background:
+		linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, color-mix(in srgb, var(--sec-surface) 78%, white 22%) 100%);
+	box-shadow:
+		0 14px 32px color-mix(in srgb, var(--sec-primary) 12%, transparent),
+		inset 0 1px 0 rgba(255, 255, 255, 0.85);
+	backdrop-filter: blur(6px);
+}
+
 .sec-title {
 	font-size: clamp(1.05rem, 1rem + 0.55vw, 1.45rem);
 	line-height: 1.2;
 	font-weight: 700;
 	color: var(--rec-title);
 	letter-spacing: 0.01em;
+}
+
+.secretaria-theme .sec-title {
+	letter-spacing: 0.015em;
+	text-wrap: balance;
 }
 
 .sec-subtitle {
@@ -57,10 +182,25 @@
 	transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
 }
 
+.secretaria-theme .sec-card {
+	border-color: var(--sec-border);
+	border-radius: 14px;
+	background: linear-gradient(170deg, rgba(255, 255, 255, 0.97) 0%, rgba(250, 255, 251, 0.96) 100%);
+	box-shadow:
+		0 8px 24px color-mix(in srgb, var(--sec-primary) 7%, transparent),
+		inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
 .sec-card:hover {
 	border-color: color-mix(in srgb, var(--rec-primary) 34%, white 66%);
 	box-shadow: 0 14px 34px color-mix(in srgb, var(--rec-primary) 14%, transparent);
 	transform: translateY(-1px);
+}
+
+.secretaria-theme .sec-card:hover {
+	border-color: color-mix(in srgb, var(--sec-primary) 30%, white 70%);
+	box-shadow: 0 18px 36px color-mix(in srgb, var(--sec-primary) 13%, transparent);
+	transform: translateY(-2px);
 }
 
 .sec-chip {
@@ -76,16 +216,44 @@
 	color: color-mix(in srgb, var(--rec-primary-strong) 82%, var(--rec-ink) 18%);
 }
 
+.secretaria-theme .sec-chip {
+	border-color: color-mix(in srgb, var(--sec-primary) 34%, white 66%);
+	background: linear-gradient(180deg, color-mix(in srgb, var(--sec-surface) 82%, white 18%) 0%, color-mix(in srgb, var(--sec-surface) 65%, white 35%) 100%);
+	color: color-mix(in srgb, var(--sec-primary-strong) 88%, var(--rec-ink) 12%);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
 .sec-table {
 	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, white 80%);
 	border-radius: 12px;
-	overflow: hidden;
+	overflow-x: auto;
+	overflow-y: hidden;
+	-webkit-overflow-scrolling: touch;
 	background: #fff;
 	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rec-soft) 65%, white 35%);
 }
 
+.secretaria-theme .sec-table {
+	border-color: var(--sec-border);
+	border-radius: 14px;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.85),
+		0 6px 18px color-mix(in srgb, var(--sec-primary) 7%, transparent);
+}
+
+.sec-table table {
+	min-width: 920px;
+}
+
 .sec-table thead {
 	background: linear-gradient(180deg, color-mix(in srgb, var(--rec-soft) 35%, white 65%) 0%, color-mix(in srgb, var(--rec-soft) 68%, white 32%) 100%);
+}
+
+.secretaria-theme .sec-table thead {
+	background: linear-gradient(180deg, color-mix(in srgb, var(--sec-surface) 35%, white 65%) 0%, color-mix(in srgb, var(--sec-surface) 72%, white 28%) 100%);
+	position: sticky;
+	top: 0;
+	z-index: 3;
 }
 
 .sec-table th {
@@ -97,15 +265,92 @@
 	border-bottom: 1px solid color-mix(in srgb, var(--rec-primary) 18%, white 82%);
 }
 
+.secretaria-theme .sec-table tbody tr {
+	transition: background-color 160ms ease;
+}
+
+.secretaria-theme .sec-table tbody tr:hover {
+	background: color-mix(in srgb, var(--sec-surface) 35%, white 65%);
+}
+
 .sec-table td {
 	border-top: 1px solid color-mix(in srgb, var(--rec-soft) 55%, white 45%);
 	color: var(--rec-ink);
 	vertical-align: top;
 }
 
+.secretaria-theme .sec-table::-webkit-scrollbar {
+	height: 8px;
+}
+
+.secretaria-theme .sec-table::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.35);
+	border-radius: 9999px;
+}
+
+.secretaria-theme .sec-table::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--sec-primary) 35%, #9cb8a7 65%);
+	border-radius: 9999px;
+}
+
 .sec-muted {
 	font-size: 0.76rem;
 	color: color-mix(in srgb, var(--rec-ink) 58%, white 42%);
+}
+
+.secretaria-theme .sec-page :where(input, select, textarea) {
+	border-radius: 10px;
+	border-color: color-mix(in srgb, var(--sec-primary) 24%, #cfd8d3 76%) !important;
+	background: #fff;
+	transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.secretaria-theme .sec-page :where(input, select, textarea):focus {
+	border-color: color-mix(in srgb, var(--sec-primary) 56%, white 44%) !important;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--sec-primary) 22%, transparent) !important;
+	outline: none;
+}
+
+.secretaria-theme .sec-page :where(label) {
+	font-weight: 600;
+	color: color-mix(in srgb, var(--rec-ink) 78%, white 22%);
+}
+
+.secretaria-theme .sec-page button {
+	border-radius: 10px;
+	font-weight: 600;
+	transition: transform 140ms ease, box-shadow 160ms ease, background-color 160ms ease, opacity 140ms ease;
+	box-shadow: 0 2px 8px rgba(20, 40, 30, 0.12);
+}
+
+.secretaria-theme .sec-page button:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 16px rgba(20, 40, 30, 0.18);
+}
+
+.secretaria-theme .sec-page button:disabled {
+	transform: none;
+	box-shadow: none;
+	opacity: 0.72;
+}
+
+.secretaria-theme .sec-page button.bg-black {
+	background: linear-gradient(180deg, color-mix(in srgb, var(--sec-primary) 92%, white 8%) 0%, var(--sec-primary-strong) 100%);
+	color: #fff;
+}
+
+.secretaria-theme .sec-page button.bg-gray-200 {
+	background: linear-gradient(180deg, #eef2f0 0%, #dde5e1 100%);
+	color: #173425;
+}
+
+.secretaria-theme .sec-page button.bg-red-600 {
+	background: linear-gradient(180deg, #d93e49 0%, #b91f2b 100%);
+	color: #fff;
+}
+
+.secretaria-theme .sec-page a.inline-block {
+	border-radius: 10px;
 }
 
 .sec-grid-cards {
@@ -137,6 +382,11 @@
 	color: var(--rec-earth);
 }
 
+.secretaria-theme .sec-stat {
+	border-color: var(--sec-border);
+	box-shadow: 0 4px 14px color-mix(in srgb, var(--sec-primary) 8%, transparent);
+}
+
 .sec-sticky-actions {
 	position: sticky;
 	bottom: 0;
@@ -153,6 +403,17 @@
 	from {
 		opacity: 0;
 		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes secRiseUp {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
 	}
 	to {
 		opacity: 1;
@@ -185,5 +446,44 @@
 
 	.sec-page {
 		padding: 0;
+	}
+
+	.sec-table th,
+	.sec-table td {
+		white-space: nowrap;
+	}
+
+	.secretaria-theme .sec-hero {
+		padding: 1rem;
+		gap: 0.75rem;
+	}
+
+	.secretaria-theme .sec-card {
+		border-radius: 12px;
+	}
+
+	.secretaria-theme .sec-page button {
+		min-height: 36px;
+	}
+
+	.sec-toolbar {
+		padding: 0.6rem;
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.sec-toolbar .sec-toolbar-group {
+		width: 100%;
+		justify-content: flex-start;
+	}
+
+	.sec-action-cluster > * {
+		flex: 1 1 180px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.sec-table table {
+		min-width: 100%;
 	}
 }

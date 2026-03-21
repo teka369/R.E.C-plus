@@ -184,6 +184,16 @@ export default function SecretariaPromocionesPage() {
         <span className="sec-chip">Cierre de periodo</span>
       </div>
 
+      <div className="sec-toolbar">
+        <div className="sec-flow-nav">
+          <span className="sec-flow-link">1. Origen/Destino</span>
+          <span className="sec-flow-link">2. Mapeo de grupos</span>
+          <span className="sec-flow-link">3. Simulación</span>
+          <span className="sec-flow-link">4. Confirmación</span>
+        </div>
+        <span className="sec-muted">Primero simula, luego confirma la promoción para evitar errores operativos</span>
+      </div>
+
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="sec-card p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select label="Grado origen" options={[{ label: "Seleccione", value: "" }, ...gradeOptions]} value={sourceGradeId} onChange={(e) => setSourceGradeId(e.target.value)} />
@@ -192,9 +202,9 @@ export default function SecretariaPromocionesPage() {
 
         {sourceGroups.length > 0 && (
           <div className="sec-card p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="sec-toolbar">
               <h3 className="font-medium">Mapeo de grupos y selección de repetidores</h3>
-              <div className="flex items-center gap-2">
+              <div className="sec-toolbar-group">
                 <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds(new Set(sourceGroups.map((g) => g.id)))} disabled={selectedGroupIds.size === sourceGroups.length}>Seleccionar todos</Button>
                 <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds(new Set())} disabled={selectedGroupIds.size === 0}>Limpiar selección</Button>
                 {selectedGroupIds.size > 0 && <span className="text-xs text-gray-600">Seleccionados: {selectedGroupIds.size}/{sourceGroups.length}</span>}
@@ -279,7 +289,7 @@ export default function SecretariaPromocionesPage() {
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="sec-toolbar">
           {promotionProgress && (
             <div className="flex-1 border rounded p-2 bg-emerald-50">
               <div className="text-xs font-medium mb-1">Procesando: {promotionProgress.current}/{promotionProgress.total}</div>
@@ -288,8 +298,10 @@ export default function SecretariaPromocionesPage() {
               </div>
             </div>
           )}
-          <Button type="button" disabled={!canSubmit || previewing} onClick={onPreview}>{previewing ? "Simulando..." : "Simular"}</Button>
-          <Button type="submit" disabled={!canSubmit || submitting || !result}>{submitting ? `Promocionando (${selectedGroupIds.size})...` : `Confirmar y Promocionar (${selectedGroupIds.size})`}</Button>
+          <div className="sec-toolbar-group">
+            <Button type="button" disabled={!canSubmit || previewing} onClick={onPreview}>{previewing ? "Simulando..." : "Simular"}</Button>
+            <Button type="submit" disabled={!canSubmit || submitting || !result}>{submitting ? `Promocionando (${selectedGroupIds.size})...` : `Confirmar y Promocionar (${selectedGroupIds.size})`}</Button>
+          </div>
         </div>
 
         {result && (

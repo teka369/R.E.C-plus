@@ -40,18 +40,23 @@ describe('PerformanceService', () => {
     ).rejects.toThrow(ForbiddenException);
   });
 
-  it('allows secretaria and returns upserted row', async () => {
+  it('allows secretaria and returns recomputed row', async () => {
     prisma.group.findFirst.mockResolvedValue({ id: 1, nombre: '10-1' });
-    prisma.$executeRaw.mockResolvedValue(1);
-    prisma.$queryRaw.mockResolvedValue([
-      {
+    const recomputeSpy = jest
+      .spyOn(
+        service as unknown as {
+          recomputeGroupPerformance: (groupId: number) => Promise<unknown>;
+        },
+        'recomputeGroupPerformance',
+      )
+      .mockResolvedValue({
         id: 1,
         groupId: 1,
+        academicPeriodId: 99,
         promedioGeneral: 4.2,
         asistenciaPromedio: 94,
         aprobacion: 88,
         mejorAsignatura: 'Matemáticas',
-        estudiantesDestacados: 'Ana, Luis',
         inasistenciasJustificadas: 2,
         inasistenciasInjustificadas: 1,
         porcentajeCursoMayorAsistencia: 96,
@@ -61,8 +66,40 @@ describe('PerformanceService', () => {
         tendenciaGeneral: 'Positiva',
         createdAt: new Date('2026-02-28T10:00:00.000Z'),
         updatedAt: new Date('2026-02-28T10:10:00.000Z'),
-      },
-    ]);
+        leagueScore: 87,
+        scoreBreakdown: {
+          promedio: {
+            raw: 4.2,
+            normalized: 84,
+            weight: 0.4,
+            contribution: 33.6,
+          },
+          asistencia: {
+            raw: 94,
+            normalized: 94,
+            weight: 0.2,
+            contribution: 18.8,
+          },
+          aprobacion: {
+            raw: 88,
+            normalized: 88,
+            weight: 0.3,
+            contribution: 26.4,
+          },
+          recuperacionAusencias: {
+            raw: 100,
+            normalized: 100,
+            weight: 0.1,
+            contribution: 10,
+          },
+          total: 88.8,
+        },
+        derivedSignals: {
+          recoveryCompletionRate: null,
+          resourcesPerSubject: 0,
+          activeSyllabusRate: 0,
+        },
+      });
 
     const result = await service.upsertByGrade(
       { userId: 1, role: UserRole.SECRETARIA },
@@ -72,6 +109,6 @@ describe('PerformanceService', () => {
 
     expect(result).toBeTruthy();
     expect(result?.groupId).toBe(1);
-    expect(prisma.$executeRaw).toHaveBeenCalled();
+    expect(recomputeSpy).toHaveBeenCalledWith(1);
   });
 });

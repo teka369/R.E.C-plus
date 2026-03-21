@@ -22,7 +22,6 @@ export type FeedbackDTO = {
 };
 
 export type CreateFeedbackInput = {
-  teacherId: number;
   studentId: number;
   groupId: number;
   subjectId?: number;

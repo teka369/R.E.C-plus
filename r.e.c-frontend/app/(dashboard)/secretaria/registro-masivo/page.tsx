@@ -330,7 +330,6 @@ export default function RegistroMasivoPage() {
     };
   }, [items.length]);
 
-  const preview = items.slice(0, 20);
   const invalidCount = validation.filter((v) => !v.isValid).length;
   const validCount = items.length - invalidCount;
 
@@ -393,6 +392,16 @@ export default function RegistroMasivoPage() {
         </div>
       </div>
 
+      <div className="sec-toolbar">
+        <div className="sec-flow-nav">
+          <span className="sec-flow-link">1. Subir archivo</span>
+          <span className="sec-flow-link">2. Validar filas</span>
+          <span className="sec-flow-link">3. Corregir en línea</span>
+          <span className="sec-flow-link">4. Registrar</span>
+        </div>
+        <span className="sec-muted">Trabaja con selección por filas para un control más seguro en lotes grandes</span>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="sec-card p-4 space-y-3">
           <h2 className="font-medium">Subir archivo</h2>
@@ -402,7 +411,7 @@ export default function RegistroMasivoPage() {
           }} />
           <p className="text-xs text-gray-600">Formatos soportados: CSV con encabezados, Excel (.xlsx/.xls) o JSON (arreglo).</p>
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
-          <div className="flex items-center gap-3">
+          <div className="sec-action-cluster">
             <label className="text-xs flex items-center gap-2">
               <input type="checkbox" checked={registerOnlyValid} onChange={(e) => setRegisterOnlyValid(e.target.checked)} /> Registrar sólo filas válidas
             </label>
@@ -424,13 +433,15 @@ export default function RegistroMasivoPage() {
             <p className="text-xs text-gray-600">Sube un archivo para ver la vista previa.</p>
           ) : (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="sec-toolbar">
                 <label className="text-xs flex items-center gap-2">
                   <input type="checkbox" checked={showErrorsOnly} onChange={(e) => setShowErrorsOnly(e.target.checked)} /> 
                   Solo mostrar filas con errores ({invalidCount})
                 </label>
-                <Button variant="secondary" size="sm" onClick={selectAllDisplayed} disabled={displayedItems.length === 0}>{selectedRows.size > 0 ? "Más filas" : "Seleccionar mostradas"}</Button>
-                <Button variant="secondary" size="sm" onClick={clearSelection} disabled={selectedRows.size === 0}>Limpiar selección ({selectedRows.size})</Button>
+                <div className="sec-toolbar-group">
+                  <Button variant="secondary" size="sm" onClick={selectAllDisplayed} disabled={displayedItems.length === 0}>{selectedRows.size > 0 ? "Más filas" : "Seleccionar mostradas"}</Button>
+                  <Button variant="secondary" size="sm" onClick={clearSelection} disabled={selectedRows.size === 0}>Limpiar selección ({selectedRows.size})</Button>
+                </div>
               </div>
 
               {uploadProgress && (

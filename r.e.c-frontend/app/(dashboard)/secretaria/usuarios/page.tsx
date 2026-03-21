@@ -34,10 +34,13 @@ export default function UsuariosPage() {
         <span className="sec-chip">Control global</span>
       </div>
 
-      <div className="flex items-center justify-between">
-        <Link href="/secretaria/usuarios/create" prefetch={false}>
-          <Button>Crear usuario</Button>
-        </Link>
+      <div className="sec-toolbar">
+        <div className="sec-toolbar-group">
+          <Link href="/secretaria/usuarios/create" prefetch={false}>
+            <Button>Crear usuario</Button>
+          </Link>
+        </div>
+        <span className="sec-muted">Gestion centralizada de cuentas por rol</span>
       </div>
 
       <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -78,7 +81,7 @@ export default function UsuariosPage() {
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.role}</td>
                 <td className="p-2">{u.documento_identidad}</td>
-                <td className="p-2 space-x-2">
+                <td className="p-2 sec-actions">
                     <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
                     <Button variant="secondary" size="sm">Editar</Button>
                   </Link>

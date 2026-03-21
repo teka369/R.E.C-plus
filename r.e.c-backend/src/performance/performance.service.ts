@@ -3,22 +3,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EvaluacionTipo, SyllabusStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 import { UpsertGradePerformanceDto } from './dto/performance.dto';
-import {
-  type GradeEntryJson,
-  UpsertStudentAcademicDto,
-} from './dto/student-academic.dto';
+import { UpsertStudentAcademicDto } from './dto/student-academic.dto';
 
 type GradePerformanceRow = {
   id: number;
   groupId: number;
+  academicPeriodId: number;
   promedioGeneral: number | null;
   asistenciaPromedio: number | null;
   aprobacion: number | null;
   mejorAsignatura: string | null;
-  estudiantesDestacados: string | null;
   inasistenciasJustificadas: number | null;
   inasistenciasInjustificadas: number | null;
   porcentajeCursoMayorAsistencia: number | null;
@@ -263,20 +261,31 @@ export class PerformanceService {
     };
   }
 
-  private async getPersistedGroupPerformance(groupId: number) {
-    const rows = await this.prisma.$queryRaw<GradePerformanceRow[]>`
-      SELECT *
-      FROM "GradePerformance"
-      WHERE "groupId" = ${groupId}
-      LIMIT 1
-    `;
-    return rows[0] ?? null;
+  private async getPersistedGroupPerformance(
+    groupId: number,
+    academicPeriodId: number,
+  ) {
+    return this.prisma.gradePerformance.findUnique({
+      where: { groupId_academicPeriodId: { groupId, academicPeriodId } },
+    });
   }
 
   private async recomputeGroupPerformance(
     groupId: number,
   ): Promise<RecomputedGradePerformance> {
-    const previous = await this.getPersistedGroupPerformance(groupId);
+    const activePeriod = await this.prisma.academicPeriod.findFirst({
+      where: { estado: 'ACTIVE' },
+      select: { id: true },
+    });
+    if (!activePeriod) {
+      throw new NotFoundException(
+        'No hay período académico activo. Ejecute seed-active-period.js primero.',
+      );
+    }
+    const previous = await this.getPersistedGroupPerformance(
+      groupId,
+      activePeriod.id,
+    );
 
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
@@ -301,11 +310,46 @@ export class PerformanceService {
       },
     });
 
+    // Batch-fetch evaluation grades para calcular promedios (reemplaza parcial1-4)
+    const studentGroups = await this.prisma.studentGroup.findMany({
+      where: { groupId },
+      select: { id: true, studentId: true },
+    });
+    const sgByStudentId = new Map(
+      studentGroups.map((sg) => [sg.studentId, sg.id]),
+    );
+    const offeringIds = Array.from(
+      new Set(
+        records
+          .map((r) => r.academicOfferingId)
+          .filter((id): id is number => id != null),
+      ),
+    );
+    const allEvalGrades =
+      offeringIds.length > 0
+        ? await this.prisma.evaluationGrade.findMany({
+            where: {
+              studentGroupId: { in: studentGroups.map((sg) => sg.id) },
+              academicEvaluation: { academicOfferingId: { in: offeringIds } },
+            },
+            include: {
+              academicEvaluation: { select: { academicOfferingId: true } },
+            },
+          })
+        : [];
+    const evalGradesIndex = new Map<string, number[]>();
+    allEvalGrades.forEach((g) => {
+      const key = `${g.studentGroupId}_${g.academicEvaluation.academicOfferingId}`;
+      const list = evalGradesIndex.get(key) ?? [];
+      list.push(g.nota);
+      evalGradesIndex.set(key, list);
+    });
+
     const materialsCount = await this.prisma.studyMaterial.count({
       where: { groupId },
     });
     const activeSyllabiCount = await this.prisma.syllabus.count({
-      where: { groupId, status: 'ACTIVO' },
+      where: { groupId, status: SyllabusStatus.ACTIVO },
     });
     const recoveryRows = await this.prisma.recoveryRequest.findMany({
       where: { groupId },
@@ -313,13 +357,13 @@ export class PerformanceService {
     });
 
     const normalized = records.map((record) => {
-      const gradesJson = this.getGradesJsonValue(record);
-      const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
-        record.parcial1,
-        record.parcial2,
-        record.parcial3,
-        record.parcial4,
-      ]);
+      const sgId = sgByStudentId.get(record.studentId);
+      const offeringId = record.academicOfferingId;
+      const evalGrades =
+        sgId != null && offeringId != null
+          ? (evalGradesIndex.get(`${sgId}_${offeringId}`) ?? [])
+          : [];
+      const promedioMateria = this.computePromedioFromEvalGrades(evalGrades);
       const gradeValue =
         record.notaFinal != null ? record.notaFinal : promedioMateria;
       const ausenciasTotal =
@@ -435,13 +479,6 @@ export class PerformanceService {
       .sort((a, b) => b.average - a.average)
       .slice(0, 3);
 
-    const estudiantesDestacados =
-      topStudents.length > 0
-        ? topStudents
-            .map((entry) => `${entry.fullName} (${entry.average.toFixed(1)})`)
-            .join(', ')
-        : null;
-
     const variacionPromedio =
       previous?.promedioGeneral != null && promedioGeneral != null
         ? Number((promedioGeneral - previous.promedioGeneral).toFixed(2))
@@ -503,13 +540,17 @@ export class PerformanceService {
             : 'MIXTA';
 
     const updated = await this.prisma.gradePerformance.upsert({
-      where: { groupId },
+      where: {
+        groupId_academicPeriodId: {
+          groupId,
+          academicPeriodId: activePeriod.id,
+        },
+      },
       update: {
         promedioGeneral,
         asistenciaPromedio,
         aprobacion,
         mejorAsignatura,
-        estudiantesDestacados,
         inasistenciasJustificadas,
         inasistenciasInjustificadas,
         porcentajeCursoMayorAsistencia,
@@ -520,11 +561,11 @@ export class PerformanceService {
       },
       create: {
         groupId,
+        academicPeriodId: activePeriod.id,
         promedioGeneral,
         asistenciaPromedio,
         aprobacion,
         mejorAsignatura,
-        estudiantesDestacados,
         inasistenciasJustificadas,
         inasistenciasInjustificadas,
         porcentajeCursoMayorAsistencia,
@@ -534,6 +575,21 @@ export class PerformanceService {
         tendenciaGeneral,
       },
     });
+
+    // Sincronizar PerformanceTopStudent
+    await this.prisma.performanceTopStudent.deleteMany({
+      where: { gradePerformanceId: updated.id },
+    });
+    if (topStudents.length > 0) {
+      await this.prisma.performanceTopStudent.createMany({
+        data: topStudents.map((entry, index) => ({
+          gradePerformanceId: updated.id,
+          fullName: entry.fullName,
+          average: entry.average,
+          rank: index + 1,
+        })),
+      });
+    }
 
     const row = updated as unknown as GradePerformanceRow;
     const scoreBreakdown = this.buildScoreBreakdown({
@@ -563,32 +619,9 @@ export class PerformanceService {
     return Number((total / present.length).toFixed(2));
   }
 
-  private computePromedioFromGradesJson(
-    gradesJson: string | null,
-    fallback: Array<number | null | undefined>,
-  ): number | null {
-    if (gradesJson) {
-      try {
-        const parsedRaw: unknown = JSON.parse(gradesJson);
-        const parsed = Array.isArray(parsedRaw)
-          ? (parsedRaw as GradeEntryJson[])
-          : [];
-        const values = parsed
-          .map((g) => g.value)
-          .filter(
-            (v): v is number => typeof v === 'number' && !Number.isNaN(v),
-          );
-        if (values.length > 0) return this.average(values);
-      } catch {
-        // fallback to legacy parcial fields
-      }
-    }
-    return this.average(fallback);
-  }
-
-  private getGradesJsonValue(record: unknown): string | null {
-    const value = (record as { gradesJson?: unknown }).gradesJson;
-    return typeof value === 'string' ? value : null;
+  private computePromedioFromEvalGrades(grades: number[]): number | null {
+    if (grades.length === 0) return null;
+    return this.average(grades);
   }
 
   private async ensureCanViewStudentAcademic(actor: Actor, studentId: number) {
@@ -758,24 +791,74 @@ export class PerformanceService {
       orderBy: { subject: { nombre: 'asc' } },
     });
 
-    const normalized = records.map((record) => {
-      const gradesJson = this.getGradesJsonValue(record);
-      const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
-        record.parcial1,
-        record.parcial2,
-        record.parcial3,
-        record.parcial4,
-      ]);
+    // Batch-fetch evaluation grades para este estudiante
+    const studentSgId = studentGroup.id;
+    const recordOfferingIds = Array.from(
+      new Set(
+        records
+          .map((r) => r.academicOfferingId)
+          .filter((id): id is number => id != null),
+      ),
+    );
+    const studentEvalGrades =
+      recordOfferingIds.length > 0
+        ? await this.prisma.evaluationGrade.findMany({
+            where: {
+              studentGroupId: studentSgId,
+              academicEvaluation: {
+                academicOfferingId: { in: recordOfferingIds },
+              },
+            },
+            include: {
+              academicEvaluation: {
+                select: {
+                  titulo: true,
+                  tipo: true,
+                  orden: true,
+                  porcentaje: true,
+                  academicOfferingId: true,
+                },
+              },
+            },
+            orderBy: { academicEvaluation: { orden: 'asc' } },
+          })
+        : [];
+    const evalByOfferingForStudent = new Map<
+      number,
+      Array<{
+        titulo: string;
+        tipo: string;
+        orden: number;
+        porcentaje: number | null;
+        nota: number;
+      }>
+    >();
+    studentEvalGrades.forEach((g) => {
+      const oid = g.academicEvaluation.academicOfferingId;
+      const list = evalByOfferingForStudent.get(oid) ?? [];
+      list.push({
+        titulo: g.academicEvaluation.titulo,
+        tipo: g.academicEvaluation.tipo,
+        orden: g.academicEvaluation.orden,
+        porcentaje: g.academicEvaluation.porcentaje,
+        nota: g.nota,
+      });
+      evalByOfferingForStudent.set(oid, list);
+    });
 
+    const normalized = records.map((record) => {
+      const evaluaciones =
+        record.academicOfferingId != null
+          ? (evalByOfferingForStudent.get(record.academicOfferingId) ?? [])
+          : [];
+      const promedioMateria = this.computePromedioFromEvalGrades(
+        evaluaciones.map((e) => e.nota),
+      );
       return {
         id: record.id,
         subjectId: record.subjectId,
         subject: { id: record.subject.id, nombre: record.subject.nombre },
-        parcial1: record.parcial1,
-        parcial2: record.parcial2,
-        parcial3: record.parcial3,
-        parcial4: record.parcial4,
-        gradesJson,
+        evaluaciones,
         notaFinal: record.notaFinal,
         promedioMateria,
         progresoMateria: record.progresoMateria,
@@ -858,26 +941,77 @@ export class PerformanceService {
       byStudent.set(record.studentId, list);
     });
 
+    // Batch-fetch evaluation grades para todos los estudiantes del grupo
+    const allSgIds = students.map((s) => s.id);
+    const groupOfferingIds = Array.from(
+      new Set(
+        records
+          .map((r) => r.academicOfferingId)
+          .filter((id): id is number => id != null),
+      ),
+    );
+    const groupEvalGrades =
+      groupOfferingIds.length > 0 && allSgIds.length > 0
+        ? await this.prisma.evaluationGrade.findMany({
+            where: {
+              studentGroupId: { in: allSgIds },
+              academicEvaluation: {
+                academicOfferingId: { in: groupOfferingIds },
+              },
+            },
+            include: {
+              academicEvaluation: {
+                select: {
+                  titulo: true,
+                  tipo: true,
+                  orden: true,
+                  porcentaje: true,
+                  academicOfferingId: true,
+                },
+              },
+            },
+          })
+        : [];
+    const groupEvalIndex = new Map<
+      string,
+      Array<{
+        titulo: string;
+        tipo: string;
+        orden: number;
+        porcentaje: number | null;
+        nota: number;
+      }>
+    >();
+    groupEvalGrades.forEach((g) => {
+      const key = `${g.studentGroupId}_${g.academicEvaluation.academicOfferingId}`;
+      const list = groupEvalIndex.get(key) ?? [];
+      list.push({
+        titulo: g.academicEvaluation.titulo,
+        tipo: g.academicEvaluation.tipo,
+        orden: g.academicEvaluation.orden,
+        porcentaje: g.academicEvaluation.porcentaje,
+        nota: g.nota,
+      });
+      groupEvalIndex.set(key, list);
+    });
+
     const normalizedStudents = students.map((item) => {
       const studentRecords = byStudent.get(item.student.id) ?? [];
 
       const normalizedRecords = studentRecords.map((record) => {
-        const gradesJson = this.getGradesJsonValue(record);
-        const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
-          record.parcial1,
-          record.parcial2,
-          record.parcial3,
-          record.parcial4,
-        ]);
+        const evaluaciones =
+          record.academicOfferingId != null
+            ? (groupEvalIndex.get(`${item.id}_${record.academicOfferingId}`) ??
+              [])
+            : [];
+        const promedioMateria = this.computePromedioFromEvalGrades(
+          evaluaciones.map((e) => e.nota),
+        );
         return {
           id: record.id,
           subjectId: record.subjectId,
           subject: { id: record.subject.id, nombre: record.subject.nombre },
-          parcial1: record.parcial1,
-          parcial2: record.parcial2,
-          parcial3: record.parcial3,
-          parcial4: record.parcial4,
-          gradesJson,
+          evaluaciones,
           notaFinal: record.notaFinal,
           promedioMateria,
           progresoMateria: record.progresoMateria,
@@ -941,10 +1075,23 @@ export class PerformanceService {
       throw new NotFoundException('La materia no está asignada a ese grupo');
     }
 
-    const gradesJsonPatch =
-      dto.gradesJson !== undefined
-        ? ({ gradesJson: dto.gradesJson } as Record<string, unknown>)
-        : {};
+    // Lookup del período activo y offering para vincular EvaluationGrade
+    const activePeriod = await this.prisma.academicPeriod.findFirst({
+      where: { estado: 'ACTIVE' },
+      select: { id: true },
+    });
+    const offering = activePeriod
+      ? await this.prisma.academicOffering.findUnique({
+          where: {
+            groupId_subjectId_academicPeriodId: {
+              groupId,
+              subjectId,
+              academicPeriodId: activePeriod.id,
+            },
+          },
+          select: { id: true },
+        })
+      : null;
 
     const result = await this.prisma.studentAcademicRecord.upsert({
       where: {
@@ -955,35 +1102,69 @@ export class PerformanceService {
         },
       },
       update: {
-        parcial1: dto.parcial1,
-        parcial2: dto.parcial2,
-        parcial3: dto.parcial3,
-        parcial4: dto.parcial4,
-        ...gradesJsonPatch,
         notaFinal: dto.notaFinal,
         progresoMateria: dto.progresoMateria,
         inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
         inasistenciasInjustificadas: dto.inasistenciasInjustificadas ?? 0,
         observaciones: dto.observaciones,
         updatedByTeacherId: actor.userId,
+        ...(offering ? { academicOfferingId: offering.id } : {}),
       },
       create: {
         studentId,
         groupId,
         subjectId,
-        parcial1: dto.parcial1,
-        parcial2: dto.parcial2,
-        parcial3: dto.parcial3,
-        parcial4: dto.parcial4,
-        ...gradesJsonPatch,
         notaFinal: dto.notaFinal,
         progresoMateria: dto.progresoMateria,
         inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
         inasistenciasInjustificadas: dto.inasistenciasInjustificadas ?? 0,
         observaciones: dto.observaciones,
         updatedByTeacherId: actor.userId,
+        ...(offering ? { academicOfferingId: offering.id } : {}),
       },
     });
+
+    // Sincronizar EvaluationGrade para parciales provistos (backward compat con DTO)
+    if (offering && studentGroup) {
+      const parciales = [
+        { titulo: 'Parcial 1', orden: 1, nota: dto.parcial1 },
+        { titulo: 'Parcial 2', orden: 2, nota: dto.parcial2 },
+        { titulo: 'Parcial 3', orden: 3, nota: dto.parcial3 },
+        { titulo: 'Parcial 4', orden: 4, nota: dto.parcial4 },
+      ];
+      for (const p of parciales) {
+        if (p.nota == null) continue;
+        let evalTemplate = await this.prisma.academicEvaluation.findFirst({
+          where: { academicOfferingId: offering.id, orden: p.orden },
+          select: { id: true },
+        });
+        if (!evalTemplate) {
+          evalTemplate = await this.prisma.academicEvaluation.create({
+            data: {
+              academicOfferingId: offering.id,
+              titulo: p.titulo,
+              tipo: EvaluacionTipo.PARCIAL,
+              orden: p.orden,
+            },
+            select: { id: true },
+          });
+        }
+        await this.prisma.evaluationGrade.upsert({
+          where: {
+            academicEvaluationId_studentGroupId: {
+              academicEvaluationId: evalTemplate.id,
+              studentGroupId: studentGroup.id,
+            },
+          },
+          update: { nota: p.nota },
+          create: {
+            academicEvaluationId: evalTemplate.id,
+            studentGroupId: studentGroup.id,
+            nota: p.nota,
+          },
+        });
+      }
+    }
 
     const subject = await this.prisma.subject.findUnique({
       where: { id: result.subjectId },
@@ -993,14 +1174,38 @@ export class PerformanceService {
       throw new NotFoundException('Materia no encontrada');
     }
 
-    const gradesJson = this.getGradesJsonValue(result);
+    // Calcular promedio desde EvaluationGrade
+    const evalGradesResult =
+      offering && studentGroup
+        ? await this.prisma.evaluationGrade.findMany({
+            where: {
+              studentGroupId: studentGroup.id,
+              academicEvaluation: { academicOfferingId: offering.id },
+            },
+            include: {
+              academicEvaluation: {
+                select: {
+                  titulo: true,
+                  tipo: true,
+                  orden: true,
+                  porcentaje: true,
+                },
+              },
+            },
+            orderBy: { academicEvaluation: { orden: 'asc' } },
+          })
+        : [];
+    const evaluaciones = evalGradesResult.map((g) => ({
+      titulo: g.academicEvaluation.titulo,
+      tipo: g.academicEvaluation.tipo,
+      orden: g.academicEvaluation.orden,
+      porcentaje: g.academicEvaluation.porcentaje,
+      nota: g.nota,
+    }));
 
-    const promedioMateria = this.computePromedioFromGradesJson(gradesJson, [
-      result.parcial1,
-      result.parcial2,
-      result.parcial3,
-      result.parcial4,
-    ]);
+    const promedioMateria = this.computePromedioFromEvalGrades(
+      evaluaciones.map((e) => e.nota),
+    );
 
     return {
       id: result.id,
@@ -1008,11 +1213,7 @@ export class PerformanceService {
       groupId: result.groupId,
       subjectId: result.subjectId,
       subject,
-      parcial1: result.parcial1,
-      parcial2: result.parcial2,
-      parcial3: result.parcial3,
-      parcial4: result.parcial4,
-      gradesJson,
+      evaluaciones,
       notaFinal: result.notaFinal,
       promedioMateria,
       progresoMateria: result.progresoMateria,

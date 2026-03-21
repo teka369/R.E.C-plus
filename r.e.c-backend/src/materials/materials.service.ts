@@ -7,7 +7,13 @@ import {
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { MaterialType, Prisma, Visibility } from '@prisma/client';
+import {
+  AcademicPeriodStatus,
+  MaterialType,
+  Prisma,
+  SyllabusStatus,
+  Visibility,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStudyMaterialDto } from './dto/create-study-material.dto';
 import { UpdateStudyMaterialDto } from './dto/update-study-material.dto';
@@ -112,7 +118,7 @@ export class MaterialsService {
       dto.groupId,
       dto.subjectId,
     );
-    return this.prisma.studyMaterial.create({
+    const material = await this.prisma.studyMaterial.create({
       data: {
         subjectId: dto.subjectId,
         groupId: dto.groupId,
@@ -126,6 +132,35 @@ export class MaterialsService {
         visibility: dto.visibility as Visibility,
       },
     });
+
+    // Enlace a AcademicOffering (best-effort)
+    try {
+      const activePeriod = await this.prisma.academicPeriod.findFirst({
+        where: { estado: AcademicPeriodStatus.ACTIVE },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (activePeriod) {
+        const offering = await this.prisma.academicOffering.findUnique({
+          where: {
+            groupId_subjectId_academicPeriodId: {
+              groupId: dto.groupId,
+              subjectId: dto.subjectId,
+              academicPeriodId: activePeriod.id,
+            },
+          },
+        });
+        if (offering) {
+          return await this.prisma.studyMaterial.update({
+            where: { id: material.id },
+            data: { academicOfferingId: offering.id },
+          });
+        }
+      }
+    } catch {
+      // No critico
+    }
+
+    return material;
   }
 
   async updateStudyMaterial(
@@ -384,18 +419,47 @@ export class MaterialsService {
       dto.groupId,
       dto.subjectId,
     );
-    return this.prisma.syllabus.create({
+    const syllabus = await this.prisma.syllabus.create({
       data: {
         subjectId: dto.subjectId,
         groupId: dto.groupId,
         teacherId: actor.userId,
         title: dto.title,
-        period: dto.period,
-        status: dto.status ?? 'BORRADOR',
+        status:
+          (dto.status as SyllabusStatus | undefined) ?? SyllabusStatus.BORRADOR,
         duration: dto.duration,
         content: dto.content,
       },
     });
+
+    // Enlace a AcademicOffering (best-effort)
+    try {
+      const activePeriod = await this.prisma.academicPeriod.findFirst({
+        where: { estado: AcademicPeriodStatus.ACTIVE },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (activePeriod) {
+        const offering = await this.prisma.academicOffering.findUnique({
+          where: {
+            groupId_subjectId_academicPeriodId: {
+              groupId: dto.groupId,
+              subjectId: dto.subjectId,
+              academicPeriodId: activePeriod.id,
+            },
+          },
+        });
+        if (offering) {
+          return await this.prisma.syllabus.update({
+            where: { id: syllabus.id },
+            data: { academicOfferingId: offering.id },
+          });
+        }
+      }
+    } catch {
+      // No critico
+    }
+
+    return syllabus;
   }
 
   async updateSyllabus(
@@ -412,8 +476,7 @@ export class MaterialsService {
       where: { id },
       data: {
         title: dto.title,
-        period: dto.period,
-        status: dto.status,
+        status: dto.status as SyllabusStatus | undefined,
         duration: dto.duration,
         content: dto.content,
       },
@@ -486,10 +549,26 @@ export class MaterialsService {
 
   // Group Info (Leagues)
   async getGroupInfo(groupId: number) {
-    const info = await this.prisma.groupInfo.findUnique({ where: { groupId } });
-    return (
-      info ?? { groupId, summary: null, highlights: [], metrics: {}, links: [] }
-    );
+    const info = await this.prisma.groupInfo.findUnique({
+      where: { groupId },
+      include: {
+        infoHighlights: { orderBy: { orden: 'asc' } },
+        infoMetrics: { orderBy: { orden: 'asc' } },
+        infoLinks: { orderBy: { orden: 'asc' } },
+      },
+    });
+    if (!info)
+      return { groupId, summary: null, highlights: [], metrics: {}, links: [] };
+    return {
+      groupId: info.groupId,
+      summary: info.summary,
+      highlights: info.infoHighlights.map((h) => h.texto),
+      metrics: info.infoMetrics.reduce(
+        (acc, m) => ({ ...acc, [m.etiqueta]: Number(m.valor) || m.valor }),
+        {} as Record<string, unknown>,
+      ),
+      links: info.infoLinks.map((l) => l.url),
+    };
   }
 
   async updateGroupInfo(
@@ -506,37 +585,87 @@ export class MaterialsService {
         'Solo el director del grupo puede actualizar',
       );
     }
-    return this.prisma.groupInfo.upsert({
+    // Upsert del registro raíz con solo el summary
+    await this.prisma.groupInfo.upsert({
       where: { groupId },
-      update: {
-        summary: dto.summary ?? undefined,
-        highlights: dto.highlights
-          ? this.toJsonValue(dto.highlights)
-          : undefined,
-        metrics: dto.metrics ? this.toJsonValue(dto.metrics) : undefined,
-        links: dto.links ? this.toJsonValue(dto.links) : undefined,
-      },
-      create: {
-        groupId,
-        summary: dto.summary ?? null,
-        highlights: dto.highlights
-          ? this.toJsonValue(dto.highlights)
-          : undefined,
-        metrics: dto.metrics ? this.toJsonValue(dto.metrics) : undefined,
-        links: dto.links ? this.toJsonValue(dto.links) : undefined,
-      },
+      update: { summary: dto.summary ?? undefined },
+      create: { groupId, summary: dto.summary ?? null },
     });
+    // Sincronizar highlights
+    if (dto.highlights !== undefined) {
+      await this.prisma.groupInfoHighlight.deleteMany({ where: { groupId } });
+      if (dto.highlights.length > 0) {
+        await this.prisma.groupInfoHighlight.createMany({
+          data: dto.highlights.map((texto, i) => ({
+            groupId,
+            texto,
+            orden: i,
+          })),
+        });
+      }
+    }
+    // Sincronizar metrics
+    if (dto.metrics !== undefined && dto.metrics !== null) {
+      await this.prisma.groupInfoMetric.deleteMany({ where: { groupId } });
+      const metricRows = Object.entries(dto.metrics)
+        .filter(([, v]) => v != null)
+        .map(([k, v], i) => ({
+          groupId,
+          etiqueta: k,
+          valor: String(v),
+          orden: i,
+        }));
+      if (metricRows.length > 0) {
+        await this.prisma.groupInfoMetric.createMany({ data: metricRows });
+      }
+    }
+    // Sincronizar links
+    if (dto.links !== undefined) {
+      await this.prisma.groupInfoLink.deleteMany({ where: { groupId } });
+      if (dto.links.length > 0) {
+        await this.prisma.groupInfoLink.createMany({
+          data: dto.links.map((url, i) => ({
+            groupId,
+            titulo: url,
+            url,
+            orden: i,
+          })),
+        });
+      }
+    }
+    return this.getGroupInfo(groupId);
   }
 
   async listGradeLeagues(gradeId: number) {
     const groups = await this.prisma.group.findMany({
       where: { gradeId },
-      include: { info: true },
+      include: {
+        info: {
+          include: {
+            infoHighlights: { orderBy: { orden: 'asc' } },
+            infoMetrics: { orderBy: { orden: 'asc' } },
+            infoLinks: { orderBy: { orden: 'asc' } },
+          },
+        },
+      },
     });
     return groups.map((g) => ({
       groupId: g.id,
       nombre: g.nombre,
-      info: g.info ?? { summary: null, highlights: [], metrics: {}, links: [] },
+      info: g.info
+        ? {
+            summary: g.info.summary,
+            highlights: g.info.infoHighlights.map((h) => h.texto),
+            metrics: g.info.infoMetrics.reduce(
+              (acc, m) => ({
+                ...acc,
+                [m.etiqueta]: Number(m.valor) || m.valor,
+              }),
+              {} as Record<string, unknown>,
+            ),
+            links: g.info.infoLinks.map((l) => l.url),
+          }
+        : { summary: null, highlights: [], metrics: {}, links: [] },
     }));
   }
 }

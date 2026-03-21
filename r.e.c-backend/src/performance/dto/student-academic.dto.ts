@@ -61,8 +61,4 @@ export class UpsertStudentAcademicDto {
   @IsString()
   @MaxLength(1000)
   observaciones?: string;
-
-  @IsOptional()
-  @IsString()
-  gradesJson?: string;
 }

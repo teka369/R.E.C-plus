@@ -22,9 +22,6 @@ class FeedbackPointsDto {
 
 export class CreateFeedbackDto {
   @IsInt()
-  teacherId: number;
-
-  @IsInt()
   studentId: number;
 
   @IsInt()

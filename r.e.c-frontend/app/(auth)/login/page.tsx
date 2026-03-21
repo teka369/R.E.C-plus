@@ -4,7 +4,12 @@ import Navbar from "@/components/layouts/Navbar";
 import api from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/lib/errors";
-import { Player } from "@lottiefiles/react-lottie-player";
+import dynamic from "next/dynamic";
+
+const Player = dynamic(
+  () => import("@lottiefiles/react-lottie-player").then((module) => module.Player),
+  { ssr: false },
+);
 
 function KidsLoginIllustration() {
   return (

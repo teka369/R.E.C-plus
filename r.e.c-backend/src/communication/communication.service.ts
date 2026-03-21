@@ -3,6 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  FeedbackEstado as PrismaFeedbackEstado,
+  FeedbackTipo as PrismaFeedbackTipo,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFeedbackDto, UpdateFeedbackDto } from './dto/feedback.dto';
 import { SendMessageDto } from './dto/message.dto';
@@ -42,11 +46,25 @@ export class CommunicationService {
         subjectId: dto.subjectId ?? null,
         title: dto.title,
         content: dto.content,
-        tipo: dto.tipo ?? 'INFORMATIVA',
-        estado: dto.estado ?? 'PENDIENTE',
-        strengths: dto.strengths ? { items: dto.strengths.items } : undefined,
-        improvements: dto.improvements
-          ? { items: dto.improvements.items }
+        tipo: (dto.tipo ??
+          PrismaFeedbackTipo.INFORMATIVA) as PrismaFeedbackTipo,
+        estado: (dto.estado ??
+          PrismaFeedbackEstado.PENDIENTE) as PrismaFeedbackEstado,
+        feedbackStrengths: dto.strengths?.items?.length
+          ? {
+              create: dto.strengths.items.map((texto, i) => ({
+                texto,
+                orden: i,
+              })),
+            }
+          : undefined,
+        feedbackImprovements: dto.improvements?.items?.length
+          ? {
+              create: dto.improvements.items.map((texto, i) => ({
+                texto,
+                orden: i,
+              })),
+            }
           : undefined,
       },
     });
@@ -65,18 +83,42 @@ export class CommunicationService {
     if (existing.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede editar este feedback');
     }
+    if (dto.strengths !== undefined) {
+      await this.prisma.feedbackStrength.deleteMany({ where: { feedbackId } });
+      if (dto.strengths.items.length > 0) {
+        await this.prisma.feedbackStrength.createMany({
+          data: dto.strengths.items.map((texto, i) => ({
+            feedbackId,
+            texto,
+            orden: i,
+          })),
+        });
+      }
+    }
+    if (dto.improvements !== undefined) {
+      await this.prisma.feedbackImprovement.deleteMany({
+        where: { feedbackId },
+      });
+      if (dto.improvements.items.length > 0) {
+        await this.prisma.feedbackImprovement.createMany({
+          data: dto.improvements.items.map((texto, i) => ({
+            feedbackId,
+            texto,
+            orden: i,
+          })),
+        });
+      }
+    }
     return this.prisma.feedback.update({
       where: { id: feedbackId },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.content !== undefined ? { content: dto.content } : {}),
-        ...(dto.tipo !== undefined ? { tipo: dto.tipo } : {}),
-        ...(dto.estado !== undefined ? { estado: dto.estado } : {}),
-        ...(dto.strengths !== undefined
-          ? { strengths: { items: dto.strengths.items } }
+        ...(dto.tipo !== undefined
+          ? { tipo: dto.tipo as PrismaFeedbackTipo }
           : {}),
-        ...(dto.improvements !== undefined
-          ? { improvements: { items: dto.improvements.items } }
+        ...(dto.estado !== undefined
+          ? { estado: dto.estado as PrismaFeedbackEstado }
           : {}),
       },
     });
@@ -133,24 +175,27 @@ export class CommunicationService {
         orderBy: { createdAt: 'desc' },
       });
     }
-    // Profesor: validar que enseña al menos en uno de los grupos del estudiante
+    // Profesor: solo puede ver feedback de grupos donde efectivamente enseña.
     const studentGroups = await this.prisma.studentGroup.findMany({
       where: { studentId },
+      select: { groupId: true },
     });
     const groupIds = studentGroups.map((g) => g.groupId);
     if (groupIds.length === 0) {
       return [];
     }
-    const teaches = await this.prisma.teacherAssignment.findFirst({
+    const teacherGroups = await this.prisma.teacherAssignment.findMany({
       where: { teacherId: actor.userId, groupId: { in: groupIds } },
+      select: { groupId: true },
     });
-    if (!teaches) {
+    const allowedGroupIds = teacherGroups.map((row) => row.groupId);
+    if (allowedGroupIds.length === 0) {
       throw new ForbiddenException(
         'No autorizado para ver feedback de este estudiante',
       );
     }
     return this.prisma.feedback.findMany({
-      where: { studentId },
+      where: { studentId, groupId: { in: allowedGroupIds } },
       orderBy: { createdAt: 'desc' },
     });
   }

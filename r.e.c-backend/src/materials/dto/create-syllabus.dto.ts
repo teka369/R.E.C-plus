@@ -20,11 +20,6 @@ export class CreateSyllabusDto {
 
   @IsOptional()
   @IsString()
-  @Length(0, 30)
-  period?: string;
-
-  @IsOptional()
-  @IsString()
   @IsIn(SYLLABUS_STATUS)
   status?: (typeof SYLLABUS_STATUS)[number];
 
