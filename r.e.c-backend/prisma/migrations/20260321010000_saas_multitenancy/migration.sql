@@ -52,7 +52,7 @@ UPDATE "User" u
 SET "institutionId" = di.id
 FROM default_institution di
 WHERE u."institutionId" IS NULL
-  AND u."role" <> 'SUPER_ADMIN';
+  AND u."role"::text <> 'SUPER_ADMIN';
 
 DO $$
 BEGIN
