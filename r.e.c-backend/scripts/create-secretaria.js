@@ -1,55 +1,76 @@
-// Script para crear una secretaria en la BD
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
+async function resolveInstitutionId() {
+  if (process.env.INSTITUTION_ID) {
+    const parsed = Number(process.env.INSTITUTION_ID);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error('INSTITUTION_ID invalido');
+    }
+    return parsed;
+  }
+
+  const firstInstitution = await prisma.institution.findFirst({
+    orderBy: { id: 'asc' },
+    select: { id: true },
+  });
+
+  if (!firstInstitution) {
+    throw new Error('No existen instituciones. Cree una institucion primero.');
+  }
+
+  return firstInstitution.id;
+}
+
 async function createSecretaria() {
   try {
-    // Datos de la secretaria
+    const institutionId = await resolveInstitutionId();
+
     const secretariaData = {
-      nombres: 'María',
-      apellidos: 'García López',
-      email: 'secretaria5@iejavieralondonobarriosevilla.edu.co',
-      documento_identidad: '12345678',
-      password: 'Admin@2025', // Contraseña inicial
+      institutionId,
+      nombres: process.env.SECRETARIA_NOMBRES || 'Maria',
+      apellidos: process.env.SECRETARIA_APELLIDOS || 'Garcia Lopez',
+      email:
+        (process.env.SECRETARIA_EMAIL ||
+          `secretaria.${institutionId}@colegio.local`).trim().toLowerCase(),
+      documento_identidad:
+        process.env.SECRETARIA_DOCUMENTO || `SEC-${Date.now()}`,
+      password: process.env.SECRETARIA_PASSWORD || 'Admin@2026',
       role: 'SECRETARIA',
     };
 
-    // Verificar si ya existe
     const existing = await prisma.user.findUnique({
       where: { email: secretariaData.email },
     });
 
     if (existing) {
-      console.log('❌ La secretaria ya existe en la BD:', existing.email);
+      console.log('La secretaria ya existe en la BD:', existing.email);
       return;
     }
 
-    // Hashear contraseña
     const hashedPassword = await bcrypt.hash(secretariaData.password, 10);
 
-    // Crear secretaria
     const secretaria = await prisma.user.create({
       data: {
+        institutionId: secretariaData.institutionId,
         nombres: secretariaData.nombres,
         apellidos: secretariaData.apellidos,
         email: secretariaData.email,
         documento_identidad: secretariaData.documento_identidad,
         password: hashedPassword,
         role: secretariaData.role,
-        telefono: null, // Teléfono no es requerido para secretarias
+        telefono: null,
       },
     });
 
-    console.log('✅ Secretaria creada exitosamente:');
-    console.log('📧 Email:', secretaria.email);
-    console.log('🔑 Contraseña: Admin@2025');
-    console.log('👤 Nombres:', secretaria.nombres, secretaria.apellidos);
-    console.log('📝 Documento:', secretaria.documento_identidad);
-    console.log('\n💡 Usa estas credenciales en: http://localhost:3000/acceso-secretaria');
+    console.log('Secretaria creada exitosamente:');
+    console.log('Institucion ID:', secretaria.institutionId);
+    console.log('Email:', secretaria.email);
+    console.log('Password inicial:', secretariaData.password);
   } catch (error) {
-    console.error('❌ Error al crear la secretaria:', error.message);
+    console.error('Error al crear la secretaria:', error.message);
   } finally {
     await prisma.$disconnect();
   }

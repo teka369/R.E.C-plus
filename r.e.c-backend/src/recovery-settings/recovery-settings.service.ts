@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserRole } from '../users/dto/user-role.enum';
 
 type RecoveryPeriodView = {
   active: boolean;
@@ -24,21 +26,40 @@ type RecoveryScheduleMeta = {
   uploadedAt: string;
 };
 
+type Actor = {
+  userId: number;
+  role: UserRole;
+  institutionId?: number | null;
+};
+
 @Injectable()
 export class RecoverySettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async getActiveAcademicPeriodId() {
+  private getActorInstitutionId(actor: Actor): number {
+    if (actor.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
+      );
+    }
+    if (!actor.institutionId) {
+      throw new ForbiddenException('Usuario sin institucion asociada');
+    }
+    return actor.institutionId;
+  }
+
+  private async getActiveAcademicPeriodId(actor: Actor) {
+    const institutionId = this.getActorInstitutionId(actor);
     const period = await this.prisma.academicPeriod.findFirst({
-      where: { estado: 'ACTIVE' },
+      where: { estado: 'ACTIVE', institutionId },
       select: { id: true },
       orderBy: { createdAt: 'desc' },
     });
     return period?.id ?? null;
   }
 
-  async getPeriod(): Promise<RecoveryPeriodView> {
-    const activePeriodId = await this.getActiveAcademicPeriodId();
+  async getPeriod(actor: Actor): Promise<RecoveryPeriodView> {
+    const activePeriodId = await this.getActiveAcademicPeriodId(actor);
     if (!activePeriodId) {
       const now = new Date();
       const end = new Date(now);
@@ -80,11 +101,11 @@ export class RecoverySettingsService {
   }
 
   async setPeriod(
-    actorId: number,
+    actor: Actor,
     startAt: string,
     endAt: string,
   ): Promise<RecoveryPeriodView> {
-    const activePeriodId = await this.getActiveAcademicPeriodId();
+    const activePeriodId = await this.getActiveAcademicPeriodId(actor);
     if (!activePeriodId) {
       throw new BadRequestException(
         'No existe período académico activo para configurar recuperación',
@@ -115,7 +136,7 @@ export class RecoverySettingsService {
         data: {
           startAt: start,
           endAt: end,
-          updatedById: actorId,
+          updatedById: actor.userId,
         },
       });
     } else {
@@ -128,7 +149,7 @@ export class RecoverySettingsService {
           id: (lastConfig?.id ?? 0) + 1,
           startAt: start,
           endAt: end,
-          updatedById: actorId,
+          updatedById: actor.userId,
           academicPeriodId: activePeriodId,
         },
       });
@@ -141,8 +162,8 @@ export class RecoverySettingsService {
     };
   }
 
-  async getScheduleFile(): Promise<RecoveryScheduleFile> {
-    const activePeriodId = await this.getActiveAcademicPeriodId();
+  async getScheduleFile(actor: Actor): Promise<RecoveryScheduleFile> {
+    const activePeriodId = await this.getActiveAcademicPeriodId(actor);
     if (!activePeriodId) {
       throw new NotFoundException('No hay período académico activo');
     }
@@ -161,10 +182,10 @@ export class RecoverySettingsService {
   }
 
   async uploadSchedule(
-    actorId: number,
+    actor: Actor,
     file: { originalname: string; mimetype: string; buffer: Buffer },
   ): Promise<RecoveryScheduleMeta> {
-    const activePeriodId = await this.getActiveAcademicPeriodId();
+    const activePeriodId = await this.getActiveAcademicPeriodId(actor);
     if (!activePeriodId) {
       throw new BadRequestException(
         'No existe período académico activo para cargar el horario',
@@ -192,7 +213,7 @@ export class RecoverySettingsService {
             originalName: file.originalname,
             mimeType: file.mimetype,
             fileContent: fileBytes,
-            uploadedById: actorId,
+            uploadedById: actor.userId,
             uploadedAt: new Date(),
           },
           select: {
@@ -213,7 +234,7 @@ export class RecoverySettingsService {
               originalName: file.originalname,
               mimeType: file.mimetype,
               fileContent: fileBytes,
-              uploadedById: actorId,
+              uploadedById: actor.userId,
               academicPeriodId: activePeriodId,
             },
             select: {

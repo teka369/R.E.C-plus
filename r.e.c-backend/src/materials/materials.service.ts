@@ -22,6 +22,12 @@ import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { UpdateGroupInfoDto } from './dto/update-group-info.dto';
 import { UserRole } from '../users/dto/user-role.enum';
 
+type Actor = {
+  userId: number;
+  role: UserRole;
+  institutionId?: number | null;
+};
+
 @Injectable()
 export class MaterialsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -32,28 +38,64 @@ export class MaterialsService {
     return value as Prisma.InputJsonValue;
   }
 
+  private getActorInstitutionId(actor: Actor): number {
+    if (actor.role === UserRole.SUPER_ADMIN) {
+      throw new BadRequestException(
+        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
+      );
+    }
+    if (!actor.institutionId) {
+      throw new BadRequestException('Usuario sin institucion asociada');
+    }
+    return actor.institutionId;
+  }
+
+  private groupInstitutionWhere(actor: Actor):
+    | { institutionId?: number }
+    | { institutionId: number } {
+    if (actor.role === UserRole.SUPER_ADMIN) return {};
+    return { institutionId: this.getActorInstitutionId(actor) };
+  }
+
   // Utilidades
   private async ensureTeacherAssignment(
-    teacherId: number,
+    actor: Actor,
     groupId: number,
     subjectId: number,
   ) {
+    if (actor.role !== UserRole.PROFESOR) {
+      throw new ForbiddenException('Solo profesores');
+    }
+
     const assign = await this.prisma.teacherAssignment.findUnique({
-      where: { teacherId_groupId_subjectId: { teacherId, groupId, subjectId } },
+      where: {
+        teacherId_groupId_subjectId: {
+          teacherId: actor.userId,
+          groupId,
+          subjectId,
+        },
+      },
+      include: { group: { select: { institutionId: true } } },
     });
     if (!assign)
       throw new ForbiddenException('No asignado a ese grupo/materia');
+    if (assign.group.institutionId !== this.getActorInstitutionId(actor)) {
+      throw new ForbiddenException('Asignacion fuera del alcance de su institucion');
+    }
     return assign;
   }
 
-  private async getActorContext(actor: { userId: number; role: UserRole }) {
+  private async getActorContext(actor: Actor) {
     if (actor.role === UserRole.ESTUDIANTE) {
       const sg = await this.prisma.studentGroup.findFirst({
-        where: { studentId: actor.userId },
+        where: {
+          studentId: actor.userId,
+          group: this.groupInstitutionWhere(actor),
+        },
       });
       if (!sg) throw new ForbiddenException('Estudiante sin grupo asignado');
-      const group = await this.prisma.group.findUnique({
-        where: { id: sg.groupId },
+      const group = await this.prisma.group.findFirst({
+        where: { id: sg.groupId, ...this.groupInstitutionWhere(actor) },
       });
       if (!group) throw new NotFoundException('Grupo no encontrado');
       return { groupId: group.id, gradeId: group.gradeId };
@@ -63,14 +105,14 @@ export class MaterialsService {
 
   // Study Materials
   async uploadStudyFile(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
     subjectId: number,
     file: { originalname: string; mimetype: string; buffer: Buffer },
   ) {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
-    await this.ensureTeacherAssignment(actor.userId, groupId, subjectId);
+    await this.ensureTeacherAssignment(actor, groupId, subjectId);
     if (!file?.buffer || !file.originalname || !file.mimetype) {
       throw new BadRequestException('Archivo inválido');
     }
@@ -108,16 +150,12 @@ export class MaterialsService {
   }
 
   async createStudyMaterial(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     dto: CreateStudyMaterialDto,
   ) {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
-    await this.ensureTeacherAssignment(
-      actor.userId,
-      dto.groupId,
-      dto.subjectId,
-    );
+    await this.ensureTeacherAssignment(actor, dto.groupId, dto.subjectId);
     const material = await this.prisma.studyMaterial.create({
       data: {
         subjectId: dto.subjectId,
@@ -136,7 +174,10 @@ export class MaterialsService {
     // Enlace a AcademicOffering (best-effort)
     try {
       const activePeriod = await this.prisma.academicPeriod.findFirst({
-        where: { estado: AcademicPeriodStatus.ACTIVE },
+        where: {
+          estado: AcademicPeriodStatus.ACTIVE,
+          institutionId: this.getActorInstitutionId(actor),
+        },
         orderBy: { createdAt: 'desc' },
       });
       if (activePeriod) {
@@ -164,7 +205,7 @@ export class MaterialsService {
   }
 
   async updateStudyMaterial(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateStudyMaterialDto,
   ) {
@@ -224,7 +265,7 @@ export class MaterialsService {
   }
 
   async deleteStudyMaterial(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
   ) {
     const material = await this.prisma.studyMaterial.findUnique({
@@ -263,14 +304,23 @@ export class MaterialsService {
     return { deleted: true };
   }
 
-  async listStudyMaterials(actor: { userId: number; role: UserRole }) {
-    if (actor.role === UserRole.SECRETARIA) {
-      return this.prisma.studyMaterial.findMany({ orderBy: { id: 'desc' } });
+  async listStudyMaterials(actor: Actor) {
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+      return this.prisma.studyMaterial.findMany({
+        where:
+          actor.role === UserRole.SUPER_ADMIN
+            ? undefined
+            : { group: this.groupInstitutionWhere(actor) },
+        orderBy: { id: 'desc' },
+      });
     }
     if (actor.role === UserRole.PROFESOR) {
       // Materiales en grupos donde el profesor enseña
       const assigns = await this.prisma.teacherAssignment.findMany({
-        where: { teacherId: actor.userId },
+        where: {
+          teacherId: actor.userId,
+          group: this.groupInstitutionWhere(actor),
+        },
       });
       const groupIds = assigns.map((a) => a.groupId);
       const subjectIds = assigns.map((a) => a.subjectId);
@@ -296,7 +346,7 @@ export class MaterialsService {
   }
 
   async getStudyMaterial(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
   ) {
     const material = await this.prisma.studyMaterial.findUnique({
@@ -304,7 +354,16 @@ export class MaterialsService {
       include: { group: true },
     });
     if (!material) throw new NotFoundException('Material no encontrado');
-    if (actor.role === UserRole.SECRETARIA) return material;
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      material.group.institutionId !== this.getActorInstitutionId(actor)
+    ) {
+      throw new ForbiddenException('No autorizado');
+    }
+
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+      return material;
+    }
     if (actor.role === UserRole.PROFESOR) {
       const assign = await this.prisma.teacherAssignment.findUnique({
         where: {
@@ -328,7 +387,7 @@ export class MaterialsService {
   }
 
   async getStudyFile(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
   ): Promise<{ originalName: string; mimeType: string; fileContent: Buffer }> {
     const material = await this.getStudyMaterial(actor, id);
@@ -382,7 +441,7 @@ export class MaterialsService {
   }
 
   async incrementStudyViews(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
   ) {
     await this.getStudyMaterial(actor, id);
@@ -395,7 +454,7 @@ export class MaterialsService {
   }
 
   async incrementStudyDownloads(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
   ) {
     await this.getStudyMaterial(actor, id);
@@ -409,16 +468,12 @@ export class MaterialsService {
 
   // Syllabus
   async createSyllabus(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     dto: CreateSyllabusDto,
   ) {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
-    await this.ensureTeacherAssignment(
-      actor.userId,
-      dto.groupId,
-      dto.subjectId,
-    );
+    await this.ensureTeacherAssignment(actor, dto.groupId, dto.subjectId);
     const syllabus = await this.prisma.syllabus.create({
       data: {
         subjectId: dto.subjectId,
@@ -435,7 +490,10 @@ export class MaterialsService {
     // Enlace a AcademicOffering (best-effort)
     try {
       const activePeriod = await this.prisma.academicPeriod.findFirst({
-        where: { estado: AcademicPeriodStatus.ACTIVE },
+        where: {
+          estado: AcademicPeriodStatus.ACTIVE,
+          institutionId: this.getActorInstitutionId(actor),
+        },
         orderBy: { createdAt: 'desc' },
       });
       if (activePeriod) {
@@ -463,7 +521,7 @@ export class MaterialsService {
   }
 
   async updateSyllabus(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateSyllabusDto,
   ) {
@@ -483,7 +541,7 @@ export class MaterialsService {
     });
   }
 
-  async deleteSyllabus(actor: { userId: number; role: UserRole }, id: number) {
+  async deleteSyllabus(actor: Actor, id: number) {
     const syl = await this.prisma.syllabus.findUnique({ where: { id } });
     if (!syl) throw new NotFoundException('Temario no encontrado');
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
@@ -493,13 +551,22 @@ export class MaterialsService {
     return { deleted: true };
   }
 
-  async listSyllabi(actor: { userId: number; role: UserRole }) {
-    if (actor.role === UserRole.SECRETARIA) {
-      return this.prisma.syllabus.findMany({ orderBy: { id: 'desc' } });
+  async listSyllabi(actor: Actor) {
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+      return this.prisma.syllabus.findMany({
+        where:
+          actor.role === UserRole.SUPER_ADMIN
+            ? undefined
+            : { group: this.groupInstitutionWhere(actor) },
+        orderBy: { id: 'desc' },
+      });
     }
     if (actor.role === UserRole.PROFESOR) {
       const assigns = await this.prisma.teacherAssignment.findMany({
-        where: { teacherId: actor.userId },
+        where: {
+          teacherId: actor.userId,
+          group: this.groupInstitutionWhere(actor),
+        },
       });
       const groupIds = assigns.map((a) => a.groupId);
       const subjectIds = assigns.map((a) => a.subjectId);
@@ -520,13 +587,22 @@ export class MaterialsService {
     });
   }
 
-  async getSyllabus(actor: { userId: number; role: UserRole }, id: number) {
+  async getSyllabus(actor: Actor, id: number) {
     const syl = await this.prisma.syllabus.findUnique({
       where: { id },
       include: { group: true },
     });
     if (!syl) throw new NotFoundException('Temario no encontrado');
-    if (actor.role === UserRole.SECRETARIA) return syl;
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      syl.group.institutionId !== this.getActorInstitutionId(actor)
+    ) {
+      throw new ForbiddenException('No autorizado');
+    }
+
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+      return syl;
+    }
     if (actor.role === UserRole.PROFESOR) {
       const assign = await this.prisma.teacherAssignment.findUnique({
         where: {
@@ -548,7 +624,13 @@ export class MaterialsService {
   }
 
   // Group Info (Leagues)
-  async getGroupInfo(groupId: number) {
+  async getGroupInfo(actor: Actor, groupId: number) {
+    const group = await this.prisma.group.findFirst({
+      where: { id: groupId, ...this.groupInstitutionWhere(actor) },
+      select: { id: true },
+    });
+    if (!group) throw new NotFoundException('Grupo no encontrado');
+
     const info = await this.prisma.groupInfo.findUnique({
       where: { groupId },
       include: {
@@ -572,12 +654,12 @@ export class MaterialsService {
   }
 
   async updateGroupInfo(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
     dto: UpdateGroupInfoDto,
   ) {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
+    const group = await this.prisma.group.findFirst({
+      where: { id: groupId, ...this.groupInstitutionWhere(actor) },
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
     if (actor.role !== UserRole.PROFESOR || group.directorId !== actor.userId) {
@@ -633,12 +715,15 @@ export class MaterialsService {
         });
       }
     }
-    return this.getGroupInfo(groupId);
+    return this.getGroupInfo(actor, groupId);
   }
 
-  async listGradeLeagues(gradeId: number) {
+  async listGradeLeagues(actor: Actor, gradeId: number) {
     const groups = await this.prisma.group.findMany({
-      where: { gradeId },
+      where: {
+        gradeId,
+        ...this.groupInstitutionWhere(actor),
+      },
       include: {
         info: {
           include: {

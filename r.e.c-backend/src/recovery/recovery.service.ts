@@ -44,13 +44,36 @@ const ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES = new Set([
   'application/x-zip-compressed',
 ]);
 
+type Actor = {
+  userId: number;
+  role: UserRole;
+  institutionId?: number | null;
+};
+
 @Injectable()
 export class RecoveryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async isRecoveryPeriodActive() {
+  private getActorInstitutionId(actor: Actor): number {
+    if (actor.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
+      );
+    }
+    if (!actor.institutionId) {
+      throw new ForbiddenException('Usuario sin institucion asociada');
+    }
+    return actor.institutionId;
+  }
+
+  private async isRecoveryPeriodActive(actor: Actor) {
     const activePeriod = await this.prisma.academicPeriod.findFirst({
-      where: { estado: 'ACTIVE' },
+      where: {
+        estado: 'ACTIVE',
+        ...(actor.role === UserRole.SUPER_ADMIN
+          ? {}
+          : { institutionId: this.getActorInstitutionId(actor) }),
+      },
       select: { id: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -73,22 +96,32 @@ export class RecoveryService {
     );
   }
 
-  private async ensureRecoveryPeriodActive(actor: {
-    userId: number;
-    role: UserRole;
-  }) {
-    if (actor.role === UserRole.SECRETARIA) return;
-    const active = await this.isRecoveryPeriodActive();
+  private async ensureRecoveryPeriodActive(actor: Actor) {
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
+    const active = await this.isRecoveryPeriodActive(actor);
     if (!active) {
       throw new BadRequestException('El periodo de recuperación está inactivo');
     }
   }
 
   private async ensureGroupViewAccess(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
   ) {
-    if (actor.role === UserRole.SECRETARIA) return;
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      const groupInScope = await this.prisma.group.findFirst({
+        where: {
+          id: groupId,
+          institutionId: this.getActorInstitutionId(actor),
+        },
+        select: { id: true },
+      });
+      if (!groupInScope) {
+        throw new ForbiddenException('Grupo fuera de su institucion');
+      }
+    }
+
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
 
     if (actor.role === UserRole.PROFESOR) {
       const isDirector = await this.prisma.group.findFirst({
@@ -123,7 +156,7 @@ export class RecoveryService {
           select: { id: true, nombres: true, apellidos: true, email: true },
         },
         subject: { select: { id: true, nombre: true } },
-        group: { select: { id: true, nombre: true } },
+        group: { select: { id: true, nombre: true, institutionId: true } },
       },
     });
 
@@ -132,12 +165,19 @@ export class RecoveryService {
   }
 
   private async ensureRequestAccess(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     requestId: number,
   ) {
     const request = await this.getRequestOrThrow(requestId);
 
-    if (actor.role === UserRole.SECRETARIA) return request;
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      request.group.institutionId !== this.getActorInstitutionId(actor)
+    ) {
+      throw new ForbiddenException('Solicitud fuera de su institucion');
+    }
+
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return request;
     if (actor.role === UserRole.PROFESOR && request.teacherId === actor.userId)
       return request;
     if (
@@ -160,7 +200,7 @@ export class RecoveryService {
   }
 
   async createRequest(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     dto: CreateRecoveryRequestDto,
   ) {
     await this.ensureRecoveryPeriodActive(actor);
@@ -173,6 +213,7 @@ export class RecoveryService {
       where: {
         studentId: actor.userId,
         group: {
+          institutionId: this.getActorInstitutionId(actor),
           subjects: {
             some: { subjectId: dto.subjectId },
           },
@@ -191,6 +232,7 @@ export class RecoveryService {
       where: {
         groupId: studentGroup.groupId,
         subjectId: dto.subjectId,
+        group: { institutionId: this.getActorInstitutionId(actor) },
       },
     });
 
@@ -216,12 +258,15 @@ export class RecoveryService {
     });
   }
 
-  async listMyRequests(actor: { userId: number; role: UserRole }) {
+  async listMyRequests(actor: Actor) {
     if (actor.role !== UserRole.ESTUDIANTE)
       throw new ForbiddenException('Solo estudiantes');
 
     return this.prisma.recoveryRequest.findMany({
-      where: { studentId: actor.userId },
+      where: {
+        studentId: actor.userId,
+        group: { institutionId: this.getActorInstitutionId(actor) },
+      },
       include: {
         subject: { select: { id: true, nombre: true } },
         group: { select: { id: true, nombre: true } },
@@ -232,7 +277,7 @@ export class RecoveryService {
   }
 
   async listGroupRequests(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
   ) {
     await this.ensureGroupViewAccess(actor, groupId);
@@ -253,7 +298,7 @@ export class RecoveryService {
   }
 
   async updateRequestStatus(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateRecoveryRequestStatusDto,
   ) {
@@ -303,7 +348,7 @@ export class RecoveryService {
   }
 
   async listActivities(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     requestId: number,
   ) {
     await this.ensureRequestAccess(actor, requestId);
@@ -338,7 +383,7 @@ export class RecoveryService {
   }
 
   async createActivity(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     requestId: number,
     dto: CreateRecoveryActivityDto,
   ) {
@@ -385,7 +430,7 @@ export class RecoveryService {
   }
 
   async updateActivity(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateRecoveryActivityDto,
   ) {
@@ -418,7 +463,7 @@ export class RecoveryService {
     });
   }
 
-  async deleteRequest(actor: { userId: number; role: UserRole }, id: number) {
+  async deleteRequest(actor: Actor, id: number) {
     await this.ensureRecoveryPeriodActive(actor);
 
     const request = await this.getRequestOrThrow(id);
@@ -448,7 +493,7 @@ export class RecoveryService {
     throw new ForbiddenException('No autorizado para eliminar esta solicitud');
   }
 
-  async deleteActivity(actor: { userId: number; role: UserRole }, id: number) {
+  async deleteActivity(actor: Actor, id: number) {
     await this.ensureRecoveryPeriodActive(actor);
 
     const activity = await this.getActivityOrThrow(id);
@@ -467,7 +512,7 @@ export class RecoveryService {
   }
 
   async uploadActivityAttachment(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     activityId: number,
     file: { originalname: string; mimetype: string; buffer: Buffer },
   ): Promise<RecoveryActivityAttachmentMeta> {
@@ -529,7 +574,7 @@ export class RecoveryService {
   }
 
   async getActivityAttachment(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     activityId: number,
   ): Promise<RecoveryActivityAttachmentRow> {
     const activity = await this.getActivityOrThrow(activityId);
@@ -551,7 +596,7 @@ export class RecoveryService {
   }
 
   async listMessages(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     requestId: number,
   ) {
     await this.ensureRequestAccess(actor, requestId);
@@ -568,7 +613,7 @@ export class RecoveryService {
   }
 
   async createMessage(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     requestId: number,
     dto: CreateRecoveryMessageDto,
   ) {
@@ -591,7 +636,7 @@ export class RecoveryService {
   }
 
   async statsByGroup(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
   ) {
     await this.ensureGroupViewAccess(actor, groupId);
@@ -641,7 +686,7 @@ export class RecoveryService {
   }
 
   async statsByStudent(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     studentId: number,
   ) {
     if (actor.role === UserRole.ESTUDIANTE && actor.userId !== studentId) {
@@ -650,20 +695,52 @@ export class RecoveryService {
 
     if (actor.role === UserRole.PROFESOR) {
       const linked = await this.prisma.recoveryRequest.count({
-        where: { studentId, teacherId: actor.userId },
+        where: {
+          studentId,
+          teacherId: actor.userId,
+          group: { institutionId: this.getActorInstitutionId(actor) },
+        },
+      });
+      if (linked === 0) throw new ForbiddenException('No autorizado');
+    }
+
+    if (actor.role === UserRole.SECRETARIA) {
+      const linked = await this.prisma.recoveryRequest.count({
+        where: {
+          studentId,
+          group: { institutionId: this.getActorInstitutionId(actor) },
+        },
       });
       if (linked === 0) throw new ForbiddenException('No autorizado');
     }
 
     const [total, byStatus, avgFinalScore] = await Promise.all([
-      this.prisma.recoveryRequest.count({ where: { studentId } }),
+      this.prisma.recoveryRequest.count({
+        where: {
+          studentId,
+          ...(actor.role === UserRole.SUPER_ADMIN
+            ? {}
+            : { group: { institutionId: this.getActorInstitutionId(actor) } }),
+        },
+      }),
       this.prisma.recoveryRequest.groupBy({
         by: ['status'],
-        where: { studentId },
+        where: {
+          studentId,
+          ...(actor.role === UserRole.SUPER_ADMIN
+            ? {}
+            : { group: { institutionId: this.getActorInstitutionId(actor) } }),
+        },
         _count: { _all: true },
       }),
       this.prisma.recoveryRequest.aggregate({
-        where: { studentId, finalScore: { not: null } },
+        where: {
+          studentId,
+          finalScore: { not: null },
+          ...(actor.role === UserRole.SUPER_ADMIN
+            ? {}
+            : { group: { institutionId: this.getActorInstitutionId(actor) } }),
+        },
         _avg: { finalScore: true },
       }),
     ]);

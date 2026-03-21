@@ -1,4 +1,8 @@
-export type UserRole = "SECRETARIA" | "PROFESOR" | "ESTUDIANTE";
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "SECRETARIA"
+  | "PROFESOR"
+  | "ESTUDIANTE";
 
 // Modelo simple usado en AuthContext
 export type User = {

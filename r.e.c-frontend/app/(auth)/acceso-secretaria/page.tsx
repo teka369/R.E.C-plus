@@ -57,12 +57,12 @@ export default function AccesoSecretariaPage() {
         password,
       });
       const { access_token, user } = res.data;
-      if (user.role !== "SECRETARIA") {
-        setError("Acceso exclusivo para Secretaría");
+      if (user.role !== "SECRETARIA" && user.role !== "SUPER_ADMIN") {
+        setError("Acceso exclusivo para Secretaría y Super Admin");
         return;
       }
       await login(user, access_token);
-      window.location.href = "/secretaria";
+      window.location.href = user.role === "SUPER_ADMIN" ? "/super-admin" : "/secretaria";
     } catch (error: unknown) {
       setError(getErrorMessage(error, "Error al iniciar sesión"));
     } finally {
@@ -147,7 +147,7 @@ export default function AccesoSecretariaPage() {
             </form>
 
             <p className="mt-5 rounded-xl border border-[color:var(--rec-soft)] bg-[color:var(--rec-soft)]/60 px-4 py-3 text-sm text-slate-600">
-              Este acceso esta habilitado solo para personal de Secretaría.
+              Este acceso esta habilitado para Secretaría y Super Admin de plataforma.
             </p>
           </div>
         </div>

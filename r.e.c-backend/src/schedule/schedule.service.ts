@@ -17,22 +17,67 @@ import {
 } from './dto/event.dto';
 import { Prisma } from '@prisma/client';
 
+type Actor = {
+  userId: number;
+  role: UserRole;
+  institutionId?: number | null;
+};
+
 @Injectable()
 export class ScheduleService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private getActorInstitutionId(actor: Actor): number {
+    if (actor.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
+      );
+    }
+    if (!actor.institutionId) {
+      throw new ForbiddenException('Usuario sin institucion asociada');
+    }
+    return actor.institutionId;
+  }
+
+  private async ensureGroupInScope(actor: Actor, groupId: number) {
+    if (actor.role === UserRole.SUPER_ADMIN) {
+      const group = await this.prisma.group.findUnique({
+        where: { id: groupId },
+        select: { id: true },
+      });
+      if (!group) throw new NotFoundException('Grupo no encontrado');
+      return;
+    }
+
+    const group = await this.prisma.group.findFirst({
+      where: { id: groupId, institutionId: this.getActorInstitutionId(actor) },
+      select: { id: true },
+    });
+    if (!group) throw new ForbiddenException('Grupo fuera de su institucion');
+  }
+
   private async ensureViewAccess(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
   ) {
-    if (actor.role === UserRole.SECRETARIA) return;
+    await this.ensureGroupInScope(actor, groupId);
+
+    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
     if (actor.role === UserRole.PROFESOR) {
       const isDirector = await this.prisma.group.findFirst({
-        where: { id: groupId, directorId: actor.userId },
+        where: {
+          id: groupId,
+          directorId: actor.userId,
+          institutionId: this.getActorInstitutionId(actor),
+        },
       });
       if (isDirector) return;
       const assign = await this.prisma.teacherAssignment.findFirst({
-        where: { teacherId: actor.userId, groupId },
+        where: {
+          teacherId: actor.userId,
+          groupId,
+          group: { institutionId: this.getActorInstitutionId(actor) },
+        },
       });
       if (!assign)
         throw new ForbiddenException('No autorizado a ver este grupo');
@@ -40,19 +85,29 @@ export class ScheduleService {
     }
     // Estudiante debe pertenecer al grupo
     const sg = await this.prisma.studentGroup.findFirst({
-      where: { groupId, studentId: actor.userId },
+      where: {
+        groupId,
+        studentId: actor.userId,
+        group: { institutionId: this.getActorInstitutionId(actor) },
+      },
     });
     if (!sg) throw new ForbiddenException('No autorizado');
   }
 
   private async ensureManageAccess(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
   ) {
+    await this.ensureGroupInScope(actor, groupId);
+
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
     const isDirector = await this.prisma.group.findFirst({
-      where: { id: groupId, directorId: actor.userId },
+      where: {
+        id: groupId,
+        directorId: actor.userId,
+        institutionId: this.getActorInstitutionId(actor),
+      },
     });
     if (!isDirector)
       throw new ForbiddenException(
@@ -62,7 +117,7 @@ export class ScheduleService {
 
   // Entries
   async listEntries(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
   ) {
     await this.ensureViewAccess(actor, groupId);
@@ -73,7 +128,7 @@ export class ScheduleService {
   }
 
   async createEntry(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
     dto: CreateScheduleEntryDto,
   ) {
@@ -103,7 +158,7 @@ export class ScheduleService {
   }
 
   async updateEntry(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateScheduleEntryDto,
   ) {
@@ -144,7 +199,7 @@ export class ScheduleService {
     });
   }
 
-  async deleteEntry(actor: { userId: number; role: UserRole }, id: number) {
+  async deleteEntry(actor: Actor, id: number) {
     const entry = await this.prisma.weeklyScheduleEntry.findUnique({
       where: { id },
     });
@@ -155,7 +210,7 @@ export class ScheduleService {
   }
 
   // Notes
-  async listNotes(actor: { userId: number; role: UserRole }, groupId: number) {
+  async listNotes(actor: Actor, groupId: number) {
     await this.ensureViewAccess(actor, groupId);
     return this.prisma.scheduleNote.findMany({
       where: { groupId },
@@ -164,7 +219,7 @@ export class ScheduleService {
   }
 
   async createNote(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
     dto: CreateScheduleNoteDto,
   ) {
@@ -175,7 +230,7 @@ export class ScheduleService {
   }
 
   async updateNote(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateScheduleNoteDto,
   ) {
@@ -188,7 +243,7 @@ export class ScheduleService {
     });
   }
 
-  async deleteNote(actor: { userId: number; role: UserRole }, id: number) {
+  async deleteNote(actor: Actor, id: number) {
     const note = await this.prisma.scheduleNote.findUnique({ where: { id } });
     if (!note) throw new NotFoundException('Nota no encontrada');
     await this.ensureManageAccess(actor, note.groupId);
@@ -198,7 +253,7 @@ export class ScheduleService {
 
   // Events
   async listEvents(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
     startAt?: string,
     endAt?: string,
@@ -218,7 +273,7 @@ export class ScheduleService {
   }
 
   async createEvent(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     groupId: number,
     dto: CreateScheduleEventDto,
   ) {
@@ -240,7 +295,7 @@ export class ScheduleService {
   }
 
   async updateEvent(
-    actor: { userId: number; role: UserRole },
+    actor: Actor,
     id: number,
     dto: UpdateScheduleEventDto,
   ) {
@@ -266,7 +321,7 @@ export class ScheduleService {
     });
   }
 
-  async deleteEvent(actor: { userId: number; role: UserRole }, id: number) {
+  async deleteEvent(actor: Actor, id: number) {
     const ev = await this.prisma.scheduleEvent.findUnique({ where: { id } });
     if (!ev) throw new NotFoundException('Evento no encontrado');
     await this.ensureManageAccess(actor, ev.groupId);

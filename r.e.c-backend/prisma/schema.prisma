@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   SECRETARIA
   PROFESOR
   ESTUDIANTE
@@ -113,6 +114,7 @@ enum EvaluacionTipo {
 
 model User {
   id                 Int      @id @default(autoincrement())
+  institutionId      Int?
   nombres            String
   apellidos          String
   email              String   @unique
@@ -145,14 +147,35 @@ model User {
   recoveryMessagesSent RecoveryMessage[] @relation("RecoveryMessageAuthor")
   academicRecords StudentAcademicRecord[] @relation("AcademicRecordStudent")
   academicRecordsUpdated StudentAcademicRecord[] @relation("AcademicRecordTeacher")
+  institution        Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId])
+}
+
+model Institution {
+  id          Int             @id @default(autoincrement())
+  nombre      String
+  slug        String          @unique
+  codigo      String?         @unique
+  dominio     String?
+  maxUsers    Int             @default(500)
+  activa      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  users       User[]
+  grades      Grade[]
+  groups      Group[]
+  subjects    Subject[]
+  periods     AcademicPeriod[]
 }
 
 // Modelos académicos
 
 model AcademicPeriod {
   id               Int                  @id @default(autoincrement())
+  institutionId    Int
   nombre           String
-  codigo           String               @unique
+  codigo           String
   tipo             AcademicPeriodType   @default(TERM)
   estado           AcademicPeriodStatus @default(DRAFT)
   fechaInicio      DateTime
@@ -168,18 +191,28 @@ model AcademicPeriod {
   recoveryConfigs   RecoveryConfig[]    @relation("RecoveryConfigPeriod")
   recoverySchedules RecoverySchedule[]  @relation("RecoverySchedulePeriod")
   syllabi           Syllabus[]
+  institution       Institution         @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, codigo])
+  @@index([institutionId])
 }
 
 model Grade {
   id        Int      @id @default(autoincrement())
-  nombre    String   @unique
+  institutionId Int
+  nombre    String
   groups    Group[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, nombre])
+  @@index([institutionId])
 }
 
 model Group {
   id                 Int      @id @default(autoincrement())
+  institutionId      Int
   nombre             String
   gradeId            Int
   grade              Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
@@ -202,8 +235,10 @@ model Group {
   academicRecords    StudentAcademicRecord[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  institution        Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 
   @@unique([nombre, gradeId])
+  @@index([institutionId])
 }
 
 model GradePerformance {
@@ -233,7 +268,8 @@ model GradePerformance {
 
 model Subject {
   id                 Int      @id @default(autoincrement())
-  nombre             String   @unique
+  institutionId      Int
+  nombre             String
   codigo             String?
   groupSubjects      GroupSubject[]
   academicOfferings  AcademicOffering[]
@@ -247,6 +283,10 @@ model Subject {
   academicRecords    StudentAcademicRecord[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  institution        Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, nombre])
+  @@index([institutionId])
 }
 
 model StudentAcademicRecord {

@@ -34,6 +34,7 @@ type AuthenticatedRequest = {
   user: {
     userId: number;
     role: UserRole;
+    institutionId?: number | null;
   };
 };
 

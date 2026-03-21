@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Header,
@@ -11,7 +12,6 @@ import {
   Query,
   Req,
   UseGuards,
-  Delete,
 } from '@nestjs/common';
 import { AcademicService } from './academic.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,6 +26,7 @@ type AuthenticatedRequest = {
   user: {
     userId: number;
     role: UserRole;
+    institutionId?: number | null;
   };
 };
 
@@ -33,186 +34,191 @@ type AuthenticatedRequest = {
 export class AcademicController {
   constructor(private readonly academic: AcademicService) {}
 
-  // Grados
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('grades')
-  createGrade(@Body() dto: { nombre: string }) {
-    return this.academic.createGrade(dto);
+  createGrade(@Body() dto: { nombre: string }, @Req() req: AuthenticatedRequest) {
+    return this.academic.createGrade(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('grades')
-  listGrades() {
-    return this.academic.listGrades();
+  listGrades(@Req() req: AuthenticatedRequest) {
+    return this.academic.listGrades(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:id')
-  getGrade(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.getGrade(id);
+  getGrade(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.getGrade(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('grades/:id')
   updateGrade(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: { nombre: string },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.updateGrade(id, dto);
+    return this.academic.updateGrade(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('grades/:id')
-  deleteGrade(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.deleteGrade(id);
+  deleteGrade(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.deleteGrade(req.user, id);
   }
 
-  // Grupos
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('groups')
-  createGroup(@Body() dto: { nombre: string; gradeId: number }) {
-    return this.academic.createGroup(dto);
+  createGroup(@Body() dto: { nombre: string; gradeId: number }, @Req() req: AuthenticatedRequest) {
+    return this.academic.createGroup(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('groups')
-  listGroups() {
-    return this.academic.listGroups();
+  listGroups(@Req() req: AuthenticatedRequest) {
+    return this.academic.listGroups(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('groups/:id')
-  getGroup(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.getGroup(id);
+  getGroup(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.getGroup(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('groups/:id')
   updateGroup(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: { nombre?: string; gradeId?: number },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.updateGroup(id, dto);
+    return this.academic.updateGroup(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('groups/:id')
-  deleteGroup(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.deleteGroup(id);
+  deleteGroup(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.deleteGroup(req.user, id);
   }
 
-  // Asignar director a grupo
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('groups/:groupId/director')
   assignGroupDirector(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Body() dto: AssignGroupDirectorDto,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.assignGroupDirector(groupId, dto.directorId);
+    return this.academic.assignGroupDirector(req.user, groupId, dto.directorId);
   }
 
-  // Materias
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('subjects')
-  createSubject(@Body() dto: { nombre: string; codigo?: string }) {
-    return this.academic.createSubject(dto);
+  createSubject(@Body() dto: { nombre: string; codigo?: string }, @Req() req: AuthenticatedRequest) {
+    return this.academic.createSubject(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('subjects')
-  listSubjects() {
-    return this.academic.listSubjects();
+  listSubjects(@Req() req: AuthenticatedRequest) {
+    return this.academic.listSubjects(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('subjects/:id')
-  getSubject(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.getSubject(id);
+  getSubject(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.getSubject(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('subjects/:id')
   updateSubject(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: { nombre?: string; codigo?: string },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.updateSubject(id, dto);
+    return this.academic.updateSubject(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('subjects/:id')
-  deleteSubject(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.deleteSubject(id);
+  deleteSubject(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.deleteSubject(req.user, id);
   }
 
-  // Asignar materia a grupo
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('group-subjects')
-  assignSubjectToGroup(@Body() dto: { groupId: number; subjectId: number }) {
-    return this.academic.assignSubjectToGroup(dto);
+  assignSubjectToGroup(
+    @Body() dto: { groupId: number; subjectId: number },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.assignSubjectToGroup(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/subjects')
-  listGroupSubjects(@Param('groupId') groupId: string) {
-    return this.academic.listGroupSubjects(Number(groupId));
+  listGroupSubjects(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.listGroupSubjects(req.user, groupId);
   }
 
-  // Listar estudiantes de un grupo
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA, UserRole.PROFESOR)
+  @Roles(UserRole.SECRETARIA, UserRole.PROFESOR, UserRole.SUPER_ADMIN)
   @Get('groups/:groupId/students')
-  listGroupStudents(@Param('groupId', ParseIntPipe) groupId: number) {
-    return this.academic.listGroupStudents(groupId);
+  listGroupStudents(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.listGroupStudents(req.user, groupId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('group-subjects/:id')
-  deleteGroupSubject(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.deleteGroupSubject(id);
+  deleteGroupSubject(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.deleteGroupSubject(req.user, id);
   }
 
-  // Asignar estudiante a grupo
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Header('Deprecation', 'true')
   @Header('Sunset', '2026-01-31T00:00:00Z')
-  @Header(
-    'Link',
-    '</academic/students/:studentId/group>; rel="successor-version"',
-  )
+  @Header('Link', '</academic/students/:studentId/group>; rel="successor-version"')
   @Post('students/assign-group')
-  assignStudentToGroup(@Body() dto: { studentId: number; groupId: number }) {
-    return this.academic.assignStudentToGroup(dto);
+  assignStudentToGroup(
+    @Body() dto: { studentId: number; groupId: number },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.assignStudentToGroup(req.user, dto);
   }
 
-  // Actualizar grupo del estudiante (RESTful)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('students/:studentId/group')
   updateStudentGroup(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Body() dto: UpdateStudentGroupDto,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.assignStudentToGroup({
+    return this.academic.assignStudentToGroup(req.user, {
       studentId,
       groupId: dto.groupId,
     });
   }
 
-  // Obtener grupo actual del estudiante
   @UseGuards(JwtAuthGuard)
   @Get('students/:studentId/group')
   getStudentGroup(
@@ -220,19 +226,26 @@ export class AcademicController {
     @Req() req: AuthenticatedRequest,
   ) {
     const actor = req.user;
-    if (actor.role !== UserRole.SECRETARIA && actor.userId !== studentId) {
+    if (
+      actor.role !== UserRole.SECRETARIA &&
+      actor.role !== UserRole.SUPER_ADMIN &&
+      actor.userId !== studentId
+    ) {
       throw new ForbiddenException('No autorizado');
     }
-    return this.academic.getStudentGroup(studentId);
+    return this.academic.getStudentGroup(actor, studentId);
   }
 
-  // Eliminar grupo del estudiante (debe eliminar antes de asignar otro)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('students/:studentId/group')
-  deleteStudentGroup(@Param('studentId', ParseIntPipe) studentId: number) {
-    return this.academic.deleteStudentGroup(studentId);
+  deleteStudentGroup(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.deleteStudentGroup(req.user, studentId);
   }
+
   @UseGuards(JwtAuthGuard)
   @Get('students/:studentId/subjects')
   listStudentSubjects(
@@ -240,86 +253,90 @@ export class AcademicController {
     @Req() req: AuthenticatedRequest,
   ) {
     const actor = req.user;
-    if (actor.role !== UserRole.SECRETARIA && actor.userId !== studentId) {
+    if (
+      actor.role !== UserRole.SECRETARIA &&
+      actor.role !== UserRole.SUPER_ADMIN &&
+      actor.userId !== studentId
+    ) {
       throw new ForbiddenException('No autorizado');
     }
-    return this.academic.listStudentSubjects(studentId);
+    return this.academic.listStudentSubjects(actor, studentId);
   }
 
-  // Promoción de grado (SECRETARIA)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('promotions/grade')
-  promoteGrade(@Body() dto: PromoteGradeDto) {
-    return this.academic.promoteGrade(dto);
+  promoteGrade(@Body() dto: PromoteGradeDto, @Req() req: AuthenticatedRequest) {
+    return this.academic.promoteGrade(req.user, dto);
   }
 
-  // Simulación de promoción de grado (SECRETARIA)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('promotions/grade/preview')
-  previewPromoteGrade(@Body() dto: PromoteGradeDto) {
-    return this.academic.previewPromoteGrade(dto);
+  previewPromoteGrade(@Body() dto: PromoteGradeDto, @Req() req: AuthenticatedRequest) {
+    return this.academic.previewPromoteGrade(req.user, dto);
   }
 
-  // Asignar profesor a grupo/materia
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('teachers/assign')
   assignTeacher(
     @Body() dto: { teacherId: number; groupId: number; subjectId: number },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.assignTeacher(dto);
+    return this.academic.assignTeacher(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('teachers/:teacherId/assignments')
-  listTeacherAssignments(@Param('teacherId') teacherId: string) {
-    return this.academic.listTeacherAssignments(Number(teacherId));
+  listTeacherAssignments(
+    @Param('teacherId', ParseIntPipe) teacherId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.listTeacherAssignments(req.user, teacherId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('teachers/assignments/:id')
-  deleteTeacherAssignment(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.deleteTeacherAssignment(id);
+  deleteTeacherAssignment(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.deleteTeacherAssignment(req.user, id);
   }
 
-  // ─── Ofertas del Profesor ─────────────────────────────────────────────────
   @UseGuards(JwtAuthGuard)
   @Get('teachers/:teacherId/offerings')
   listTeacherOfferings(
     @Param('teacherId', ParseIntPipe) teacherId: number,
-    @Query('periodId') periodId?: string,
+    @Query('periodId') periodId: string | undefined,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.academic.listTeacherOfferings(
+      req.user,
       teacherId,
       periodId ? Number(periodId) : undefined,
     );
   }
 
-  // ─── Períodos Académicos ──────────────────────────────────────────────────
-
   @UseGuards(JwtAuthGuard)
   @Get('periods')
-  listAcademicPeriods() {
-    return this.academic.listAcademicPeriods();
+  listAcademicPeriods(@Req() req: AuthenticatedRequest) {
+    return this.academic.listAcademicPeriods(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('periods/active')
-  getActivePeriod() {
-    return this.academic.getActivePeriod();
+  getActivePeriod(@Req() req: AuthenticatedRequest) {
+    return this.academic.getActivePeriod(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('periods/:id')
-  getAcademicPeriod(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.getAcademicPeriod(id);
+  getAcademicPeriod(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.getAcademicPeriod(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('periods')
   createAcademicPeriod(
     @Body()
@@ -331,12 +348,13 @@ export class AcademicController {
       fechaFin: string;
       fechaCierre?: string;
     },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.createAcademicPeriod(dto);
+    return this.academic.createAcademicPeriod(req.user, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('periods/:id')
   updateAcademicPeriod(
     @Param('id', ParseIntPipe) id: number,
@@ -349,33 +367,34 @@ export class AcademicController {
       fechaFin?: string;
       fechaCierre?: string;
     },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.updateAcademicPeriod(id, dto);
+    return this.academic.updateAcademicPeriod(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('periods/:id/activate')
-  activateAcademicPeriod(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.activateAcademicPeriod(id);
+  activateAcademicPeriod(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.activateAcademicPeriod(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('periods/:id/close')
-  closeAcademicPeriod(@Param('id', ParseIntPipe) id: number) {
-    return this.academic.closeAcademicPeriod(id);
+  closeAcademicPeriod(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.closeAcademicPeriod(req.user, id);
   }
-
-  // ─── Ofertas Académicas ───────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/offerings')
   listGroupOfferings(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Query('periodId') periodId?: string,
+    @Query('periodId') periodId: string | undefined,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.academic.listGroupOfferings(
+      req.user,
       groupId,
       periodId ? Number(periodId) : undefined,
     );
@@ -383,20 +402,18 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('offerings/:offeringId')
-  getOfferingDetail(@Param('offeringId', ParseIntPipe) offeringId: number) {
-    return this.academic.getOfferingDetail(offeringId);
+  getOfferingDetail(@Param('offeringId', ParseIntPipe) offeringId: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.getOfferingDetail(req.user, offeringId);
   }
-
-  // ─── Evaluaciones por Oferta ──────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('offerings/:offeringId/evaluations')
-  listEvaluations(@Param('offeringId', ParseIntPipe) offeringId: number) {
-    return this.academic.listEvaluations(offeringId);
+  listEvaluations(@Param('offeringId', ParseIntPipe) offeringId: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.listEvaluations(req.user, offeringId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('offerings/:offeringId/evaluations')
   createEvaluation(
     @Param('offeringId', ParseIntPipe) offeringId: number,
@@ -407,12 +424,13 @@ export class AcademicController {
       porcentaje?: number;
       orden?: number;
     },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.createEvaluation(offeringId, dto);
+    return this.academic.createEvaluation(req.user, offeringId, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('evaluations/:evalId')
   updateEvaluation(
     @Param('evalId', ParseIntPipe) evalId: number,
@@ -423,14 +441,15 @@ export class AcademicController {
       porcentaje?: number;
       orden?: number;
     },
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.academic.updateEvaluation(evalId, dto);
+    return this.academic.updateEvaluation(req.user, evalId, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
+  @Roles(UserRole.PROFESOR, UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('evaluations/:evalId')
-  deleteEvaluation(@Param('evalId', ParseIntPipe) evalId: number) {
-    return this.academic.deleteEvaluation(evalId);
+  deleteEvaluation(@Param('evalId', ParseIntPipe) evalId: number, @Req() req: AuthenticatedRequest) {
+    return this.academic.deleteEvaluation(req.user, evalId);
   }
 }

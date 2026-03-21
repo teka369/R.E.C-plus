@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { usersApi } from "@/lib/usersApi";
 
-type Role = "SECRETARIA" | "PROFESOR" | "ESTUDIANTE";
+type Role = "SUPER_ADMIN" | "SECRETARIA" | "PROFESOR" | "ESTUDIANTE";
 export type AuthUser = {
   id: string;
   name: string;
@@ -98,7 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const prevRole = user?.role;
     setUser(null);
     setToken(null);
-    const target = prevRole === "SECRETARIA" ? "/acceso-secretaria" : "/login";
+    const target =
+      prevRole === "SECRETARIA" || prevRole === "SUPER_ADMIN"
+        ? "/acceso-secretaria"
+        : "/login";
     // Borrar cookies de sesión y forzar navegación completa para que el middleware actúe
     fetch("/api/auth/session", { method: "DELETE" })
       .catch(() => {})

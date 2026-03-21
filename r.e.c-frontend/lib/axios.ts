@@ -16,7 +16,11 @@ function getCookie(name: string): string | null {
 }
 
 api.interceptors.request.use((config) => {
-  const token = getCookie("rec_token_client");
+  // Intenta rec_token primero (servidor), luego rec_token_client
+  let token = getCookie("rec_token");
+  if (!token) {
+    token = getCookie("rec_token_client");
+  }
   if (token) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
