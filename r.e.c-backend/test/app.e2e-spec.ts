@@ -92,12 +92,14 @@ describe('AppController (e2e)', () => {
   let estudianteId = 0;
   let groupId = 0;
   let academicPeriodId = 0;
+  let institutionId = 0;
 
   const tokenFor = (userId: number, role: UserRole) =>
     jwtService.sign({
       sub: userId,
       role,
       email: `${role.toLowerCase()}@e2e.test`,
+      institutionId,
     });
 
   beforeAll(async () => {
@@ -111,8 +113,17 @@ describe('AppController (e2e)', () => {
     prisma = app.get(PrismaService);
     jwtService = new JwtService({ secret: process.env.JWT_SECRET });
 
+    const institution = await prisma.institution.create({
+      data: {
+        nombre: `E2E Institution ${runId}`,
+        slug: `e2e-inst-${runId}`,
+      },
+    });
+    institutionId = institution.id;
+
     const academicPeriod = await prisma.academicPeriod.create({
       data: {
+        institutionId,
         nombre: `E2E Period ${runId}`,
         codigo: `E2E-P-${runId}`,
         tipo: 'TERM',
@@ -125,6 +136,7 @@ describe('AppController (e2e)', () => {
 
     const secretaria = await prisma.user.create({
       data: {
+        institutionId,
         nombres: 'E2E',
         apellidos: 'Secretaria',
         email: `e2e.secretaria.${runId}@test.dev`,
@@ -137,6 +149,7 @@ describe('AppController (e2e)', () => {
 
     const profesor = await prisma.user.create({
       data: {
+        institutionId,
         nombres: 'E2E',
         apellidos: 'Profesor',
         email: `e2e.profesor.${runId}@test.dev`,
@@ -149,6 +162,7 @@ describe('AppController (e2e)', () => {
 
     const estudiante = await prisma.user.create({
       data: {
+        institutionId,
         nombres: 'E2E',
         apellidos: 'Estudiante',
         email: `e2e.estudiante.${runId}@test.dev`,
@@ -160,15 +174,19 @@ describe('AppController (e2e)', () => {
     estudianteId = estudiante.id;
 
     const grade = await prisma.grade.create({
-      data: { nombre: names.grade },
+      data: { institutionId, nombre: names.grade },
     });
     const group = await prisma.group.create({
-      data: { nombre: names.group, gradeId: grade.id },
+      data: { institutionId, nombre: names.group, gradeId: grade.id },
     });
     groupId = group.id;
 
     const subject = await prisma.subject.create({
-      data: { nombre: names.subject, codigo: `E2E-${runId}` },
+      data: {
+        institutionId,
+        nombre: names.subject,
+        codigo: `E2E-${runId}`,
+      },
     });
 
     await prisma.teacherAssignment.create({
@@ -181,6 +199,10 @@ describe('AppController (e2e)', () => {
   });
 
   afterAll(async () => {
+    if (!prisma) {
+      return;
+    }
+
     await prisma.teacherAssignment.deleteMany({
       where: { teacherId: profesorId, groupId },
     });
@@ -210,7 +232,15 @@ describe('AppController (e2e)', () => {
       });
     }
 
-    await app.close();
+    if (institutionId) {
+      await prisma.institution.deleteMany({
+        where: { id: institutionId },
+      });
+    }
+
+    if (app) {
+      await app.close();
+    }
   });
 
   it('/ (GET)', () => {
