@@ -36,10 +36,7 @@ export class CommunicationService {
   }
 
   // Feedback
-  async createFeedback(
-    dto: CreateFeedbackDto,
-    actor: Actor,
-  ) {
+  async createFeedback(dto: CreateFeedbackDto, actor: Actor) {
     if (actor.role !== UserRole.PROFESOR) {
       throw new ForbiddenException('Solo profesores pueden crear feedback');
     }
@@ -143,10 +140,7 @@ export class CommunicationService {
     });
   }
 
-  async deleteFeedback(
-    feedbackId: number,
-    actor: Actor,
-  ) {
+  async deleteFeedback(feedbackId: number, actor: Actor) {
     const existing = await this.prisma.feedback.findUnique({
       where: { id: feedbackId },
       include: { group: { select: { institutionId: true } } },
@@ -171,11 +165,11 @@ export class CommunicationService {
     return { deleted: true };
   }
 
-  async listFeedbackByGroup(
-    groupId: number,
-    actor: Actor,
-  ) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+  async listFeedbackByGroup(groupId: number, actor: Actor) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       return this.prisma.feedback.findMany({
         where: {
           groupId,
@@ -206,10 +200,7 @@ export class CommunicationService {
     throw new ForbiddenException('No autorizado');
   }
 
-  async listFeedbackByStudent(
-    studentId: number,
-    actor: Actor,
-  ) {
+  async listFeedbackByStudent(studentId: number, actor: Actor) {
     if (
       actor.role === UserRole.SECRETARIA ||
       actor.role === UserRole.SUPER_ADMIN ||
@@ -265,7 +256,9 @@ export class CommunicationService {
       actor.role !== UserRole.SUPER_ADMIN &&
       recipient.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new ForbiddenException('No autorizado para mensajeria entre instituciones');
+      throw new ForbiddenException(
+        'No autorizado para mensajeria entre instituciones',
+      );
     }
 
     // Ignorar senderId del payload y usar el actor
@@ -285,7 +278,9 @@ export class CommunicationService {
         recipientId: actor.userId,
         ...(actor.role === UserRole.SUPER_ADMIN
           ? {}
-          : { recipient: { institutionId: this.getActorInstitutionId(actor) } }),
+          : {
+              recipient: { institutionId: this.getActorInstitutionId(actor) },
+            }),
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -331,11 +326,11 @@ export class CommunicationService {
     });
   }
 
-  async createNotification(
-    dto: CreateNotificationDto,
-    actor: Actor,
-  ) {
-    if (actor.role !== UserRole.SECRETARIA && actor.role !== UserRole.SUPER_ADMIN) {
+  async createNotification(dto: CreateNotificationDto, actor: Actor) {
+    if (
+      actor.role !== UserRole.SECRETARIA &&
+      actor.role !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException(
         'Solo SECRETARIA puede crear notificaciones',
       );
@@ -351,7 +346,9 @@ export class CommunicationService {
       actor.role !== UserRole.SUPER_ADMIN &&
       target.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new ForbiddenException('No autorizado para crear notificaciones cruzadas');
+      throw new ForbiddenException(
+        'No autorizado para crear notificaciones cruzadas',
+      );
     }
 
     return this.prisma.notification.create({
@@ -364,10 +361,7 @@ export class CommunicationService {
     });
   }
 
-  async markNotificationRead(
-    notificationId: number,
-    actor: Actor,
-  ) {
+  async markNotificationRead(notificationId: number, actor: Actor) {
     const notif = await this.prisma.notification.findUnique({
       where: { id: notificationId },
     });

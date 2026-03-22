@@ -43,7 +43,11 @@ describe('TenantBoundaryGuard', () => {
   it('debe permitir SUPER_ADMIN sin institutionId', () => {
     expect(
       guard.canActivate(
-        buildContext({ userId: 1, role: UserRole.SUPER_ADMIN, institutionId: null }),
+        buildContext({
+          userId: 1,
+          role: UserRole.SUPER_ADMIN,
+          institutionId: null,
+        }),
       ),
     ).toBe(true);
   });
@@ -51,7 +55,11 @@ describe('TenantBoundaryGuard', () => {
   it('debe rechazar actor tenant sin institutionId', () => {
     expect(() =>
       guard.canActivate(
-        buildContext({ userId: 2, role: UserRole.SECRETARIA, institutionId: null }),
+        buildContext({
+          userId: 2,
+          role: UserRole.SECRETARIA,
+          institutionId: null,
+        }),
       ),
     ).toThrow(ForbiddenException);
   });

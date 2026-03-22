@@ -50,9 +50,9 @@ export class MaterialsService {
     return actor.institutionId;
   }
 
-  private groupInstitutionWhere(actor: Actor):
-    | { institutionId?: number }
-    | { institutionId: number } {
+  private groupInstitutionWhere(
+    actor: Actor,
+  ): { institutionId?: number } | { institutionId: number } {
     if (actor.role === UserRole.SUPER_ADMIN) return {};
     return { institutionId: this.getActorInstitutionId(actor) };
   }
@@ -80,7 +80,9 @@ export class MaterialsService {
     if (!assign)
       throw new ForbiddenException('No asignado a ese grupo/materia');
     if (assign.group.institutionId !== this.getActorInstitutionId(actor)) {
-      throw new ForbiddenException('Asignacion fuera del alcance de su institucion');
+      throw new ForbiddenException(
+        'Asignacion fuera del alcance de su institucion',
+      );
     }
     return assign;
   }
@@ -149,10 +151,7 @@ export class MaterialsService {
     };
   }
 
-  async createStudyMaterial(
-    actor: Actor,
-    dto: CreateStudyMaterialDto,
-  ) {
+  async createStudyMaterial(actor: Actor, dto: CreateStudyMaterialDto) {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
     await this.ensureTeacherAssignment(actor, dto.groupId, dto.subjectId);
@@ -264,10 +263,7 @@ export class MaterialsService {
     }
   }
 
-  async deleteStudyMaterial(
-    actor: Actor,
-    id: number,
-  ) {
+  async deleteStudyMaterial(actor: Actor, id: number) {
     const material = await this.prisma.studyMaterial.findUnique({
       where: { id },
     });
@@ -305,7 +301,10 @@ export class MaterialsService {
   }
 
   async listStudyMaterials(actor: Actor) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       return this.prisma.studyMaterial.findMany({
         where:
           actor.role === UserRole.SUPER_ADMIN
@@ -345,10 +344,7 @@ export class MaterialsService {
     });
   }
 
-  async getStudyMaterial(
-    actor: Actor,
-    id: number,
-  ) {
+  async getStudyMaterial(actor: Actor, id: number) {
     const material = await this.prisma.studyMaterial.findUnique({
       where: { id },
       include: { group: true },
@@ -361,7 +357,10 @@ export class MaterialsService {
       throw new ForbiddenException('No autorizado');
     }
 
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       return material;
     }
     if (actor.role === UserRole.PROFESOR) {
@@ -440,10 +439,7 @@ export class MaterialsService {
     };
   }
 
-  async incrementStudyViews(
-    actor: Actor,
-    id: number,
-  ) {
+  async incrementStudyViews(actor: Actor, id: number) {
     await this.getStudyMaterial(actor, id);
     const updated = await this.prisma.studyMaterial.update({
       where: { id },
@@ -453,10 +449,7 @@ export class MaterialsService {
     return updated;
   }
 
-  async incrementStudyDownloads(
-    actor: Actor,
-    id: number,
-  ) {
+  async incrementStudyDownloads(actor: Actor, id: number) {
     await this.getStudyMaterial(actor, id);
     const updated = await this.prisma.studyMaterial.update({
       where: { id },
@@ -467,10 +460,7 @@ export class MaterialsService {
   }
 
   // Syllabus
-  async createSyllabus(
-    actor: Actor,
-    dto: CreateSyllabusDto,
-  ) {
+  async createSyllabus(actor: Actor, dto: CreateSyllabusDto) {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
     await this.ensureTeacherAssignment(actor, dto.groupId, dto.subjectId);
@@ -520,11 +510,7 @@ export class MaterialsService {
     return syllabus;
   }
 
-  async updateSyllabus(
-    actor: Actor,
-    id: number,
-    dto: UpdateSyllabusDto,
-  ) {
+  async updateSyllabus(actor: Actor, id: number, dto: UpdateSyllabusDto) {
     const syl = await this.prisma.syllabus.findUnique({ where: { id } });
     if (!syl) throw new NotFoundException('Temario no encontrado');
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
@@ -552,7 +538,10 @@ export class MaterialsService {
   }
 
   async listSyllabi(actor: Actor) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       return this.prisma.syllabus.findMany({
         where:
           actor.role === UserRole.SUPER_ADMIN
@@ -600,7 +589,10 @@ export class MaterialsService {
       throw new ForbiddenException('No autorizado');
     }
 
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       return syl;
     }
     if (actor.role === UserRole.PROFESOR) {

@@ -4,7 +4,7 @@ import { UsersService } from '../../../src/users/users.service';
 import { UserRole } from '../../../src/users/dto/user-role.enum';
 
 jest.mock('bcryptjs', () => ({
-  hash: jest.fn(async (value: string) => `hashed:${value}`),
+  hash: jest.fn((value: string) => Promise.resolve(`hashed:${value}`)),
   compare: jest.fn(),
 }));
 
@@ -44,7 +44,10 @@ describe('UsersService', () => {
   });
 
   it('crea estudiante usando documento como password inicial', async () => {
-    prisma.user.create.mockResolvedValue({ id: 100, role: UserRole.ESTUDIANTE });
+    prisma.user.create.mockResolvedValue({
+      id: 100,
+      role: UserRole.ESTUDIANTE,
+    });
 
     const result = await service.create(
       { userId: 1, role: UserRole.SECRETARIA, institutionId: 4 },

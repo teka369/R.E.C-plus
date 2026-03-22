@@ -344,12 +344,15 @@ export class AcademicService {
       where: { id },
       include: { group: { select: { institutionId: true } } },
     });
-    if (!gs) throw new NotFoundException('Asignacion grupo-materia no encontrada');
+    if (!gs)
+      throw new NotFoundException('Asignacion grupo-materia no encontrada');
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
       gs.group.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Asignacion fuera del alcance de su institucion');
+      throw new BadRequestException(
+        'Asignacion fuera del alcance de su institucion',
+      );
     }
     return this.prisma.groupSubject.delete({ where: { id } });
   }
@@ -367,7 +370,9 @@ export class AcademicService {
       actor.role !== UserRole.SUPER_ADMIN &&
       student.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new ForbiddenException('Estudiante fuera del alcance de su institucion');
+      throw new ForbiddenException(
+        'Estudiante fuera del alcance de su institucion',
+      );
     }
 
     const group = await this.prisma.group.findUnique({
@@ -426,8 +431,13 @@ export class AcademicService {
         where: { id: studentId },
         select: { institutionId: true },
       });
-      if (!student || student.institutionId !== this.getActorInstitutionId(actor)) {
-        throw new BadRequestException('Estudiante fuera del alcance de su institucion');
+      if (
+        !student ||
+        student.institutionId !== this.getActorInstitutionId(actor)
+      ) {
+        throw new BadRequestException(
+          'Estudiante fuera del alcance de su institucion',
+        );
       }
     }
 
@@ -447,8 +457,13 @@ export class AcademicService {
         where: { id: studentId },
         select: { institutionId: true },
       });
-      if (!student || student.institutionId !== this.getActorInstitutionId(actor)) {
-        throw new BadRequestException('Estudiante fuera del alcance de su institucion');
+      if (
+        !student ||
+        student.institutionId !== this.getActorInstitutionId(actor)
+      ) {
+        throw new BadRequestException(
+          'Estudiante fuera del alcance de su institucion',
+        );
       }
     }
 
@@ -464,8 +479,13 @@ export class AcademicService {
         where: { id: studentId },
         select: { institutionId: true },
       });
-      if (!student || student.institutionId !== this.getActorInstitutionId(actor)) {
-        throw new BadRequestException('Estudiante fuera del alcance de su institucion');
+      if (
+        !student ||
+        student.institutionId !== this.getActorInstitutionId(actor)
+      ) {
+        throw new BadRequestException(
+          'Estudiante fuera del alcance de su institucion',
+        );
       }
     }
 
@@ -488,7 +508,9 @@ export class AcademicService {
       actor.role !== UserRole.SUPER_ADMIN &&
       teacher.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Profesor fuera del alcance de su institucion');
+      throw new BadRequestException(
+        'Profesor fuera del alcance de su institucion',
+      );
     }
 
     await this.getGroup(actor, dto.groupId);
@@ -571,8 +593,13 @@ export class AcademicService {
         where: { id: teacherId },
         select: { institutionId: true },
       });
-      if (!teacher || teacher.institutionId !== this.getActorInstitutionId(actor)) {
-        throw new BadRequestException('Profesor fuera del alcance de su institucion');
+      if (
+        !teacher ||
+        teacher.institutionId !== this.getActorInstitutionId(actor)
+      ) {
+        throw new BadRequestException(
+          'Profesor fuera del alcance de su institucion',
+        );
       }
     }
 
@@ -587,13 +614,16 @@ export class AcademicService {
       where: { id },
       include: { group: { select: { institutionId: true } } },
     });
-    if (!existing) throw new NotFoundException('Asignacion docente no encontrada');
+    if (!existing)
+      throw new NotFoundException('Asignacion docente no encontrada');
 
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
       existing.group.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Asignacion fuera del alcance de su institucion');
+      throw new BadRequestException(
+        'Asignacion fuera del alcance de su institucion',
+      );
     }
 
     const deleted = await this.prisma.teacherAssignment.delete({
@@ -637,7 +667,9 @@ export class AcademicService {
       actor.role !== UserRole.SUPER_ADMIN &&
       user.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Usuario fuera del alcance de su institucion');
+      throw new BadRequestException(
+        'Usuario fuera del alcance de su institucion',
+      );
     }
     if (user.role !== 'PROFESOR')
       throw new BadRequestException('El usuario no es PROFESOR');
@@ -972,7 +1004,11 @@ export class AcademicService {
     });
   }
 
-  async updateEvaluation(actor: Actor, evalId: number, dto: UpdateAcademicEvaluationDto) {
+  async updateEvaluation(
+    actor: Actor,
+    evalId: number,
+    dto: UpdateAcademicEvaluationDto,
+  ) {
     const ev = await this.prisma.academicEvaluation.findUnique({
       where: { id: evalId },
       include: {
@@ -984,9 +1020,12 @@ export class AcademicService {
     if (!ev) throw new NotFoundException('Evaluación no encontrada');
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
-      ev.academicOffering.group.institutionId !== this.getActorInstitutionId(actor)
+      ev.academicOffering.group.institutionId !==
+        this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Evaluacion fuera del alcance de su institucion');
+      throw new BadRequestException(
+        'Evaluacion fuera del alcance de su institucion',
+      );
     }
     // Verificar conflicto de orden si se cambia
     if (dto.orden !== undefined && dto.orden !== ev.orden) {
@@ -1023,9 +1062,12 @@ export class AcademicService {
     if (!ev) throw new NotFoundException('Evaluación no encontrada');
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
-      ev.academicOffering.group.institutionId !== this.getActorInstitutionId(actor)
+      ev.academicOffering.group.institutionId !==
+        this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Evaluacion fuera del alcance de su institucion');
+      throw new BadRequestException(
+        'Evaluacion fuera del alcance de su institucion',
+      );
     }
     await this.prisma.academicEvaluation.delete({ where: { id: evalId } });
     return { deleted: true };
@@ -1033,14 +1075,23 @@ export class AcademicService {
 
   // ─── Listado de ofertas de un profesor ─────────────────────────────────────
 
-  async listTeacherOfferings(actor: Actor, teacherId: number, periodId?: number) {
+  async listTeacherOfferings(
+    actor: Actor,
+    teacherId: number,
+    periodId?: number,
+  ) {
     if (actor.role !== UserRole.SUPER_ADMIN && actor.userId !== teacherId) {
       const teacher = await this.prisma.user.findUnique({
         where: { id: teacherId },
         select: { institutionId: true },
       });
-      if (!teacher || teacher.institutionId !== this.getActorInstitutionId(actor)) {
-        throw new BadRequestException('Profesor fuera del alcance de su institucion');
+      if (
+        !teacher ||
+        teacher.institutionId !== this.getActorInstitutionId(actor)
+      ) {
+        throw new BadRequestException(
+          'Profesor fuera del alcance de su institucion',
+        );
       }
     }
 
@@ -1062,7 +1113,11 @@ export class AcademicService {
           ? {
               academicOffering: {
                 ...(actor.role !== UserRole.SUPER_ADMIN
-                  ? { group: { institutionId: this.getActorInstitutionId(actor) } }
+                  ? {
+                      group: {
+                        institutionId: this.getActorInstitutionId(actor),
+                      },
+                    }
                   : {}),
                 ...(academicPeriodId ? { academicPeriodId } : {}),
               },

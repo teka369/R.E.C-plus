@@ -24,9 +24,13 @@ export class SanitizeInputPipe implements PipeTransform {
 
     if (value && typeof value === 'object') {
       const output: Record<string, unknown> = {};
-      for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      for (const [key, nested] of Object.entries(
+        value as Record<string, unknown>,
+      )) {
         if (DANGEROUS_KEYS.has(key)) {
-          throw new BadRequestException('Payload contiene claves no permitidas');
+          throw new BadRequestException(
+            'Payload contiene claves no permitidas',
+          );
         }
         output[key] = this.sanitize(nested);
       }
@@ -36,7 +40,12 @@ export class SanitizeInputPipe implements PipeTransform {
     if (typeof value === 'string') {
       // Sanitizacion defensiva para entradas comunes de inyeccion
       const trimmed = value.trim();
-      const normalized = trimmed.replace(/[\u0000-\u001F\u007F]/g, '');
+      const normalized = Array.from(trimmed)
+        .filter((char) => {
+          const code = char.charCodeAt(0);
+          return code >= 32 && code !== 127;
+        })
+        .join('');
       return normalized;
     }
 

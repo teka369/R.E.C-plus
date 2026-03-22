@@ -14,7 +14,9 @@ describe('PrismaService security', () => {
   });
 
   it('bloquea $executeRawUnsafe', async () => {
-    await expect(service.$executeRawUnsafe('DELETE FROM "User"')).rejects.toThrow(
+    await expect(
+      service.$executeRawUnsafe('DELETE FROM "User"'),
+    ).rejects.toThrow(
       'Uso bloqueado: $executeRawUnsafe no esta permitido en Recedu',
     );
   });

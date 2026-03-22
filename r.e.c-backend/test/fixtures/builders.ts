@@ -1,6 +1,12 @@
 import { UserRole } from '../../src/users/dto/user-role.enum';
 
-export function buildActor(overrides?: Partial<{ userId: number; role: UserRole; institutionId: number }>) {
+export function buildActor(
+  overrides?: Partial<{
+    userId: number;
+    role: UserRole;
+    institutionId: number;
+  }>,
+) {
   return {
     userId: overrides?.userId ?? 101,
     role: overrides?.role ?? UserRole.PROFESOR,
@@ -8,7 +14,9 @@ export function buildActor(overrides?: Partial<{ userId: number; role: UserRole;
   };
 }
 
-export function buildInstitution(overrides?: Partial<{ id: number; nombre: string; slug: string }>) {
+export function buildInstitution(
+  overrides?: Partial<{ id: number; nombre: string; slug: string }>,
+) {
   return {
     id: overrides?.id ?? 100,
     nombre: overrides?.nombre ?? 'Colegio Test',
@@ -16,7 +24,14 @@ export function buildInstitution(overrides?: Partial<{ id: number; nombre: strin
   };
 }
 
-export function buildGroup(overrides?: Partial<{ id: number; institutionId: number; nombre: string; gradeId: number }>) {
+export function buildGroup(
+  overrides?: Partial<{
+    id: number;
+    institutionId: number;
+    nombre: string;
+    gradeId: number;
+  }>,
+) {
   return {
     id: overrides?.id ?? 301,
     institutionId: overrides?.institutionId ?? 100,

@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsString, Length, Matches, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  Min,
+} from 'class-validator';
 
 export class CreateInstitutionDto {
   @IsString()

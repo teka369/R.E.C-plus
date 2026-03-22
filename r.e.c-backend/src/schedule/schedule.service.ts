@@ -56,13 +56,14 @@ export class ScheduleService {
     if (!group) throw new ForbiddenException('Grupo fuera de su institucion');
   }
 
-  private async ensureViewAccess(
-    actor: Actor,
-    groupId: number,
-  ) {
+  private async ensureViewAccess(actor: Actor, groupId: number) {
     await this.ensureGroupInScope(actor, groupId);
 
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    )
+      return;
     if (actor.role === UserRole.PROFESOR) {
       const isDirector = await this.prisma.group.findFirst({
         where: {
@@ -94,10 +95,7 @@ export class ScheduleService {
     if (!sg) throw new ForbiddenException('No autorizado');
   }
 
-  private async ensureManageAccess(
-    actor: Actor,
-    groupId: number,
-  ) {
+  private async ensureManageAccess(actor: Actor, groupId: number) {
     await this.ensureGroupInScope(actor, groupId);
 
     if (actor.role !== UserRole.PROFESOR)
@@ -116,10 +114,7 @@ export class ScheduleService {
   }
 
   // Entries
-  async listEntries(
-    actor: Actor,
-    groupId: number,
-  ) {
+  async listEntries(actor: Actor, groupId: number) {
     await this.ensureViewAccess(actor, groupId);
     return this.prisma.weeklyScheduleEntry.findMany({
       where: { groupId },
@@ -157,11 +152,7 @@ export class ScheduleService {
     });
   }
 
-  async updateEntry(
-    actor: Actor,
-    id: number,
-    dto: UpdateScheduleEntryDto,
-  ) {
+  async updateEntry(actor: Actor, id: number, dto: UpdateScheduleEntryDto) {
     const entry = await this.prisma.weeklyScheduleEntry.findUnique({
       where: { id },
     });
@@ -218,22 +209,14 @@ export class ScheduleService {
     });
   }
 
-  async createNote(
-    actor: Actor,
-    groupId: number,
-    dto: CreateScheduleNoteDto,
-  ) {
+  async createNote(actor: Actor, groupId: number, dto: CreateScheduleNoteDto) {
     await this.ensureManageAccess(actor, groupId);
     return this.prisma.scheduleNote.create({
       data: { groupId, teacherId: actor.userId, content: dto.content },
     });
   }
 
-  async updateNote(
-    actor: Actor,
-    id: number,
-    dto: UpdateScheduleNoteDto,
-  ) {
+  async updateNote(actor: Actor, id: number, dto: UpdateScheduleNoteDto) {
     const note = await this.prisma.scheduleNote.findUnique({ where: { id } });
     if (!note) throw new NotFoundException('Nota no encontrada');
     await this.ensureManageAccess(actor, note.groupId);
@@ -294,11 +277,7 @@ export class ScheduleService {
     });
   }
 
-  async updateEvent(
-    actor: Actor,
-    id: number,
-    dto: UpdateScheduleEventDto,
-  ) {
+  async updateEvent(actor: Actor, id: number, dto: UpdateScheduleEventDto) {
     const ev = await this.prisma.scheduleEvent.findUnique({ where: { id } });
     if (!ev) throw new NotFoundException('Evento no encontrado');
     await this.ensureManageAccess(actor, ev.groupId);

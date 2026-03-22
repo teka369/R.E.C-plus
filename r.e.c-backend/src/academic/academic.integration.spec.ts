@@ -141,15 +141,25 @@ describe('Academic integration - cascade delete integrity', () => {
 
     await prismaTestClient.group.delete({ where: { id: group.id } });
 
-    const [deletedGroup, remainingStudentGroups, remainingGroupSubjects, remainingOfferings, remainingAssignments, remainingRecords] =
-      await Promise.all([
-        prismaTestClient.group.findUnique({ where: { id: group.id } }),
-        prismaTestClient.studentGroup.count({ where: { groupId: group.id } }),
-        prismaTestClient.groupSubject.count({ where: { groupId: group.id } }),
-        prismaTestClient.academicOffering.count({ where: { groupId: group.id } }),
-        prismaTestClient.teacherAssignment.count({ where: { groupId: group.id } }),
-        prismaTestClient.studentAcademicRecord.count({ where: { groupId: group.id } }),
-      ]);
+    const [
+      deletedGroup,
+      remainingStudentGroups,
+      remainingGroupSubjects,
+      remainingOfferings,
+      remainingAssignments,
+      remainingRecords,
+    ] = await Promise.all([
+      prismaTestClient.group.findUnique({ where: { id: group.id } }),
+      prismaTestClient.studentGroup.count({ where: { groupId: group.id } }),
+      prismaTestClient.groupSubject.count({ where: { groupId: group.id } }),
+      prismaTestClient.academicOffering.count({ where: { groupId: group.id } }),
+      prismaTestClient.teacherAssignment.count({
+        where: { groupId: group.id },
+      }),
+      prismaTestClient.studentAcademicRecord.count({
+        where: { groupId: group.id },
+      }),
+    ]);
 
     expect(deletedGroup).toBeNull();
     expect(remainingStudentGroups).toBe(0);

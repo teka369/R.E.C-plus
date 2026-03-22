@@ -3,12 +3,27 @@ import { RecoveryService } from './recovery.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 
+type RecoveryRequestUpdateArgs = {
+  where: { id: number };
+  data: {
+    status: string;
+    teacherComment?: string;
+    dueDate?: Date;
+    finalScore?: number | null;
+    respondedAt?: Date | null;
+  };
+};
+
 describe('RecoveryService', () => {
   let service: RecoveryService;
   let prisma: {
     academicPeriod: { findFirst: jest.Mock };
     recoveryActivity: { findUnique: jest.Mock; delete: jest.Mock };
-    recoveryRequest: { findUnique: jest.Mock; update: jest.Mock; delete: jest.Mock };
+    recoveryRequest: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
+    };
     group: { findFirst: jest.Mock };
     teacherAssignment: { findFirst: jest.Mock };
     studentGroup: { findFirst: jest.Mock };
@@ -199,17 +214,19 @@ describe('RecoveryService', () => {
       subject: { id: 3, nombre: 'Math' },
       group: { id: 2, nombre: '10-1', institutionId: 2 },
     };
-    const requestRowSnapshot = JSON.parse(JSON.stringify(requestRow));
+    const requestRowSnapshot = structuredClone(requestRow);
 
     prisma.recoveryRequest.findUnique.mockResolvedValue(requestRow);
-    prisma.recoveryRequest.update.mockImplementation(async ({ where, data }) => ({
-      id: where.id,
-      status: data.status,
-      teacherComment: data.teacherComment,
-      dueDate: data.dueDate,
-      finalScore: data.finalScore ?? null,
-      respondedAt: data.respondedAt,
-    }));
+    prisma.recoveryRequest.update.mockImplementation(
+      ({ where, data }: RecoveryRequestUpdateArgs) => ({
+        id: where.id,
+        status: data.status,
+        teacherComment: data.teacherComment,
+        dueDate: data.dueDate,
+        finalScore: data.finalScore ?? null,
+        respondedAt: data.respondedAt,
+      }),
+    );
 
     const result = await service.updateRequestStatus(
       { userId: 10, role: UserRole.PROFESOR, institutionId: 2 },
@@ -224,11 +241,16 @@ describe('RecoveryService', () => {
     expect(prisma.recoveryRequest.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.recoveryRequest.update).toHaveBeenCalledTimes(1);
 
-    const findUniqueOrder = prisma.recoveryRequest.findUnique.mock.invocationCallOrder[0];
-    const updateOrder = prisma.recoveryRequest.update.mock.invocationCallOrder[0];
+    const findUniqueOrder =
+      prisma.recoveryRequest.findUnique.mock.invocationCallOrder[0];
+    const updateOrder =
+      prisma.recoveryRequest.update.mock.invocationCallOrder[0];
     expect(findUniqueOrder).toBeLessThan(updateOrder);
 
-    const updateArg = prisma.recoveryRequest.update.mock.calls[0][0];
+    const [updateCall] = prisma.recoveryRequest.update.mock.calls as [
+      [RecoveryRequestUpdateArgs],
+    ];
+    const [updateArg] = updateCall;
     expect(updateArg).toMatchObject({
       where: { id: 72 },
       data: {

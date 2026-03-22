@@ -105,7 +105,10 @@ export class PerformanceService {
   }
 
   private async ensureWriteAccess(actor: Actor, groupId: number) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       const group = await this.prisma.group.findFirst({
         where: { id: groupId, ...this.groupWhere(actor) },
         select: { id: true },
@@ -140,7 +143,10 @@ export class PerformanceService {
   }
 
   private async ensureCanViewGroupPerformance(actor: Actor, groupId: number) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       const group = await this.prisma.group.findFirst({
         where: { id: groupId, ...this.groupWhere(actor) },
         select: { id: true },
@@ -186,7 +192,10 @@ export class PerformanceService {
   }
 
   private async ensureCanViewGradePerformance(actor: Actor, gradeId: number) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       const exists = await this.prisma.group.findFirst({
         where: { gradeId, ...this.groupWhere(actor) },
         select: { id: true },
@@ -692,7 +701,10 @@ export class PerformanceService {
   }
 
   private async ensureCanViewStudentAcademic(actor: Actor, studentId: number) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       const belongs = await this.prisma.user.findFirst({
         where: { id: studentId, ...this.groupWhere(actor) },
         select: { id: true },
@@ -735,7 +747,10 @@ export class PerformanceService {
   }
 
   private async ensureCanManageGroupAcademic(actor: Actor, groupId: number) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) {
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    ) {
       const group = await this.prisma.group.findFirst({
         where: { id: groupId, ...this.groupWhere(actor) },
         select: { id: true },
@@ -745,7 +760,11 @@ export class PerformanceService {
     }
 
     const isDirector = await this.prisma.group.findFirst({
-      where: { id: groupId, directorId: actor.userId, ...this.groupWhere(actor) },
+      where: {
+        id: groupId,
+        directorId: actor.userId,
+        ...this.groupWhere(actor),
+      },
       select: { id: true },
     });
     if (isDirector) return;
@@ -767,10 +786,18 @@ export class PerformanceService {
     groupId: number,
     subjectId: number,
   ) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    )
+      return;
 
     const isDirector = await this.prisma.group.findFirst({
-      where: { id: groupId, directorId: actor.userId, ...this.groupWhere(actor) },
+      where: {
+        id: groupId,
+        directorId: actor.userId,
+        ...this.groupWhere(actor),
+      },
       select: { id: true },
     });
     if (isDirector) return;

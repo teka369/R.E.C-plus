@@ -37,7 +37,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('grades')
-  createGrade(@Body() dto: { nombre: string }, @Req() req: AuthenticatedRequest) {
+  createGrade(
+    @Body() dto: { nombre: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.createGrade(req.user, dto);
   }
 
@@ -49,7 +52,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:id')
-  getGrade(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  getGrade(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.getGrade(req.user, id);
   }
 
@@ -67,14 +73,20 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('grades/:id')
-  deleteGrade(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  deleteGrade(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.deleteGrade(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('groups')
-  createGroup(@Body() dto: { nombre: string; gradeId: number }, @Req() req: AuthenticatedRequest) {
+  createGroup(
+    @Body() dto: { nombre: string; gradeId: number },
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.createGroup(req.user, dto);
   }
 
@@ -86,7 +98,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('groups/:id')
-  getGroup(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  getGroup(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.getGroup(req.user, id);
   }
 
@@ -104,7 +119,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('groups/:id')
-  deleteGroup(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  deleteGroup(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.deleteGroup(req.user, id);
   }
 
@@ -122,7 +140,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('subjects')
-  createSubject(@Body() dto: { nombre: string; codigo?: string }, @Req() req: AuthenticatedRequest) {
+  createSubject(
+    @Body() dto: { nombre: string; codigo?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.createSubject(req.user, dto);
   }
 
@@ -134,7 +155,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('subjects/:id')
-  getSubject(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  getSubject(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.getSubject(req.user, id);
   }
 
@@ -152,7 +176,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('subjects/:id')
-  deleteSubject(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  deleteSubject(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.deleteSubject(req.user, id);
   }
 
@@ -188,7 +215,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('group-subjects/:id')
-  deleteGroupSubject(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  deleteGroupSubject(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.deleteGroupSubject(req.user, id);
   }
 
@@ -196,7 +226,10 @@ export class AcademicController {
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Header('Deprecation', 'true')
   @Header('Sunset', '2026-01-31T00:00:00Z')
-  @Header('Link', '</academic/students/:studentId/group>; rel="successor-version"')
+  @Header(
+    'Link',
+    '</academic/students/:studentId/group>; rel="successor-version"',
+  )
   @Post('students/assign-group')
   assignStudentToGroup(
     @Body() dto: { studentId: number; groupId: number },
@@ -273,7 +306,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('promotions/grade/preview')
-  previewPromoteGrade(@Body() dto: PromoteGradeDto, @Req() req: AuthenticatedRequest) {
+  previewPromoteGrade(
+    @Body() dto: PromoteGradeDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.previewPromoteGrade(req.user, dto);
   }
 
@@ -299,7 +335,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('teachers/assignments/:id')
-  deleteTeacherAssignment(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  deleteTeacherAssignment(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.deleteTeacherAssignment(req.user, id);
   }
 
@@ -331,7 +370,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('periods/:id')
-  getAcademicPeriod(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  getAcademicPeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.getAcademicPeriod(req.user, id);
   }
 
@@ -375,14 +417,20 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('periods/:id/activate')
-  activateAcademicPeriod(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  activateAcademicPeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.activateAcademicPeriod(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Put('periods/:id/close')
-  closeAcademicPeriod(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+  closeAcademicPeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.closeAcademicPeriod(req.user, id);
   }
 
@@ -402,13 +450,19 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('offerings/:offeringId')
-  getOfferingDetail(@Param('offeringId', ParseIntPipe) offeringId: number, @Req() req: AuthenticatedRequest) {
+  getOfferingDetail(
+    @Param('offeringId', ParseIntPipe) offeringId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.getOfferingDetail(req.user, offeringId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('offerings/:offeringId/evaluations')
-  listEvaluations(@Param('offeringId', ParseIntPipe) offeringId: number, @Req() req: AuthenticatedRequest) {
+  listEvaluations(
+    @Param('offeringId', ParseIntPipe) offeringId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.listEvaluations(req.user, offeringId);
   }
 
@@ -449,7 +503,10 @@ export class AcademicController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR, UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete('evaluations/:evalId')
-  deleteEvaluation(@Param('evalId', ParseIntPipe) evalId: number, @Req() req: AuthenticatedRequest) {
+  deleteEvaluation(
+    @Param('evalId', ParseIntPipe) evalId: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
     return this.academic.deleteEvaluation(req.user, evalId);
   }
 }

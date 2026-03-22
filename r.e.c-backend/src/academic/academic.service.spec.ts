@@ -74,7 +74,10 @@ describe('AcademicService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AcademicService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        AcademicService,
+        { provide: PrismaService, useValue: prisma },
+      ],
     }).compile();
 
     service = module.get<AcademicService>(AcademicService);
@@ -101,8 +104,8 @@ describe('AcademicService', () => {
       },
     };
 
-    const studentBaseline = JSON.parse(JSON.stringify(studentRow));
-    const groupBaseline = JSON.parse(JSON.stringify(groupRow));
+    const studentBaseline = structuredClone(studentRow);
+    const groupBaseline = structuredClone(groupRow);
 
     prisma.user.findUnique.mockResolvedValue(studentRow);
     // Should not be reached in this specific denial path (student mismatch first).
@@ -160,8 +163,8 @@ describe('AcademicService', () => {
       status: 'ACTIVE',
     };
 
-    const studentBaseline = JSON.parse(JSON.stringify(studentRow));
-    const groupBaseline = JSON.parse(JSON.stringify(groupRow));
+    const studentBaseline = structuredClone(studentRow);
+    const groupBaseline = structuredClone(groupRow);
 
     prisma.user.findUnique.mockResolvedValue(studentRow);
     prisma.group.findUnique.mockResolvedValue(groupRow);
@@ -182,8 +185,10 @@ describe('AcademicService', () => {
 
     const userReadOrder = prisma.user.findUnique.mock.invocationCallOrder[0];
     const groupReadOrder = prisma.group.findUnique.mock.invocationCallOrder[0];
-    const periodReadOrder = prisma.academicPeriod.findFirst.mock.invocationCallOrder[0];
-    const existingReadOrder = prisma.studentGroup.findFirst.mock.invocationCallOrder[0];
+    const periodReadOrder =
+      prisma.academicPeriod.findFirst.mock.invocationCallOrder[0];
+    const existingReadOrder =
+      prisma.studentGroup.findFirst.mock.invocationCallOrder[0];
     const createOrder = prisma.studentGroup.create.mock.invocationCallOrder[0];
 
     expect(userReadOrder).toBeLessThan(groupReadOrder);

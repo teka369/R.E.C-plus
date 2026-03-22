@@ -19,14 +19,22 @@ export class PrismaService
     _query: string,
     ..._values: any[]
   ): Prisma.PrismaPromise<T> {
-    throw new Error('Uso bloqueado: $queryRawUnsafe no esta permitido en Recedu');
+    void _query;
+    void _values;
+    throw new Error(
+      'Uso bloqueado: $queryRawUnsafe no esta permitido en Recedu',
+    );
   }
 
   // Bloqueo defensivo: evita ejecucion raw insegura con interpolacion manual.
-  override $executeRawUnsafe<T = unknown>(
+  override $executeRawUnsafe(
     _query: string,
     ..._values: any[]
   ): Prisma.PrismaPromise<number> {
-    throw new Error('Uso bloqueado: $executeRawUnsafe no esta permitido en Recedu');
+    void _query;
+    void _values;
+    throw new Error(
+      'Uso bloqueado: $executeRawUnsafe no esta permitido en Recedu',
+    );
   }
 }

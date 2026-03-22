@@ -62,7 +62,9 @@ export function createPrismaMock() {
       upsert: jest.fn(),
       count: jest.fn(),
     },
-    $transaction: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(undefined)),
+    $transaction: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb(undefined),
+    ),
     $queryRaw: jest.fn(),
     $executeRaw: jest.fn(),
     $executeRawUnsafe: jest.fn(),

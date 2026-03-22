@@ -32,11 +32,19 @@ describe('Prisma Integration - relations, constraints, cascades, transactions', 
     });
 
     const group = await prisma.group.create({
-      data: { institutionId: institution.id, nombre: '10-A', gradeId: grade.id },
+      data: {
+        institutionId: institution.id,
+        nombre: '10-A',
+        gradeId: grade.id,
+      },
     });
 
     const subject = await prisma.subject.create({
-      data: { institutionId: institution.id, nombre: 'Matematicas', codigo: 'MAT-10' },
+      data: {
+        institutionId: institution.id,
+        nombre: 'Matematicas',
+        codigo: 'MAT-10',
+      },
     });
 
     const student = await prisma.user.create({
