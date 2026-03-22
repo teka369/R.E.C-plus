@@ -149,11 +149,21 @@ export class CommunicationService {
   ) {
     const existing = await this.prisma.feedback.findUnique({
       where: { id: feedbackId },
+      include: { group: { select: { institutionId: true } } },
     });
     if (!existing) throw new NotFoundException('Feedback no encontrado');
+
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      existing.group.institutionId !== this.getActorInstitutionId(actor)
+    ) {
+      throw new ForbiddenException('Feedback fuera de su institucion');
+    }
+
     if (
       existing.teacherId !== actor.userId &&
-      actor.role !== UserRole.SECRETARIA
+      actor.role !== UserRole.SECRETARIA &&
+      actor.role !== UserRole.SUPER_ADMIN
     ) {
       throw new ForbiddenException('No autorizado para eliminar este feedback');
     }

@@ -8,16 +8,38 @@ describe('PerformanceService', () => {
   let prisma: {
     group: { findFirst: jest.Mock };
     teacherAssignment: { findFirst: jest.Mock };
+    studentGroup: { findFirst: jest.Mock };
+    groupSubject: { findFirst: jest.Mock };
+    academicPeriod: { findFirst: jest.Mock };
+    academicOffering: { findUnique: jest.Mock };
+    academicEvaluation: { findFirst: jest.Mock; create: jest.Mock };
+    subject: { findUnique: jest.Mock };
+    gradePerformance: { upsert: jest.Mock };
+    performanceTopStudent: { deleteMany: jest.Mock; createMany: jest.Mock };
+    studentAcademicRecord: { upsert: jest.Mock; update: jest.Mock };
+    evaluationGrade: { upsert: jest.Mock; findMany: jest.Mock };
     $executeRaw: jest.Mock;
     $queryRaw: jest.Mock;
+    $transaction: jest.Mock;
   };
 
   beforeEach(() => {
     prisma = {
       group: { findFirst: jest.fn() },
       teacherAssignment: { findFirst: jest.fn() },
+      studentGroup: { findFirst: jest.fn() },
+      groupSubject: { findFirst: jest.fn() },
+      academicPeriod: { findFirst: jest.fn() },
+      academicOffering: { findUnique: jest.fn() },
+      academicEvaluation: { findFirst: jest.fn(), create: jest.fn() },
+      subject: { findUnique: jest.fn() },
+      gradePerformance: { upsert: jest.fn() },
+      performanceTopStudent: { deleteMany: jest.fn(), createMany: jest.fn() },
+      studentAcademicRecord: { upsert: jest.fn(), update: jest.fn() },
+      evaluationGrade: { upsert: jest.fn(), findMany: jest.fn() },
       $executeRaw: jest.fn(),
       $queryRaw: jest.fn(),
+      $transaction: jest.fn(),
     };
 
     service = new PerformanceService(prisma as unknown as PrismaService);
@@ -102,7 +124,7 @@ describe('PerformanceService', () => {
       });
 
     const result = await service.upsertByGrade(
-      { userId: 1, role: UserRole.SECRETARIA },
+      { userId: 1, role: UserRole.SECRETARIA, institutionId: 10 },
       '10-1',
       { promedioGeneral: 4.2 },
     );
@@ -110,5 +132,144 @@ describe('PerformanceService', () => {
     expect(result).toBeTruthy();
     expect(result?.groupId).toBe(1);
     expect(recomputeSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('denies cross-tenant grade tampering before recompute or persistence', async () => {
+    const targetGroup = {
+      id: 9,
+      nombre: '10-9',
+      institutionId: 200,
+    };
+    const targetGroupBaseline = JSON.parse(JSON.stringify(targetGroup));
+
+    // Read stage: locate group by grade label (service-level call path).
+    prisma.group.findFirst
+      .mockResolvedValueOnce(targetGroup)
+      // Authorization check stage (teacher is not director in target group).
+      .mockResolvedValueOnce(null);
+    prisma.teacherAssignment.findFirst.mockResolvedValue(null);
+
+    const recomputeSpy = jest
+      .spyOn(
+        service as unknown as {
+          recomputeGroupPerformance: (groupId: number) => Promise<unknown>;
+        },
+        'recomputeGroupPerformance',
+      )
+      .mockResolvedValue({});
+
+    await expect(
+      service.upsertByGrade(
+        { userId: 5001, role: UserRole.PROFESOR, institutionId: 100 },
+        '10-9',
+        { promedioGeneral: 4.9 },
+      ),
+    ).rejects.toThrow(ForbiddenException);
+
+    // Read happens, write path must never start.
+    expect(prisma.group.findFirst).toHaveBeenCalledTimes(2);
+    expect(prisma.teacherAssignment.findFirst).toHaveBeenCalledTimes(1);
+
+    expect(recomputeSpy).not.toHaveBeenCalled();
+    expect(prisma.gradePerformance.upsert).not.toHaveBeenCalled();
+    expect(prisma.performanceTopStudent.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.performanceTopStudent.createMany).not.toHaveBeenCalled();
+    expect(prisma.studentAcademicRecord.upsert).not.toHaveBeenCalled();
+    expect(prisma.studentAcademicRecord.update).not.toHaveBeenCalled();
+    expect(prisma.evaluationGrade.upsert).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+
+    // Structural integrity: no silent in-memory mutation.
+    expect(targetGroup).toEqual(targetGroupBaseline);
+  });
+
+  it('keeps student academic upsert idempotent without redundant create writes', async () => {
+    const actor = { userId: 11, role: UserRole.SECRETARIA, institutionId: 10 };
+    const payload = {
+      parcial1: 4.2,
+      parcial2: 4.5,
+      notaFinal: 4.4,
+      progresoMateria: 92,
+      inasistenciasJustificadas: 1,
+      inasistenciasInjustificadas: 0,
+      observaciones: 'Seguimiento estable',
+    };
+
+    prisma.group.findFirst.mockResolvedValue({ id: 1 });
+    prisma.studentGroup.findFirst.mockResolvedValue({ id: 701 });
+    prisma.groupSubject.findFirst.mockResolvedValue({ id: 501 });
+    prisma.academicPeriod.findFirst.mockResolvedValue({ id: 90 });
+    prisma.academicOffering.findUnique.mockResolvedValue({ id: 600 });
+
+    const fixedUpdatedAt = new Date('2030-01-20T10:00:00.000Z');
+    prisma.studentAcademicRecord.upsert.mockResolvedValue({
+      id: 800,
+      studentId: 31,
+      groupId: 1,
+      subjectId: 21,
+      notaFinal: 4.4,
+      progresoMateria: 92,
+      inasistenciasJustificadas: 1,
+      inasistenciasInjustificadas: 0,
+      observaciones: 'Seguimiento estable',
+      updatedAt: fixedUpdatedAt,
+    });
+
+    prisma.academicEvaluation.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ id: 9101 });
+
+    prisma.academicEvaluation.create
+      .mockResolvedValueOnce({ id: 9101 })
+      .mockResolvedValueOnce({ id: 9102 });
+
+    prisma.evaluationGrade.upsert.mockResolvedValue({ id: 10001, nota: 4.2 });
+    prisma.subject.findUnique.mockResolvedValue({ id: 21, nombre: 'Matemáticas' });
+    prisma.evaluationGrade.findMany.mockResolvedValue([
+      {
+        nota: 4.2,
+        academicEvaluation: {
+          titulo: 'Parcial 1',
+          tipo: 'PARCIAL',
+          orden: 1,
+          porcentaje: null,
+        },
+      },
+      {
+        nota: 4.5,
+        academicEvaluation: {
+          titulo: 'Parcial 2',
+          tipo: 'PARCIAL',
+          orden: 2,
+          porcentaje: null,
+        },
+      },
+    ]);
+
+    const first = await service.upsertStudentAcademic(actor, 1, 31, 21, payload as never);
+    const createCallsAfterFirstRun = prisma.academicEvaluation.create.mock.calls.length;
+
+    const second = await service.upsertStudentAcademic(actor, 1, 31, 21, payload as never);
+
+    expect(first).toEqual(second);
+
+    expect(prisma.studentAcademicRecord.upsert).toHaveBeenCalledTimes(2);
+    expect(prisma.evaluationGrade.upsert).toHaveBeenCalledTimes(4);
+
+    expect(createCallsAfterFirstRun).toBe(2);
+    expect(prisma.academicEvaluation.create).toHaveBeenCalledTimes(2);
+
+    const firstUpsertArg = prisma.studentAcademicRecord.upsert.mock.calls[0][0];
+    const secondUpsertArg = prisma.studentAcademicRecord.upsert.mock.calls[1][0];
+    expect(secondUpsertArg).toEqual(firstUpsertArg);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+    expect(prisma.gradePerformance.upsert).not.toHaveBeenCalled();
+    expect(prisma.performanceTopStudent.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.performanceTopStudent.createMany).not.toHaveBeenCalled();
+    expect(prisma.studentAcademicRecord.update).not.toHaveBeenCalled();
   });
 });

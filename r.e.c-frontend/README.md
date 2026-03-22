@@ -27,6 +27,14 @@ npm run build
 npm run start
 ```
 
+## E2E con Playwright
+
+```bash
+npm run test:e2e
+```
+
+El proyecto incluye pruebas de login, protección por rol y redirecciones de acceso no autorizado.
+
 ## Producción en Docker
 
 ```bash

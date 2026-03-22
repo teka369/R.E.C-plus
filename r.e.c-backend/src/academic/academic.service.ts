@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -288,7 +289,10 @@ export class AcademicService {
     // Sincroniacion con AcademicOffering (best-effort, no rompe si falla)
     try {
       const activePeriod = await this.prisma.academicPeriod.findFirst({
-        where: { estado: AcademicPeriodStatus.ACTIVE },
+        where: {
+          estado: AcademicPeriodStatus.ACTIVE,
+          ...this.institutionWhere(actor),
+        },
         orderBy: { createdAt: 'desc' },
       });
       if (activePeriod) {
@@ -363,13 +367,20 @@ export class AcademicService {
       actor.role !== UserRole.SUPER_ADMIN &&
       student.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException('Estudiante fuera del alcance de su institucion');
+      throw new ForbiddenException('Estudiante fuera del alcance de su institucion');
     }
 
-    const group = await this.prisma.group.findFirst({
-      where: { id: dto.groupId, ...this.institutionWhere(actor) },
+    const group = await this.prisma.group.findUnique({
+      where: { id: dto.groupId },
+      select: { id: true, institutionId: true },
     });
     if (!group) throw new BadRequestException('Grupo no encontrado');
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      group.institutionId !== this.getActorInstitutionId(actor)
+    ) {
+      throw new ForbiddenException('Grupo fuera del alcance de su institucion');
+    }
 
     // Resolver período académico activo (requerido — StudentGroup.academicPeriodId NOT NULL)
     const activePeriod = await this.prisma.academicPeriod.findFirst({

@@ -44,6 +44,42 @@ El contenedor ejecuta migraciones con `prisma migrate deploy` antes de iniciar.
 - Contraseñas con bcrypt
 - JWT obligatorio para endpoints protegidos
 - CORS configurable por variable de entorno
+- Pipe global de sanitización de inputs (body/query)
+- Guard global de frontera tenant para actores autenticados
+- Bloqueo defensivo de `$queryRawUnsafe` y `$executeRawUnsafe`
+
+## Testing Profesional
+
+### Unit tests (>=80%)
+
+```bash
+npm run test:unit
+```
+
+### Integration tests (Prisma + PostgreSQL)
+
+```bash
+# usar DATABASE_URL_TEST o DATABASE_URL apuntando a recedu_test
+npm run test:integration:migrate
+npm run test:integration
+```
+
+### E2E backend
+
+```bash
+npm run test:e2e
+```
+
+### Carga (k6)
+
+```bash
+k6 run ./test/load/critical-endpoints.k6.js
+```
+
+## SQL de performance
+
+- Índices recomendados: `scripts/sql/performance-indexes.sql`
+- Diagnóstico de queries lentas: `scripts/sql/slow-queries.sql`
 
 ## Modo SaaS (Multi-institucion)
 
