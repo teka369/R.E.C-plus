@@ -1,6 +1,30 @@
 import { expect, test } from '@playwright/test';
+import { SignJWT } from 'jose';
 
 type AppRole = 'SUPER_ADMIN' | 'SECRETARIA' | 'PROFESOR' | 'ESTUDIANTE';
+
+const PLAYWRIGHT_JWT_DEFAULT = 'local-dev-jwt-secret-change-me';
+
+function jwtSecretBytes() {
+  return new TextEncoder().encode(process.env.JWT_SECRET || PLAYWRIGHT_JWT_DEFAULT);
+}
+
+async function signTestAccessToken(input: {
+  sub: number;
+  role: AppRole;
+  email: string;
+  institutionId?: number | null;
+}) {
+  return new SignJWT({
+    role: input.role,
+    email: input.email,
+    institutionId: input.institutionId ?? null,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject(String(input.sub))
+    .setExpirationTime('2h')
+    .sign(jwtSecretBytes());
+}
 
 const unauthenticatedCases = [
   { path: '/secretaria', expected: /\/acceso-secretaria/ },
@@ -49,12 +73,19 @@ test.describe('P0 - Auth routing matrix', () => {
   });
 
   test('student login flow redirects to /estudiante', async ({ page }) => {
+    let accessToken = '';
     await page.route('**/auth/login', async (route) => {
+      accessToken = await signTestAccessToken({
+        sub: 101,
+        role: 'ESTUDIANTE',
+        email: 'student@test.edu',
+        institutionId: null,
+      });
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          access_token: 'student-token',
+          access_token: accessToken,
           user: {
             id: 101,
             nombres: 'Est',
@@ -77,26 +108,27 @@ test.describe('P0 - Auth routing matrix', () => {
     await page.getByRole('button', { name: 'Ingresar' }).click();
 
     const sessionRequest = await sessionRequestPromise;
-    const sessionBody = sessionRequest.postDataJSON() as {
-      role: AppRole;
-      userId: number;
-      token: string;
-    };
-    expect(sessionBody.role).toBe('ESTUDIANTE');
-    expect(sessionBody.userId).toBe(101);
-    expect(sessionBody.token).toBe('student-token');
+    const sessionBody = sessionRequest.postDataJSON() as { token?: string };
+    expect(sessionBody.token).toBe(accessToken);
     await expect(
       page.getByText(/Este acceso es para estudiantes y docentes/i),
     ).toHaveCount(0);
   });
 
   test('teacher login flow redirects to /docente', async ({ page }) => {
+    let accessToken = '';
     await page.route('**/auth/login', async (route) => {
+      accessToken = await signTestAccessToken({
+        sub: 202,
+        role: 'PROFESOR',
+        email: 'teacher@test.edu',
+        institutionId: null,
+      });
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          access_token: 'teacher-token',
+          access_token: accessToken,
           user: {
             id: 202,
             nombres: 'Prof',
@@ -119,26 +151,27 @@ test.describe('P0 - Auth routing matrix', () => {
     await page.getByRole('button', { name: 'Ingresar' }).click();
 
     const sessionRequest = await sessionRequestPromise;
-    const sessionBody = sessionRequest.postDataJSON() as {
-      role: AppRole;
-      userId: number;
-      token: string;
-    };
-    expect(sessionBody.role).toBe('PROFESOR');
-    expect(sessionBody.userId).toBe(202);
-    expect(sessionBody.token).toBe('teacher-token');
+    const sessionBody = sessionRequest.postDataJSON() as { token?: string };
+    expect(sessionBody.token).toBe(accessToken);
     await expect(
       page.getByText(/Este acceso es para estudiantes y docentes/i),
     ).toHaveCount(0);
   });
 
   test('secretaria access flow accepts SECRETARIA and redirects to /secretaria', async ({ page }) => {
+    let accessToken = '';
     await page.route('**/auth/login', async (route) => {
+      accessToken = await signTestAccessToken({
+        sub: 303,
+        role: 'SECRETARIA',
+        email: 'secretaria@test.edu',
+        institutionId: null,
+      });
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          access_token: 'secretaria-token',
+          access_token: accessToken,
           user: {
             id: 303,
             nombres: 'Sec',
@@ -161,14 +194,8 @@ test.describe('P0 - Auth routing matrix', () => {
     await page.getByRole('button', { name: 'Ingresar' }).click();
 
     const sessionRequest = await sessionRequestPromise;
-    const sessionBody = sessionRequest.postDataJSON() as {
-      role: AppRole;
-      userId: number;
-      token: string;
-    };
-    expect(sessionBody.role).toBe('SECRETARIA');
-    expect(sessionBody.userId).toBe(303);
-    expect(sessionBody.token).toBe('secretaria-token');
+    const sessionBody = sessionRequest.postDataJSON() as { token?: string };
+    expect(sessionBody.token).toBe(accessToken);
     await expect(
       page.getByText(/Acceso exclusivo para Secretaría y Super Admin/i),
     ).toHaveCount(0);

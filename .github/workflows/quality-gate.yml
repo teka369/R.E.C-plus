@@ -110,6 +110,8 @@ jobs:
 
   frontend-lint-and-e2e:
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-jwt-secret
     defaults:
       run:
         working-directory: r.e.c-frontend

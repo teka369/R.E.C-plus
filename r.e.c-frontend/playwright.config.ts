@@ -16,10 +16,16 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev',
+    command: `npx next dev --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      ...process.env,
+      PORT: String(port),
+      JWT_SECRET: process.env.JWT_SECRET ?? 'local-dev-jwt-secret-change-me',
+      INTERNAL_API_URL: process.env.INTERNAL_API_URL ?? 'http://127.0.0.1:4001',
+    },
   },
   projects: [
     {

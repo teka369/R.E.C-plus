@@ -1,3 +1,4 @@
-- En Windows puede fallar `npx prisma generate` con EPERM al renombrar `query_engine-windows.dll.node` si el binario está bloqueado.
-- Workaround seguro para actualizar cliente/tipos sin tocar engine bloqueado: `PRISMA_GENERATE_NO_ENGINE=1 npx prisma generate`.
-- Para runtime local con engine tradicional, cerrar procesos Node que bloquean el archivo y reintentar `npx prisma generate` normal.
+- En Windows puede fallar `npx prisma generate` con EPERM al renombrar `query_engine-windows.dll.node` si el binario está bloqueado (otro `node` usando el cliente).
+- **No uses `PRISMA_GENERATE_NO_ENGINE=1` ni `prisma generate --no-engine` para desarrollo local con `DATABASE_URL=postgresql://...`**: ese cliente queda pensado para Prisma Accelerate y exige URL `prisma://` (error P6001 / DataProxyEngine).
+- Para runtime local normal: cierra procesos Node que bloqueen el engine, luego `cd r.e.c-backend && npx prisma generate` **sin** `PRISMA_GENERATE_NO_ENGINE`.
+- `PRISMA_GENERATE_NO_ENGINE` solo tiene sentido si de verdad usas Accelerate y tu `DATABASE_URL` es la de la plataforma (`prisma://` o `prisma+postgres://`).

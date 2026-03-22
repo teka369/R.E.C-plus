@@ -31,7 +31,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((data) => {
         if (!mounted) return;
         if (data?.ok) {
-          // Hidratar token y usuario mínimo (id + role) para cargar asignaciones
           setToken((prev) => prev ?? "cookie");
           if (data?.userId && data?.role) {
             setUser((prev) => {
@@ -44,6 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               };
             });
           }
+        } else {
+          setUser(null);
+          setToken(null);
         }
       })
       .catch(() => {})
@@ -82,15 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (u: AuthUser, t: string) => {
     setUser(u);
     setToken(t);
-    // Setear cookies HttpOnly vía API para soporte de middleware en servidor
+    // Cookies HttpOnly vía API (JWT validado en servidor; proxy usa rec_token)
     try {
       await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: t, role: u.role, userId: u.id }),
+        body: JSON.stringify({ token: t }),
       });
     } catch {
-      // Ignorar errores de red; el middleware depende de cookies, pero el contexto mantiene estado en memoria para esta sesión
+      // Ignorar errores de red; el proxy depende de cookies, pero el contexto mantiene estado en memoria para esta sesión
     }
   };
 
@@ -102,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       prevRole === "SECRETARIA" || prevRole === "SUPER_ADMIN"
         ? "/acceso-secretaria"
         : "/login";
-    // Borrar cookies de sesión y forzar navegación completa para que el middleware actúe
+    // Borrar cookies y navegación completa para que el proxy aplique rutas públicas
     fetch("/api/auth/session", { method: "DELETE" })
       .catch(() => {})
       .finally(() => {
