@@ -13,6 +13,7 @@ import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { RecoverySettingsModule } from './recovery-settings/recovery-settings.module';
 import { InstitutionsModule } from './institutions/institutions.module';
+import { TenantBoundaryGuard } from './common/guards/tenant-boundary.guard';
 
 @Module({
   imports: [
@@ -34,6 +35,10 @@ import { InstitutionsModule } from './institutions/institutions.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TenantBoundaryGuard,
     },
   ],
 })

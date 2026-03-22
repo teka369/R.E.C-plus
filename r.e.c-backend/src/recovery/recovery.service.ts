@@ -304,7 +304,7 @@ export class RecoveryService {
   ) {
     await this.ensureRecoveryPeriodActive(actor);
 
-    const request = await this.getRequestOrThrow(id);
+    const request = await this.ensureRequestAccess(actor, id);
 
     if (
       actor.role === UserRole.PROFESOR &&
@@ -466,7 +466,7 @@ export class RecoveryService {
   async deleteRequest(actor: Actor, id: number) {
     await this.ensureRecoveryPeriodActive(actor);
 
-    const request = await this.getRequestOrThrow(id);
+    const request = await this.ensureRequestAccess(actor, id);
 
     if (actor.role === UserRole.SECRETARIA) {
       await this.prisma.recoveryRequest.delete({ where: { id } });
@@ -497,10 +497,15 @@ export class RecoveryService {
     await this.ensureRecoveryPeriodActive(actor);
 
     const activity = await this.getActivityOrThrow(id);
+    const request = await this.ensureRequestAccess(actor, activity.requestId);
 
     if (
       actor.role !== UserRole.SECRETARIA &&
-      !(actor.role === UserRole.PROFESOR && activity.teacherId === actor.userId)
+      !(
+        actor.role === UserRole.PROFESOR &&
+        activity.teacherId === actor.userId &&
+        request.teacherId === actor.userId
+      )
     ) {
       throw new ForbiddenException(
         'No autorizado para eliminar esta actividad',

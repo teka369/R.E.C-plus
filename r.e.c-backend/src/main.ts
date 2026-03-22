@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import { SanitizeInputPipe } from './common/pipes/sanitize-input.pipe';
 // ConfigService no usado para evitar conflictos de versiones
 
 async function bootstrap() {
@@ -42,6 +43,7 @@ async function bootstrap() {
     credentials: true,
   });
   app.useGlobalPipes(
+    new SanitizeInputPipe(),
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
