@@ -55,18 +55,3 @@ Si prefieres no usar Compose:
 2. Crear app backend desde `r.e.c-backend/Dockerfile`.
 3. Crear app frontend desde `r.e.c-frontend/Dockerfile`.
 4. Configurar variables equivalentes en cada servicio.
-
-## 7) Despliegue automatico desde GitHub Actions
-
-El workflow [.github/workflows/quality-gate.yml](.github/workflows/quality-gate.yml) ya incluye un job `deploy` que se ejecuta en `main` solo cuando todos los gates pasan.
-
-Configura estos secretos en GitHub (Settings -> Secrets and variables -> Actions):
-
-- `COOLIFY_DEPLOY_WEBHOOK_URL` (obligatorio): URL del webhook de deploy de Coolify para tu stack/proyecto.
-- `COOLIFY_DEPLOY_WEBHOOK_TOKEN` (opcional): token Bearer si tu webhook esta protegido.
-
-Comportamiento del job:
-
-- Falla inmediatamente si falta `COOLIFY_DEPLOY_WEBHOOK_URL`.
-- Dispara un `POST` al webhook con metadatos de `ref`, `sha` y repositorio.
-- Falla si Coolify responde fuera del rango HTTP 2xx.
