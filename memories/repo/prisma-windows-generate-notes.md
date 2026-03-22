@@ -1,0 +1,3 @@
+- En Windows puede fallar `npx prisma generate` con EPERM al renombrar `query_engine-windows.dll.node` si el binario está bloqueado.
+- Workaround seguro para actualizar cliente/tipos sin tocar engine bloqueado: `PRISMA_GENERATE_NO_ENGINE=1 npx prisma generate`.
+- Para runtime local con engine tradicional, cerrar procesos Node que bloquean el archivo y reintentar `npx prisma generate` normal.

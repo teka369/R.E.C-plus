@@ -2,6 +2,67 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
+import type { StringValue } from 'ms';
+
+type AuthInstitution = {
+  id: number;
+  nombre: string;
+  slug: string;
+  activa: boolean;
+};
+
+type AuthUser = {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  role: string;
+  institutionId: number | null;
+  institution: AuthInstitution | null;
+  password?: string;
+};
+
+type AuthUserView = {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  role: string;
+  institutionId: number | null;
+  institution: AuthInstitution | null;
+};
+
+type TokenPayload = {
+  sub: number;
+  role: string;
+  email: string;
+  institutionId: number | null;
+};
+
+type RefreshPayload = {
+  sub: number;
+  type: 'refresh';
+  jti: string;
+};
+
+type DecodedWithExp = {
+  exp: number;
+};
+
+export type AuthTokensResponse = {
+  access_token: string;
+  refresh_token: string;
+  user: AuthUserView;
+};
+
+function isDecodedWithExp(value: unknown): value is DecodedWithExp {
+  if (!value || typeof value !== 'object' || !('exp' in value)) {
+    return false;
+  }
+  const candidate = value as { exp?: unknown };
+  return typeof candidate.exp === 'number';
+}
 
 @Injectable()
 export class AuthService {
@@ -10,7 +71,98 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  async validateUser(email: string, password: string) {
+  private getRefreshSecret(): string {
+    return process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? '';
+  }
+
+  private getRefreshExpiresIn(): string {
+    return process.env.JWT_REFRESH_EXPIRES ?? '30d';
+  }
+
+  private async issueAccessToken(payload: TokenPayload): Promise<string> {
+    return this.jwt.signAsync(payload);
+  }
+
+  private async createRefreshSession(userId: number): Promise<{
+    refreshToken: string;
+    jti: string;
+    expiresAt: Date;
+    tokenHash: string;
+  }> {
+    const jti = randomUUID();
+    const refreshToken = await this.jwt.signAsync(
+      { sub: userId, type: 'refresh', jti },
+      {
+        secret: this.getRefreshSecret(),
+        expiresIn: this.getRefreshExpiresIn() as StringValue,
+      },
+    );
+
+    const decoded: unknown = this.jwt.decode(refreshToken);
+    if (!isDecodedWithExp(decoded)) {
+      throw new UnauthorizedException('Token de refresh inválido');
+    }
+
+    return {
+      refreshToken,
+      jti,
+      expiresAt: new Date(decoded.exp * 1000),
+      tokenHash: await bcrypt.hash(refreshToken, 10),
+    };
+  }
+
+  private mapUser(user: AuthUser): AuthUserView {
+    return {
+      id: user.id,
+      nombres: user.nombres,
+      apellidos: user.apellidos,
+      email: user.email,
+      role: user.role,
+      institutionId: user.institutionId ?? null,
+      institution: user.institution
+        ? {
+            id: user.institution.id,
+            nombre: user.institution.nombre,
+            slug: user.institution.slug,
+            activa: user.institution.activa,
+          }
+        : null,
+    };
+  }
+
+  private async issueTokensForUser(user: AuthUser): Promise<{
+    response: AuthTokensResponse;
+    sessionId: number;
+  }> {
+    const accessPayload: TokenPayload = {
+      sub: user.id,
+      role: user.role,
+      email: user.email,
+      institutionId: user.institutionId ?? null,
+    };
+    const accessToken = await this.issueAccessToken(accessPayload);
+    const refreshSession = await this.createRefreshSession(user.id);
+
+    const session = await this.prisma.authSession.create({
+      data: {
+        userId: user.id,
+        jti: refreshSession.jti,
+        tokenHash: refreshSession.tokenHash,
+        expiresAt: refreshSession.expiresAt,
+      },
+    });
+
+    return {
+      response: {
+        access_token: accessToken,
+        refresh_token: refreshSession.refreshToken,
+        user: this.mapUser(user),
+      },
+      sessionId: session.id,
+    };
+  }
+
+  async validateUser(email: string, password: string): Promise<AuthUser> {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -39,33 +191,122 @@ export class AuthService {
     return user;
   }
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string): Promise<AuthTokensResponse> {
     const user = await this.validateUser(email, password);
-    const payload = {
-      sub: user.id,
-      role: user.role,
+    const issued = await this.issueTokensForUser({
+      id: user.id,
+      nombres: user.nombres,
+      apellidos: user.apellidos,
       email: user.email,
+      role: user.role,
       institutionId: user.institutionId ?? null,
-    };
-    const accessToken = await this.jwt.signAsync(payload);
-    return {
-      access_token: accessToken,
-      user: {
-        id: user.id,
-        nombres: user.nombres,
-        apellidos: user.apellidos,
-        email: user.email,
-        role: user.role,
-        institutionId: user.institutionId ?? null,
-        institution: user.institution
-          ? {
-              id: user.institution.id,
-              nombre: user.institution.nombre,
-              slug: user.institution.slug,
-              activa: user.institution.activa,
-            }
-          : null,
+      institution: user.institution
+        ? {
+            id: user.institution.id,
+            nombre: user.institution.nombre,
+            slug: user.institution.slug,
+            activa: user.institution.activa,
+          }
+        : null,
+    });
+    return issued.response;
+  }
+
+  async refresh(refreshToken: string): Promise<AuthTokensResponse> {
+    const payload = await this.jwt.verifyAsync<RefreshPayload>(refreshToken, {
+      secret: this.getRefreshSecret(),
+    });
+
+    if (payload.type !== 'refresh' || !payload.jti || !payload.sub) {
+      throw new UnauthorizedException('Token de refresh inválido');
+    }
+
+    const session = await this.prisma.authSession.findUnique({
+      where: { jti: payload.jti },
+    });
+    if (!session) {
+      throw new UnauthorizedException('Sesión inválida');
+    }
+    if (session.userId !== payload.sub) {
+      throw new UnauthorizedException('Sesión inválida');
+    }
+    if (session.revokedAt) {
+      throw new UnauthorizedException('Sesión revocada');
+    }
+    if (session.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException('Sesión expirada');
+    }
+    const matches = await bcrypt.compare(refreshToken, session.tokenHash);
+    if (!matches) {
+      throw new UnauthorizedException('Sesión inválida');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: session.userId },
+      include: {
+        institution: {
+          select: {
+            id: true,
+            nombre: true,
+            slug: true,
+            activa: true,
+          },
+        },
       },
-    };
+    });
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    const issued = await this.issueTokensForUser({
+      id: user.id,
+      nombres: user.nombres,
+      apellidos: user.apellidos,
+      email: user.email,
+      role: user.role,
+      institutionId: user.institutionId ?? null,
+      institution: user.institution
+        ? {
+            id: user.institution.id,
+            nombre: user.institution.nombre,
+            slug: user.institution.slug,
+            activa: user.institution.activa,
+          }
+        : null,
+    });
+
+    await this.prisma.authSession.update({
+      where: { id: session.id },
+      data: {
+        revokedAt: new Date(),
+        replacedById: issued.sessionId,
+      },
+    });
+
+    return issued.response;
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    const payload = await this.jwt.verifyAsync<RefreshPayload>(refreshToken, {
+      secret: this.getRefreshSecret(),
+    });
+
+    if (!payload.jti) {
+      throw new UnauthorizedException('Token de refresh inválido');
+    }
+
+    const session = await this.prisma.authSession.findUnique({
+      where: { jti: payload.jti },
+    });
+    if (!session) {
+      return;
+    }
+
+    if (!session.revokedAt) {
+      await this.prisma.authSession.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      });
+    }
   }
 }

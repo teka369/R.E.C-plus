@@ -11,6 +11,7 @@ Copia `.env.example` a `.env` y completa:
 
 - `DATABASE_URL`
 - `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
 - `CORS_ORIGIN`
 - `EMBED_ORIGINS`
 

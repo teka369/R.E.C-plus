@@ -147,9 +147,27 @@ model User {
   recoveryMessagesSent RecoveryMessage[] @relation("RecoveryMessageAuthor")
   academicRecords StudentAcademicRecord[] @relation("AcademicRecordStudent")
   academicRecordsUpdated StudentAcademicRecord[] @relation("AcademicRecordTeacher")
+  authSessions       AuthSession[]
   institution        Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
 
   @@index([institutionId])
+}
+
+model AuthSession {
+  id           Int          @id @default(autoincrement())
+  userId       Int
+  jti          String       @unique
+  tokenHash    String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy   AuthSession? @relation("AuthSessionRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  previous     AuthSession[] @relation("AuthSessionRotation")
+
+  @@index([userId, revokedAt, expiresAt])
 }
 
 model Institution {
