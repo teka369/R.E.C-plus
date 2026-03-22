@@ -47,7 +47,10 @@ describe('UsersController', () => {
       },
     );
 
-    expect(usersService.changePassword).toHaveBeenCalledWith(99, 'Password123!');
+    expect(usersService.changePassword).toHaveBeenCalledWith(
+      99,
+      'Password123!',
+    );
     expect(result).toEqual({ id: 99 });
   });
 

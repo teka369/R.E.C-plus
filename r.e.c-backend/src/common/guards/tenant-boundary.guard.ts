@@ -69,9 +69,11 @@ export class TenantBoundaryGuard implements CanActivate {
       );
     }
 
-    const requestedInstitutionIds = this.collectRequestedInstitutionIds(request);
+    const requestedInstitutionIds =
+      this.collectRequestedInstitutionIds(request);
     const hasCrossTenantTarget = requestedInstitutionIds.some(
-      (requestedInstitutionId) => requestedInstitutionId !== actor.institutionId,
+      (requestedInstitutionId) =>
+        requestedInstitutionId !== actor.institutionId,
     );
 
     if (hasCrossTenantTarget) {

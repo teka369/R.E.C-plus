@@ -3,6 +3,18 @@ import { PerformanceService } from './performance.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 
+type StudentAcademicUpsertArgs = {
+  where: {
+    studentId_groupId_subjectId: {
+      studentId: number;
+      groupId: number;
+      subjectId: number;
+    };
+  };
+  update: Record<string, unknown>;
+  create: Record<string, unknown>;
+};
+
 describe('PerformanceService', () => {
   let service: PerformanceService;
   let prisma: {
@@ -140,7 +152,7 @@ describe('PerformanceService', () => {
       nombre: '10-9',
       institutionId: 200,
     };
-    const targetGroupBaseline = JSON.parse(JSON.stringify(targetGroup));
+    const targetGroupBaseline = structuredClone(targetGroup);
 
     // Read stage: locate group by grade label (service-level call path).
     prisma.group.findFirst
@@ -226,7 +238,10 @@ describe('PerformanceService', () => {
       .mockResolvedValueOnce({ id: 9102 });
 
     prisma.evaluationGrade.upsert.mockResolvedValue({ id: 10001, nota: 4.2 });
-    prisma.subject.findUnique.mockResolvedValue({ id: 21, nombre: 'Matemáticas' });
+    prisma.subject.findUnique.mockResolvedValue({
+      id: 21,
+      nombre: 'Matemáticas',
+    });
     prisma.evaluationGrade.findMany.mockResolvedValue([
       {
         nota: 4.2,
@@ -248,10 +263,23 @@ describe('PerformanceService', () => {
       },
     ]);
 
-    const first = await service.upsertStudentAcademic(actor, 1, 31, 21, payload as never);
-    const createCallsAfterFirstRun = prisma.academicEvaluation.create.mock.calls.length;
+    const first = await service.upsertStudentAcademic(
+      actor,
+      1,
+      31,
+      21,
+      payload as never,
+    );
+    const createCallsAfterFirstRun =
+      prisma.academicEvaluation.create.mock.calls.length;
 
-    const second = await service.upsertStudentAcademic(actor, 1, 31, 21, payload as never);
+    const second = await service.upsertStudentAcademic(
+      actor,
+      1,
+      31,
+      21,
+      payload as never,
+    );
 
     expect(first).toEqual(second);
 
@@ -261,8 +289,13 @@ describe('PerformanceService', () => {
     expect(createCallsAfterFirstRun).toBe(2);
     expect(prisma.academicEvaluation.create).toHaveBeenCalledTimes(2);
 
-    const firstUpsertArg = prisma.studentAcademicRecord.upsert.mock.calls[0][0];
-    const secondUpsertArg = prisma.studentAcademicRecord.upsert.mock.calls[1][0];
+    const [firstUpsertCall, secondUpsertCall] = prisma.studentAcademicRecord
+      .upsert.mock.calls as [
+      [StudentAcademicUpsertArgs],
+      [StudentAcademicUpsertArgs],
+    ];
+    const [firstUpsertArg] = firstUpsertCall;
+    const [secondUpsertArg] = secondUpsertCall;
     expect(secondUpsertArg).toEqual(firstUpsertArg);
 
     expect(prisma.$transaction).not.toHaveBeenCalled();

@@ -97,17 +97,18 @@ export class RecoveryService {
   }
 
   private async ensureRecoveryPeriodActive(actor: Actor) {
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    )
+      return;
     const active = await this.isRecoveryPeriodActive(actor);
     if (!active) {
       throw new BadRequestException('El periodo de recuperación está inactivo');
     }
   }
 
-  private async ensureGroupViewAccess(
-    actor: Actor,
-    groupId: number,
-  ) {
+  private async ensureGroupViewAccess(actor: Actor, groupId: number) {
     if (actor.role !== UserRole.SUPER_ADMIN) {
       const groupInScope = await this.prisma.group.findFirst({
         where: {
@@ -121,7 +122,11 @@ export class RecoveryService {
       }
     }
 
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return;
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    )
+      return;
 
     if (actor.role === UserRole.PROFESOR) {
       const isDirector = await this.prisma.group.findFirst({
@@ -164,10 +169,7 @@ export class RecoveryService {
     return request;
   }
 
-  private async ensureRequestAccess(
-    actor: Actor,
-    requestId: number,
-  ) {
+  private async ensureRequestAccess(actor: Actor, requestId: number) {
     const request = await this.getRequestOrThrow(requestId);
 
     if (
@@ -177,7 +179,11 @@ export class RecoveryService {
       throw new ForbiddenException('Solicitud fuera de su institucion');
     }
 
-    if (actor.role === UserRole.SECRETARIA || actor.role === UserRole.SUPER_ADMIN) return request;
+    if (
+      actor.role === UserRole.SECRETARIA ||
+      actor.role === UserRole.SUPER_ADMIN
+    )
+      return request;
     if (actor.role === UserRole.PROFESOR && request.teacherId === actor.userId)
       return request;
     if (
@@ -199,10 +205,7 @@ export class RecoveryService {
     return activity;
   }
 
-  async createRequest(
-    actor: Actor,
-    dto: CreateRecoveryRequestDto,
-  ) {
+  async createRequest(actor: Actor, dto: CreateRecoveryRequestDto) {
     await this.ensureRecoveryPeriodActive(actor);
 
     if (actor.role !== UserRole.ESTUDIANTE) {
@@ -276,10 +279,7 @@ export class RecoveryService {
     });
   }
 
-  async listGroupRequests(
-    actor: Actor,
-    groupId: number,
-  ) {
+  async listGroupRequests(actor: Actor, groupId: number) {
     await this.ensureGroupViewAccess(actor, groupId);
 
     return this.prisma.recoveryRequest.findMany({
@@ -347,10 +347,7 @@ export class RecoveryService {
     });
   }
 
-  async listActivities(
-    actor: Actor,
-    requestId: number,
-  ) {
+  async listActivities(actor: Actor, requestId: number) {
     await this.ensureRequestAccess(actor, requestId);
 
     const activities = await this.prisma.recoveryActivity.findMany({
@@ -600,10 +597,7 @@ export class RecoveryService {
     return attachment;
   }
 
-  async listMessages(
-    actor: Actor,
-    requestId: number,
-  ) {
+  async listMessages(actor: Actor, requestId: number) {
     await this.ensureRequestAccess(actor, requestId);
 
     return this.prisma.recoveryMessage.findMany({
@@ -640,10 +634,7 @@ export class RecoveryService {
     });
   }
 
-  async statsByGroup(
-    actor: Actor,
-    groupId: number,
-  ) {
+  async statsByGroup(actor: Actor, groupId: number) {
     await this.ensureGroupViewAccess(actor, groupId);
 
     const where = {
@@ -690,10 +681,7 @@ export class RecoveryService {
     };
   }
 
-  async statsByStudent(
-    actor: Actor,
-    studentId: number,
-  ) {
+  async statsByStudent(actor: Actor, studentId: number) {
     if (actor.role === UserRole.ESTUDIANTE && actor.userId !== studentId) {
       throw new ForbiddenException('No autorizado');
     }

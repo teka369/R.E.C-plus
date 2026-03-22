@@ -43,8 +43,8 @@ describe('RolesGuard', () => {
 
   it('rechaza rol fuera de la matriz', () => {
     reflector.getAllAndOverride.mockReturnValue([UserRole.SECRETARIA]);
-    expect(() => guard.canActivate(contextWithRole(UserRole.ESTUDIANTE))).toThrow(
-      ForbiddenException,
-    );
+    expect(() =>
+      guard.canActivate(contextWithRole(UserRole.ESTUDIANTE)),
+    ).toThrow(ForbiddenException);
   });
 });
