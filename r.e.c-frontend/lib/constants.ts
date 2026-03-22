@@ -1,4 +1,5 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4001";
+/** Base del API en el navegador: BFF same-origin (ver `app/api/rec`). */
+export const API_BASE_URL = "/api/rec";
 
 export const ROLES = {
   SECRETARIA: "SECRETARIA",

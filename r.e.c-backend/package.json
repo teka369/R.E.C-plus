@@ -27,7 +27,8 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:studio": "prisma studio",
     "seed:json": "node scripts/seed-from-json.js",
-    "saas:superadmin": "node scripts/bootstrap-super-admin.js"
+    "saas:superadmin": "node scripts/bootstrap-super-admin.js",
+    "bootstrap:dev-access": "node scripts/bootstrap-dev-access.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

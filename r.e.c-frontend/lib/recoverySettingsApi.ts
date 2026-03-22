@@ -32,9 +32,7 @@ export const recoverySettingsApi = {
   async uploadSchedule(file: File): Promise<RecoveryScheduleMeta> {
     const formData = new FormData();
     formData.append("horario", file);
-    const res = await api.post<RecoveryScheduleMeta>("/recovery/schedule", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await api.post<RecoveryScheduleMeta>("/recovery/schedule", formData);
     return res.data;
   },
 };

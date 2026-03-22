@@ -143,7 +143,6 @@ export const recoveryApi = {
     const res = await api.post<{ activityId: number; originalName: string; mimeType: string; uploadedAt: string }>(
       `/recovery/activities/${activityId}/attachment`,
       formData,
-      { headers: { "Content-Type": "multipart/form-data" } },
     );
     return res.data;
   },

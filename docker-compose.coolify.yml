@@ -57,6 +57,8 @@ services:
       PORT: 3000
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
       NEXT_PUBLIC_EMAIL_DOMAIN: ${NEXT_PUBLIC_EMAIL_DOMAIN:-iejavieralondonobarriosevilla.edu.co}
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_API_URL: http://backend:4001
     expose:
       - "3000"
     healthcheck:
