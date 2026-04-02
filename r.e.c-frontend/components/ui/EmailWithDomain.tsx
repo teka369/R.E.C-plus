@@ -31,9 +31,11 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
   }, [email]);
 
   // Actualizar dominio si se recibe institutionDomain async
-  useEffect(() => {
-    if (institutionDomain) setDomain(institutionDomain);
-  }, [institutionDomain]);
+  const prevInstitutionDomain = React.useRef(institutionDomain);
+  if (institutionDomain && institutionDomain !== prevInstitutionDomain.current) {
+    prevInstitutionDomain.current = institutionDomain;
+    setDomain(institutionDomain);
+  }
 
   // Construir email completo cada vez que cambian las partes
   useEffect(() => {

@@ -14,19 +14,20 @@ export default function UsuariosPage() {
   const [page, setPage] = useState(1);
 
   const roleParam = role === "ALL" ? undefined : role;
-  const key = `/users?page=${page}&limit=20${roleParam ? `&role=${roleParam}` : ""}`;
+  const _key = `/users?page=${page}&limit=20${roleParam ? `&role=${roleParam}` : ""}`;
+  void _key;
   const { data: result, isLoading } = usePaginatedApi<UserDTO>("/users", page, 20);
 
-  const users = result?.data ?? [];
+  const data = result?.data ?? [];
   const meta = result?.meta;
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) =>
+    if (!q) return data;
+    return data.filter((u) =>
       `${u.nombres} ${u.apellidos} ${u.email}`.toLowerCase().includes(q),
     );
-  }, [users, query]);
+  }, [data, query]);
 
   return (
     <section className="sec-page space-y-5">
