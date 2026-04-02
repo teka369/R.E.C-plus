@@ -26,6 +26,10 @@ describe('AuthService (unit)', () => {
     decode: jest.fn(),
   };
 
+  const mail = {
+    sendPasswordReset: jest.fn().mockResolvedValue(undefined),
+  };
+
   let service: AuthService;
   const compareMock = bcrypt.compare as jest.Mock;
   const hashMock = bcrypt.hash as jest.Mock;
@@ -55,7 +59,7 @@ describe('AuthService (unit)', () => {
     process.env.JWT_REFRESH_SECRET = 'unit-refresh-secret';
     process.env.JWT_REFRESH_EXPIRES = '30d';
     prisma.authSession.create.mockResolvedValue({ id: 999 });
-    service = new AuthService(prisma as never, jwt as never);
+    service = new AuthService(prisma as never, jwt as never, mail as never);
   });
 
   it('login entrega access y refresh y persiste sesion', async () => {

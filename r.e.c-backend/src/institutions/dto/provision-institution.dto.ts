@@ -21,10 +21,6 @@ export class ProvisionSecretaryDto {
   email: string;
 
   @IsString()
-  @Length(6, 20)
-  documento_identidad: string;
-
-  @IsString()
   @Length(8, 64)
   password: string;
 }

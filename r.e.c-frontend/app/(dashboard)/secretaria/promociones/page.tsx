@@ -274,7 +274,7 @@ export default function SecretariaPromocionesPage() {
                                     }));
                                   }}
                                 />
-                                <span>{s.nombres} {s.apellidos} — {s.documento_identidad}</span>
+                                <span>{s.nombres} {s.apellidos} — {s.codigo}</span>
                               </label>
                             ))}
                             {(gm?.students || []).length === 0 && <p className="text-xs text-gray-600">Sin estudiantes en el grupo</p>}

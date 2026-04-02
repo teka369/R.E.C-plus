@@ -55,7 +55,7 @@ export default function SecretariaPersonalPage() {
             <tr>
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
-              <th className="p-2 text-left">Documento</th>
+              <th className="p-2 text-left">Código</th>
               <th className="p-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -64,7 +64,7 @@ export default function SecretariaPersonalPage() {
               <tr key={u.id} className="border-t border-gray-200">
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
-                <td className="p-2">{u.documento_identidad}</td>
+                <td className="p-2">{u.codigo}</td>
                 <td className="p-2 sec-actions">
                     <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
                     <Button variant="secondary" size="sm">Editar</Button>

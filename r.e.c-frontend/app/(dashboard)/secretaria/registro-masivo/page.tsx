@@ -5,6 +5,7 @@ import Input from "@/components/ui/Input";
 import { usersApi, type CreateUserDto, type BulkCreateResult } from "@/lib/usersApi";
 import * as XLSX from "xlsx";
 import { getErrorMessage } from "@/lib/errors";
+import api from "@/lib/axios";
 
 type PreviewItem = CreateUserDto & { _row?: number; _error?: string; _selected?: boolean };
 type ValidationIssue = { field: string; message: string; severity: "error" | "warning" };
@@ -33,8 +34,6 @@ function parseCSV(text: string): PreviewItem[] {
   const iNombres = idx("nombres");
   const iApellidos = idx("apellidos");
   const iEmail = idx("email");
-  const iDoc = idx("documento_identidad");
-  const iTelefono = idx("telefono");
   const iRole = idx("role");
   const iPassword = idx("password");
   const items: PreviewItem[] = [];
@@ -46,8 +45,6 @@ function parseCSV(text: string): PreviewItem[] {
       nombres: iNombres >= 0 ? cols[iNombres] : "",
       apellidos: iApellidos >= 0 ? cols[iApellidos] : "",
       email: iEmail >= 0 ? cols[iEmail] : "",
-      documento_identidad: iDoc >= 0 ? cols[iDoc] : "",
-      telefono: iTelefono >= 0 ? cols[iTelefono] || undefined : undefined,
       role: parseRole(roleVal),
       password: iPassword >= 0 ? (cols[iPassword] || undefined) : undefined,
       _row: r,
@@ -77,8 +74,6 @@ async function parseXLSX(file: File): Promise<PreviewItem[]> {
       nombres: get("nombres"),
       apellidos: get("apellidos"),
       email: get("email"),
-      documento_identidad: get("documento_identidad"),
-      telefono: get("telefono") || undefined,
       role: parseRole(roleVal),
       password: get("password") || undefined,
       _row: idx + 1,
@@ -95,7 +90,15 @@ export default function RegistroMasivoPage() {
   const [validation, setValidation] = useState<RowValidation[]>([]);
   const [registerOnlyValid, setRegisterOnlyValid] = useState(true);
   const [existingEmails, setExistingEmails] = useState<Set<string>>(new Set());
-  const [existingDocs, setExistingDocs] = useState<Set<string>>(new Set());
+  const [instDomain, setInstDomain] = useState<string | null>(null);
+
+  // Obtener dominio de la institución del usuario actual
+  useEffect(() => {
+    api.get("/users/me").then((res) => {
+      const dominio = res.data?.institution?.dominio;
+      if (dominio) setInstDomain(dominio);
+    }).catch(() => {});
+  }, []);
 
   // Mejoras estructurales
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -122,11 +125,6 @@ export default function RegistroMasivoPage() {
             nombres: typeof x.nombres === "string" ? x.nombres : "",
             apellidos: typeof x.apellidos === "string" ? x.apellidos : "",
             email: typeof x.email === "string" ? x.email : "",
-            documento_identidad:
-              typeof x.documento_identidad === "string"
-                ? x.documento_identidad
-                : "",
-            telefono: typeof x.telefono === "string" ? x.telefono : undefined,
             role: parseRole(typeof x.role === "string" ? x.role : ""),
             password: typeof x.password === "string" ? x.password : undefined,
             _row: idx + 1,
@@ -172,8 +170,6 @@ export default function RegistroMasivoPage() {
         nombres: item.nombres,
         apellidos: item.apellidos,
         email: item.email,
-        documento_identidad: item.documento_identidad,
-        telefono: item.telefono,
         password: item.password,
         role: item.role,
       }));
@@ -202,9 +198,9 @@ export default function RegistroMasivoPage() {
 
   const templateCSV = useMemo(() => {
     const rows = [
-      "nombres,apellidos,email,documento_identidad,telefono,role,password",
-      "Ana,Romero,ana.romero@colegio.edu.co,12345678,3130000000,ESTUDIANTE,",
-      "Carlos,Lopez,carlos.lopez@colegio.edu.co,22223333,,PROFESOR,segura2024",
+      "nombres,apellidos,email,role",
+      "Ana,Romero,ana.romero@colegio.edu.co,ESTUDIANTE",
+      "Carlos,Lopez,carlos.lopez@colegio.edu.co,PROFESOR",
     ].join("\n");
     const blob = new Blob([rows], { type: "text/csv" });
     return URL.createObjectURL(blob);
@@ -212,10 +208,10 @@ export default function RegistroMasivoPage() {
 
   useEffect(() => {
     // Generar plantilla Excel
-    const headers = ["nombres", "apellidos", "email", "documento_identidad", "telefono", "role", "password"];
+    const headers = ["nombres", "apellidos", "email", "role"];
     const data = [
-      ["Ana", "Romero", "ana.romero@colegio.edu.co", "12345678", "3130000000", "ESTUDIANTE", ""],
-      ["Carlos", "Lopez", "carlos.lopez@colegio.edu.co", "22223333", "", "PROFESOR", "segura2024"],
+      ["Ana", "Romero", "ana.romero@colegio.edu.co", "ESTUDIANTE"],
+      ["Carlos", "Lopez", "carlos.lopez@colegio.edu.co", "PROFESOR"],
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
     const wb = XLSX.utils.book_new();
@@ -231,19 +227,20 @@ export default function RegistroMasivoPage() {
 
   // Validación
   useEffect(() => {
-    const instDomain = "@iejavieralondonobarriosevilla.edu.co";
-    const isEmailValid = (v: string) => /^[^\s@]+@iejavieralondonobarriosevilla\.edu\.co$/.test(v);
-    const isPhoneDigits = (v?: string) => (v ? /^[0-9]{10,15}$/.test(v) : false);
+    const isEmailValid = (v: string) => {
+      if (!v || !v.includes("@")) return false;
+      if (!instDomain) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      const escaped = instDomain.replace(/\./g, "\\.");
+      return new RegExp(`^[^\\s@]+@${escaped}$`, "i").test(v);
+    };
+    const domainLabel = instDomain ? `@${instDomain}` : "";
     const isRoleValid = (v?: string) => !v || ["ESTUDIANTE", "PROFESOR", "SECRETARIA"].includes(v.toUpperCase());
 
     // Duplicados en el archivo
     const emailCounts = new Map<string, number>();
-    const docCounts = new Map<string, number>();
     items.forEach((it) => {
       const e = (it.email || "").trim().toLowerCase();
-      const d = (it.documento_identidad || "").trim();
       if (e) emailCounts.set(e, (emailCounts.get(e) || 0) + 1);
-      if (d) docCounts.set(d, (docCounts.get(d) || 0) + 1);
     });
 
     const rows: RowValidation[] = items.map((it, i) => {
@@ -252,75 +249,51 @@ export default function RegistroMasivoPage() {
       if (!it.nombres?.trim()) issues.push({ field: "nombres", message: "Nombres es requerido", severity: "error" });
       if (!it.apellidos?.trim()) issues.push({ field: "apellidos", message: "Apellidos es requerido", severity: "error" });
       if (!it.email?.trim() || !isEmailValid(it.email)) {
-        issues.push({ field: "email", message: `Correo inválido (debe terminar en ${instDomain})`, severity: "error" });
-      }
-      if (!it.documento_identidad?.trim()) issues.push({ field: "documento_identidad", message: "Documento es requerido", severity: "error" });
-      // Teléfono: obligatorio para PROFESOR; si está, validar longitud 10-15 dígitos
-      if (role === "PROFESOR") {
-        if (!it.telefono?.trim()) {
-          issues.push({ field: "telefono", message: "Teléfono es requerido para profesores", severity: "error" });
-        } else if (!isPhoneDigits(it.telefono)) {
-          issues.push({ field: "telefono", message: "Teléfono debe tener 10-15 dígitos", severity: "error" });
-        }
-      } else if (it.telefono && !isPhoneDigits(it.telefono)) {
-        issues.push({ field: "telefono", message: "Teléfono debe tener 10-15 dígitos", severity: "warning" });
+        issues.push({ field: "email", message: instDomain ? `Correo inválido (debe terminar en ${domainLabel})` : "Correo inválido", severity: "error" });
       }
       if (!isRoleValid(it.role))
         issues.push({ field: "role", message: "Rol desconocido", severity: "error" });
-      // Contraseña requerida para PROFESOR y SECRETARIA; para ESTUDIANTE si falta, se usa documento
-      if (["PROFESOR", "SECRETARIA"].includes(role) && !it.password?.trim()) {
-        issues.push({ field: "password", message: "Contraseña requerida para este rol", severity: "error" });
+      // Contraseña requerida solo para SECRETARIA
+      if (role === "SECRETARIA" && !it.password?.trim()) {
+        issues.push({ field: "password", message: "Contraseña requerida para Secretaría", severity: "error" });
       }
 
       // Duplicados: en archivo
       const eKey = (it.email || "").trim().toLowerCase();
-      const dKey = (it.documento_identidad || "").trim();
       if (eKey && (emailCounts.get(eKey) || 0) > 1) {
         issues.push({ field: "email", message: "Correo duplicado en el archivo", severity: "error" });
-      }
-      if (dKey && (docCounts.get(dKey) || 0) > 1) {
-        issues.push({ field: "documento_identidad", message: "Documento duplicado en el archivo", severity: "error" });
       }
 
       // Duplicados: existentes en sistema
       if (eKey && existingEmails.has(eKey)) {
         issues.push({ field: "email", message: "Correo ya existe en el sistema", severity: "error" });
       }
-      if (dKey && existingDocs.has(dKey)) {
-        issues.push({ field: "documento_identidad", message: "Documento ya existe en el sistema", severity: "error" });
-      }
       const isValid = issues.every((x) => x.severity !== "error");
       return { row: it._row || i + 1, issues, isValid };
     });
     setValidation(rows);
-  }, [items, existingEmails, existingDocs]);
+  }, [items, existingEmails, instDomain]);
 
-  // Cargar usuarios existentes para validar duplicados (emails y documentos)
+  // Cargar usuarios existentes para validar duplicados (emails)
   useEffect(() => {
     let cancelled = false;
     async function loadExisting() {
       if (items.length === 0) {
         setExistingEmails(new Set());
-        setExistingDocs(new Set());
         return;
       }
       try {
         const list = await usersApi.list();
         const eSet = new Set<string>();
-        const dSet = new Set<string>();
         list.forEach((u) => {
           if (u.email) eSet.add(u.email.trim().toLowerCase());
-          if (u.documento_identidad) dSet.add(u.documento_identidad.trim());
         });
         if (!cancelled) {
           setExistingEmails(eSet);
-          setExistingDocs(dSet);
         }
       } catch {
-        // Si falla la carga, mantener sets vacíos (no bloquea la validación básica)
         if (!cancelled) {
           setExistingEmails(new Set());
-          setExistingDocs(new Set());
         }
       }
     }
@@ -462,8 +435,6 @@ export default function RegistroMasivoPage() {
                       <th className="p-2 text-left">Nombres</th>
                       <th className="p-2 text-left">Apellidos</th>
                       <th className="p-2 text-left">Correo</th>
-                      <th className="p-2 text-left">Documento</th>
-                      <th className="p-2 text-left">Teléfono</th>
                       <th className="p-2 text-left">Rol</th>
                       <th className="p-2 text-left">Estado</th>
                     </tr>
@@ -537,23 +508,6 @@ export default function RegistroMasivoPage() {
                               </span>
                             )}
                           </td>
-                          <td className="p-2">
-                            {isEditing && editingRow.field === "documento_identidad" ? (
-                              <input
-                                autoFocus
-                                className="border rounded px-1 py-0 w-full"
-                                value={editingRow.value}
-                                onChange={(e) => setEditingRow({ ...editingRow, value: e.target.value })}
-                                onBlur={() => updateItemField(actualIdx, "documento_identidad", editingRow.value)}
-                                onKeyDown={(e) => e.key === "Enter" && updateItemField(actualIdx, "documento_identidad", editingRow.value)}
-                              />
-                            ) : (
-                              <span onClick={() => setEditingRow({ rowIndex: actualIdx, field: "documento_identidad", value: it.documento_identidad })}>
-                                {it.documento_identidad}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-2">{it.telefono || ""}</td>
                           <td className="p-2">{it.role || "ESTUDIANTE"}</td>
                           <td className="p-2">
                             {errText ? <div className="text-red-600 text-xs">{errText}</div> : <span className="text-green-700 text-xs">✓</span>}
@@ -617,6 +571,7 @@ export default function RegistroMasivoPage() {
                   <tr>
                     <th className="p-2 text-left">#</th>
                     <th className="p-2 text-left">Estado</th>
+                    <th className="p-2 text-left">Código</th>
                     <th className="p-2 text-left">Detalle</th>
                   </tr>
                 </thead>
@@ -625,12 +580,18 @@ export default function RegistroMasivoPage() {
                     <tr key={idx} className="border-t border-gray-200">
                       <td className="p-2">{r.index + 1}</td>
                       <td className="p-2">{r.id ? "OK" : "ERROR"}</td>
+                      <td className="p-2 font-mono">{r.codigo ?? "—"}</td>
                       <td className="p-2">{r.id ? `ID ${r.id}` : (r.error || "")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {result.created > 0 && (
+              <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <strong>Importante:</strong> El código de cada usuario es su contraseña inicial. Comparta los códigos con los usuarios para que puedan acceder a la plataforma.
+              </p>
+            )}
           </div>
         )}
       </div>

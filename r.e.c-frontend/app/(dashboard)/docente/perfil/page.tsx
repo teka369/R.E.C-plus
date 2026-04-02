@@ -151,8 +151,7 @@ export default function DocentePerfilPage() {
               {[
                 { label: "Nombre completo", value: nombreCompleto },
                 { label: "Correo institucional", value: profile?.email || user?.email || "–" },
-                { label: "Documento de identidad", value: profile?.documento_identidad || "No especificado" },
-                { label: "Teléfono", value: profile?.telefono || "No especificado" },
+                { label: "Código", value: profile?.codigo || "No especificado" },
               ].map((item) => (
                 <div key={item.label} className="rounded-xl px-4 py-3" style={{ background: "var(--rec-soft)" }}>
                   <p className="mb-0.5 text-xs font-semibold text-slate-500">{item.label}</p>

@@ -106,12 +106,12 @@ export const recoveryApi = {
     return res.data;
   },
   async listMyRequests(): Promise<RecoveryRequest[]> {
-    const res = await api.get<RecoveryRequest[]>("/recovery/requests/my");
-    return res.data;
+    const res = await api.get<{ data: RecoveryRequest[]; meta: unknown }>("/recovery/requests/my");
+    return res.data.data;
   },
   async listGroupRequests(groupId: number): Promise<RecoveryRequest[]> {
-    const res = await api.get<RecoveryRequest[]>(`/recovery/groups/${groupId}/requests`);
-    return res.data;
+    const res = await api.get<{ data: RecoveryRequest[]; meta: unknown }>(`/recovery/groups/${groupId}/requests`);
+    return res.data.data;
   },
   async updateRequestStatus(id: number, payload: UpdateRecoveryRequestStatusInput): Promise<RecoveryRequest> {
     const res = await api.patch<RecoveryRequest>(`/recovery/requests/${id}/status`, payload);

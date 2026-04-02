@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -49,8 +50,13 @@ export class CommunicationController {
   async listFeedbackByStudent(
     @Param('studentId') studentId: string,
     @Request() req: AuthenticatedRequest,
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
   ) {
-    return this.service.listFeedbackByStudent(Number(studentId), req.user);
+    return this.service.listFeedbackByStudent(Number(studentId), req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -59,8 +65,13 @@ export class CommunicationController {
   async listFeedbackByGroup(
     @Param('groupId') groupId: string,
     @Request() req: AuthenticatedRequest,
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
   ) {
-    return this.service.listFeedbackByGroup(Number(groupId), req.user);
+    return this.service.listFeedbackByGroup(Number(groupId), req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -95,14 +106,28 @@ export class CommunicationController {
 
   @UseGuards(JwtAuthGuard)
   @Get('messages/inbox')
-  async inbox(@Request() req: AuthenticatedRequest) {
-    return this.service.inbox(req.user);
+  async inbox(
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.service.inbox(req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('messages/sent')
-  async sent(@Request() req: AuthenticatedRequest) {
-    return this.service.sent(req.user);
+  async sent(
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.service.sent(req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -117,8 +142,15 @@ export class CommunicationController {
   // Notificaciones
   @UseGuards(JwtAuthGuard)
   @Get('notifications')
-  async listNotifications(@Request() req: AuthenticatedRequest) {
-    return this.service.listNotifications(req.user);
+  async listNotifications(
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.service.listNotifications(req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

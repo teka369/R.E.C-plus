@@ -10,7 +10,7 @@ type UserProfile = {
   nombres: string;
   apellidos: string;
   email: string;
-  documento_identidad: string;
+  codigo: string;
   role: string;
   institutionId?: number | null;
 };
@@ -19,7 +19,6 @@ type UpdateFormData = {
   nombres: string;
   apellidos: string;
   email: string;
-  documento_identidad: string;
 };
 
 type PasswordFormData = {
@@ -41,7 +40,6 @@ export default function ProfilePage() {
     nombres: "",
     apellidos: "",
     email: "",
-    documento_identidad: "",
   });
 
   const [passwordForm, setPasswordForm] = useState<PasswordFormData>({
@@ -65,7 +63,6 @@ export default function ProfilePage() {
           nombres: res.data.nombres,
           apellidos: res.data.apellidos,
           email: res.data.email,
-          documento_identidad: res.data.documento_identidad,
         });
       } catch (err: unknown) {
         const errorMsg = getErrorMessage(err, "No se pudo cargar tu perfil");
@@ -96,7 +93,6 @@ export default function ProfilePage() {
         nombres: updated.data.nombres,
         apellidos: updated.data.apellidos,
         email: updated.data.email,
-        documento_identidad: updated.data.documento_identidad,
       });
     } catch (err: unknown) {
       setError(getErrorMessage(err, "No se pudo actualizar el perfil"));
@@ -206,16 +202,6 @@ export default function ProfilePage() {
                 type="email"
                 value={updateForm.email}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, email: e.target.value }))}
-                className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Documento de Identidad</label>
-              <input
-                type="text"
-                value={updateForm.documento_identidad}
-                onChange={(e) => setUpdateForm((p) => ({ ...p, documento_identidad: e.target.value }))}
                 className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
                 required
               />

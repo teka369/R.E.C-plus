@@ -20,6 +20,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { PaginationQuery } from '../common/dto/pagination.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -58,12 +59,19 @@ export class UsersController {
   findAll(
     @Query('role') role: UserRole | undefined,
     @Query('institutionId') institutionId: string | undefined,
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
+    const pagination: PaginationQuery = {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    };
     return this.usersService.findAll(
       req.user,
       role,
       institutionId ? Number(institutionId) : undefined,
+      pagination,
     );
   }
 

@@ -4,16 +4,22 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRole } from './dto/user-role.enum';
 import * as bcrypt from 'bcryptjs';
+import { createId } from '@paralleldrive/cuid2';
+import {
+  PaginationQuery,
+  paginateParams,
+  buildPaginatedResult,
+  PaginatedResult,
+} from '../common/dto/pagination.dto';
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
 
 @Injectable()
-export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+export class UsersService extends TenantScopedService {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   private normalizeRole(role?: UserRole): UserRole {
     if (role === UserRole.SUPER_ADMIN) return UserRole.SUPER_ADMIN;
@@ -26,20 +32,6 @@ export class UsersService {
     return email.trim().toLowerCase();
   }
 
-  private ensureInstitutionForTenantActor(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new BadRequestException(
-        'Operacion valida solo para actores tenant',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new BadRequestException(
-        'El actor no tiene institucion asociada. Configure su cuenta antes de operar.',
-      );
-    }
-    return actor.institutionId;
-  }
-
   private resolveTargetInstitution(
     actor: Actor,
     dto: { institutionId?: number },
@@ -49,7 +41,7 @@ export class UsersService {
       return null;
     }
 
-    return this.ensureInstitutionForTenantActor(actor);
+    return this.getActorInstitutionId(actor);
   }
 
   private async assertTenantVisibility(
@@ -58,7 +50,7 @@ export class UsersService {
   ): Promise<void> {
     if (actor.role === UserRole.SUPER_ADMIN) return;
 
-    const actorInstitutionId = this.ensureInstitutionForTenantActor(actor);
+    const actorInstitutionId = this.getActorInstitutionId(actor);
     const target = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { institutionId: true },
@@ -109,27 +101,9 @@ export class UsersService {
       }
     }
 
-    // Validar que profesores tengan teléfono
-    if (role === UserRole.PROFESOR && !data.telefono) {
-      throw new BadRequestException('El teléfono es requerido para profesores');
-    }
-
-    // Para estudiantes, usar documento_identidad como contraseña inicial
-    // Para profesores, la contraseña es requerida
-    let password = data.password;
-
-    if (role === UserRole.ESTUDIANTE) {
-      // Si es estudiante y no se proporciona contraseña, usar documento_identidad
-      password = data.password || data.documento_identidad;
-    } else if (role === UserRole.PROFESOR && !data.password) {
-      throw new BadRequestException(
-        'La contraseña es requerida para profesores',
-      );
-    }
-
-    if (!password) {
-      throw new BadRequestException('La contraseña es requerida');
-    }
+    // Si no se provee contraseña, usar el código como contraseña inicial
+    const codigo = createId();
+    const password = data.password || codigo;
     const hashedPassword = await bcrypt.hash(password, 10);
 
     return this.prisma.user.create({
@@ -138,9 +112,8 @@ export class UsersService {
         nombres: data.nombres,
         apellidos: data.apellidos,
         email: this.normalizeEmail(data.email),
-        documento_identidad: data.documento_identidad,
-        telefono: data.telefono || null,
         password: hashedPassword,
+        codigo,
         role,
       },
       select: {
@@ -149,8 +122,7 @@ export class UsersService {
         nombres: true,
         apellidos: true,
         email: true,
-        documento_identidad: true,
-        telefono: true,
+        codigo: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -158,7 +130,12 @@ export class UsersService {
     });
   }
 
-  async findAll(actor: Actor, role?: UserRole, institutionId?: number) {
+  async findAll(
+    actor: Actor,
+    role?: UserRole,
+    institutionId?: number,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
     const resolvedRole = role ? this.normalizeRole(role) : undefined;
     const where =
       actor.role === UserRole.SUPER_ADMIN
@@ -168,25 +145,33 @@ export class UsersService {
           }
         : {
             ...(resolvedRole ? { role: resolvedRole } : {}),
-            institutionId: this.ensureInstitutionForTenantActor(actor),
+            institutionId: this.getActorInstitutionId(actor),
           };
 
-    return this.prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        institutionId: true,
-        nombres: true,
-        apellidos: true,
-        email: true,
-        documento_identidad: true,
-        telefono: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        // No incluir password en las consultas
-      },
-    });
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          institutionId: true,
+          nombres: true,
+          apellidos: true,
+          email: true,
+          codigo: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { id: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async findOne(actor: Actor, id: number) {
@@ -200,11 +185,11 @@ export class UsersService {
         nombres: true,
         apellidos: true,
         email: true,
-        documento_identidad: true,
-        telefono: true,
+        codigo: true,
         role: true,
         createdAt: true,
         updatedAt: true,
+        institution: { select: { dominio: true } },
         // No incluir password
       },
     });
@@ -230,7 +215,7 @@ export class UsersService {
     const updateInstitutionId =
       actor.role === UserRole.SUPER_ADMIN
         ? data.institutionId
-        : this.ensureInstitutionForTenantActor(actor);
+        : this.getActorInstitutionId(actor);
 
     return this.prisma.user.update({
       where: { id },
@@ -240,8 +225,6 @@ export class UsersService {
         nombres: data.nombres ?? undefined,
         apellidos: data.apellidos ?? undefined,
         email: data.email ? this.normalizeEmail(data.email) : undefined,
-        documento_identidad: data.documento_identidad ?? undefined,
-        telefono: data.telefono ?? undefined,
         role: data.role ? this.normalizeRole(data.role) : undefined,
       },
       select: {
@@ -250,8 +233,7 @@ export class UsersService {
         nombres: true,
         apellidos: true,
         email: true,
-        documento_identidad: true,
-        telefono: true,
+        codigo: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -267,71 +249,51 @@ export class UsersService {
 
   // Registro masivo de usuarios con transacción
   async bulkCreate(actor: Actor, items: CreateUserDto[]) {
-    const results: { index: number; id?: number; error?: string }[] = [];
+    const results: { index: number; id?: number; codigo?: string; error?: string }[] = [];
     const actorInstitutionId =
       actor.role === UserRole.SUPER_ADMIN
         ? null
-        : this.ensureInstitutionForTenantActor(actor);
+        : this.getActorInstitutionId(actor);
 
-    await this.prisma.$transaction(async (tx) => {
-      for (let i = 0; i < items.length; i++) {
-        const dto = items[i];
-        try {
-          const role = this.normalizeRole(dto.role);
-          if (
-            actor.role !== UserRole.SUPER_ADMIN &&
-            role === UserRole.SUPER_ADMIN
-          ) {
-            throw new BadRequestException(
-              'Solo SUPER_ADMIN puede crear usuarios SUPER_ADMIN',
-            );
-          }
-
-          const institutionId =
-            actor.role === UserRole.SUPER_ADMIN
-              ? (dto.institutionId ?? null)
-              : actorInstitutionId;
-
-          // Reutiliza la lógica de create, pero usando el tx en lugar de prisma directo
-          // Copiamos la lógica de validación/hasheo aquí para evitar salir del transaction
-          if (role === UserRole.PROFESOR && !dto.telefono) {
-            throw new BadRequestException(
-              'El teléfono es requerido para profesores',
-            );
-          }
-
-          let password = dto.password;
-          if (role === UserRole.ESTUDIANTE) {
-            password = dto.password || dto.documento_identidad;
-          } else if (role === UserRole.PROFESOR && !dto.password) {
-            throw new BadRequestException(
-              'La contraseña es requerida para profesores',
-            );
-          }
-          if (!password) {
-            throw new BadRequestException('La contraseña es requerida');
-          }
-          const hashedPassword = await bcrypt.hash(password, 10);
-
-          const created = await tx.user.create({
-            data: {
-              institutionId,
-              nombres: dto.nombres,
-              apellidos: dto.apellidos,
-              email: this.normalizeEmail(dto.email),
-              documento_identidad: dto.documento_identidad,
-              telefono: dto.telefono || null,
-              password: hashedPassword,
-              role,
-            },
-          });
-          results.push({ index: i, id: created.id });
-        } catch (error: unknown) {
-          const msg = this.getErrorMessage(error);
-          results.push({ index: i, error: msg });
+    for (let i = 0; i < items.length; i++) {
+      const dto = items[i];
+      try {
+        const role = this.normalizeRole(dto.role);
+        if (
+          actor.role !== UserRole.SUPER_ADMIN &&
+          role === UserRole.SUPER_ADMIN
+        ) {
+          results.push({ index: i, error: 'Solo SUPER_ADMIN puede crear usuarios SUPER_ADMIN' });
+          continue;
         }
+
+        const institutionId =
+          actor.role === UserRole.SUPER_ADMIN
+            ? (dto.institutionId ?? null)
+            : actorInstitutionId;
+
+        // Si no se provee contraseña, usar el código como contraseña inicial
+        const codigo = createId();
+        const password = dto.password || codigo;
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const created = await this.prisma.user.create({
+          data: {
+            institutionId,
+            nombres: dto.nombres,
+            apellidos: dto.apellidos,
+            email: this.normalizeEmail(dto.email),
+            password: hashedPassword,
+            codigo,
+            role,
+          },
+        });
+        results.push({ index: i, id: created.id, codigo: created.codigo });
+      } catch (error: unknown) {
+        const msg = this.getErrorMessage(error);
+        results.push({ index: i, error: msg });
       }
-    });
+    }
     const created = results.filter((r) => r.id).length;
     const failed = results.filter((r) => r.error).length;
     return { created, failed, results };

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
 }
 
 enum Role {
@@ -118,8 +119,7 @@ model User {
   nombres            String
   apellidos          String
   email              String   @unique
-  documento_identidad String  @unique
-  telefono           String?  // Solo para profesores
+  codigo             String   @unique @default(cuid())
   password           String
   role               Role     @default(ESTUDIANTE)
   createdAt          DateTime @default(now())
@@ -148,6 +148,7 @@ model User {
   academicRecords StudentAcademicRecord[] @relation("AcademicRecordStudent")
   academicRecordsUpdated StudentAcademicRecord[] @relation("AcademicRecordTeacher")
   authSessions       AuthSession[]
+  passwordResetTokens PasswordResetToken[]
   institution        Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
 
   @@index([institutionId])
@@ -213,6 +214,8 @@ model AcademicPeriod {
 
   @@unique([institutionId, codigo])
   @@index([institutionId])
+  // Queries frecuentes: WHERE institutionId = ? AND estado = 'ACTIVE'
+  @@index([institutionId, estado])
 }
 
 model Grade {
@@ -456,6 +459,8 @@ model StudyMaterial {
   @@index([subjectId])
   @@index([teacherId])
   @@index([academicOfferingId])
+  // Queries frecuentes: WHERE groupId = ? AND subjectId = ?
+  @@index([groupId, subjectId])
 }
 
 // Temarios
@@ -522,9 +527,9 @@ model Feedback {
   @@index([studentId])
   @@index([teacherId])
   @@index([groupId])
+  // Queries frecuentes: ORDER BY createdAt DESC filtrado por groupId
+  @@index([groupId, createdAt(sort: Desc)])
 }
-
-// Mensajería directa entre usuarios
 model Message {
   id          Int      @id @default(autoincrement())
   senderId    Int
@@ -554,6 +559,8 @@ model Notification {
 
   @@index([userId])
   @@index([type])
+  // Queries frecuentes: WHERE userId = ? AND readAt IS NULL
+  @@index([userId, readAt])
 }
 
 // Horario semanal por grupo (plantilla semanal)
@@ -637,9 +644,9 @@ model RecoveryRequest {
   @@index([groupId])
   @@index([subjectId])
   @@index([status])
+  // Queries frecuentes: WHERE groupId = ? AND status = 'PENDING'
+  @@index([groupId, status])
 }
-
-// Actividades asignadas dentro de una solicitud
 model RecoveryActivity {
   id             Int                  @id @default(autoincrement())
   requestId      Int
@@ -671,7 +678,7 @@ model RecoveryActivityAttachment {
   activityId   Int      @unique
   originalName String
   mimeType     String
-  fileContent  Bytes
+  filePath     String
   uploadedById Int?
   uploadedAt   DateTime @default(now())
 
@@ -714,7 +721,7 @@ model RecoverySchedule {
   id               Int             @id @default(autoincrement())
   originalName     String
   mimeType         String
-  fileContent      Bytes
+  filePath         String
   uploadedById     Int?
   academicPeriodId Int             @unique
   uploadedAt       DateTime        @default(now())
@@ -845,4 +852,18 @@ model FeedbackImprovement {
   feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
   @@index([feedbackId])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }

@@ -6,8 +6,7 @@ export type UserDTO = {
   nombres: string;
   apellidos: string;
   email: string;
-  documento_identidad: string;
-  telefono: string | null;
+  codigo: string;
   role: UserRole;
   createdAt?: string;
   updatedAt?: string;
@@ -17,8 +16,6 @@ export type CreateUserDto = {
   nombres: string;
   apellidos: string;
   email: string;
-  documento_identidad: string;
-  telefono?: string;
   password?: string;
   role?: UserRole;
 };
@@ -31,12 +28,28 @@ export type ChangePasswordDto = {
 export type BulkCreateResult = {
   created: number;
   failed: number;
-  results: { index: number; id?: number; error?: string }[];
+  results: { index: number; id?: number; codigo?: string; error?: string }[];
+};
+
+export type PaginatedResult<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 };
 
 export const usersApi = {
   async list(role?: UserRole): Promise<UserDTO[]> {
-    const res = await api.get<UserDTO[]>("/users", { params: role ? { role } : undefined });
+    const res = await api.get<PaginatedResult<UserDTO>>("/users", { params: role ? { role } : undefined });
+    return res.data.data;
+  },
+  async listPaginated(page = 1, limit = 20, role?: UserRole): Promise<PaginatedResult<UserDTO>> {
+    const res = await api.get<PaginatedResult<UserDTO>>("/users", {
+      params: { page, limit, ...(role ? { role } : {}) },
+    });
     return res.data;
   },
   async get(id: number): Promise<UserDTO> {

@@ -105,8 +105,8 @@ export const materialsApi = {
   },
 
   async listStudy(): Promise<StudyMaterial[]> {
-    const res = await api.get<StudyMaterial[]>("/materials/study");
-    return res.data;
+    const res = await api.get<{ data: StudyMaterial[]; meta: unknown }>("/materials/study");
+    return res.data.data;
   },
   async getStudy(id: number): Promise<StudyMaterial> {
     const res = await api.get<StudyMaterial>(`/materials/study/${id}`);

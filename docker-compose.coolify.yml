@@ -25,15 +25,25 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rec_db}?schema=public
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES: ${JWT_EXPIRES:-7d}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rec_db}?schema=public&connection_limit=50&pool_timeout=20
+      DATABASE_DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rec_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET es obligatorio}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET es obligatorio - debe ser distinto de JWT_SECRET}
+      JWT_EXPIRES: ${JWT_EXPIRES:-15m}
+      JWT_REFRESH_EXPIRES: ${JWT_REFRESH_EXPIRES:-30d}
       CORS_ORIGIN: ${CORS_ORIGIN}
       EMBED_ORIGINS: ${EMBED_ORIGINS}
     expose:
       - "4001"
     volumes:
       - rec_uploads_data:/app/uploads
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+        reservations:
+          memory: 256m
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -59,6 +69,13 @@ services:
       NEXT_PUBLIC_EMAIL_DOMAIN: ${NEXT_PUBLIC_EMAIL_DOMAIN:-iejavieralondonobarriosevilla.edu.co}
       JWT_SECRET: ${JWT_SECRET}
       INTERNAL_API_URL: http://backend:4001
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+        reservations:
+          memory: 256m
     expose:
       - "3000"
     healthcheck:
@@ -68,6 +85,30 @@ services:
       retries: 3
       start_period: 40s
 
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-rec_db}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - rec_backup_data:/backups
+      - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        chmod +x /usr/local/bin/backup.sh
+        echo "0 3 * * * /usr/local/bin/backup.sh" > /etc/crontabs/root
+        echo "Backup cron initialized (daily at 03:00)"
+        crond -f -l 2
+
 volumes:
   rec_postgres_data:
   rec_uploads_data:
+  rec_backup_data:

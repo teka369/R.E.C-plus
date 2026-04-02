@@ -16,7 +16,7 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 const defaults = {
-  superAdminEmail: 'superadmin@rec-dev.local',
+  superAdminEmail: '  ',
   superAdminPassword: 'RecDev2026!Sa',
   secretariaEmail: 'secretaria@rec-dev.local',
   secretariaPassword: 'RecDev2026!Se',
@@ -58,9 +58,6 @@ async function ensureSuperAdmin() {
   const password = process.env.SUPER_ADMIN_PASSWORD || defaults.superAdminPassword;
   const nombres = process.env.SUPER_ADMIN_NOMBRES || 'Super';
   const apellidos = process.env.SUPER_ADMIN_APELLIDOS || 'Administrador';
-  const documento =
-    process.env.SUPER_ADMIN_DOCUMENTO || `SA-${Date.now().toString(36)}`;
-
   if (password.length < 10) {
     throw new Error('SUPER_ADMIN_PASSWORD debe tener al menos 10 caracteres');
   }
@@ -86,7 +83,6 @@ async function ensureSuperAdmin() {
       nombres,
       apellidos,
       email,
-      documento_identidad: documento,
       password: hashed,
       role: 'SUPER_ADMIN',
     },
@@ -102,9 +98,6 @@ async function ensureSecretaria(institutionId) {
   const password = process.env.SECRETARIA_PASSWORD || defaults.secretariaPassword;
   const nombres = process.env.SECRETARIA_NOMBRES || 'Secretaría';
   const apellidos = process.env.SECRETARIA_APELLIDOS || 'Demo';
-  const documento =
-    process.env.SECRETARIA_DOCUMENTO || `SEC-${Date.now().toString(36)}`;
-
   if (password.length < 8) {
     throw new Error('SECRETARIA_PASSWORD debe tener al menos 8 caracteres');
   }
@@ -136,10 +129,8 @@ async function ensureSecretaria(institutionId) {
       nombres,
       apellidos,
       email,
-      documento_identidad: documento,
       password: hashed,
       role: 'SECRETARIA',
-      telefono: null,
     },
   });
   console.log(`SECRETARIA creada: ${email} (institución ${institutionId})`);

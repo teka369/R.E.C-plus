@@ -35,7 +35,6 @@ describe('UsersService', () => {
           nombres: 'Ana',
           apellidos: 'Diaz',
           email: 'ana@school.co',
-          documento_identidad: '123456',
           role: UserRole.SUPER_ADMIN,
           password: 'Password123!',
         },
@@ -43,7 +42,7 @@ describe('UsersService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('crea estudiante usando documento como password inicial', async () => {
+  it('genera password aleatoria si no se proporciona', async () => {
     prisma.user.create.mockResolvedValue({
       id: 100,
       role: UserRole.ESTUDIANTE,
@@ -55,29 +54,34 @@ describe('UsersService', () => {
         nombres: 'Luis',
         apellidos: 'Paz',
         email: 'luis@school.co',
-        documento_identidad: 'DOC-999',
         role: UserRole.ESTUDIANTE,
       },
     );
 
-    expect(bcrypt.hash).toHaveBeenCalledWith('DOC-999', 10);
+    expect(bcrypt.hash).toHaveBeenCalled();
     expect(prisma.user.create).toHaveBeenCalled();
     expect(result).toEqual({ id: 100, role: UserRole.ESTUDIANTE });
   });
 
-  it('rechaza profesor sin telefono', async () => {
-    await expect(
-      service.create(
-        { userId: 1, role: UserRole.SECRETARIA, institutionId: 4 },
-        {
-          nombres: 'Carlos',
-          apellidos: 'Roa',
-          email: 'carlos@school.co',
-          documento_identidad: 'DOC-777',
-          role: UserRole.PROFESOR,
-          password: 'Password123!',
-        },
-      ),
-    ).rejects.toThrow(BadRequestException);
+  it('permite crear profesor con password proporcionada', async () => {
+    prisma.user.create.mockResolvedValue({
+      id: 200,
+      role: UserRole.PROFESOR,
+    });
+
+    const result = await service.create(
+      { userId: 1, role: UserRole.SECRETARIA, institutionId: 4 },
+      {
+        nombres: 'Carlos',
+        apellidos: 'Roa',
+        email: 'carlos@school.co',
+        role: UserRole.PROFESOR,
+        password: 'Password123!',
+      },
+    );
+
+    expect(bcrypt.hash).toHaveBeenCalledWith('Password123!', 10);
+    expect(prisma.user.create).toHaveBeenCalled();
+    expect(result).toEqual({ id: 200, role: UserRole.PROFESOR });
   });
 });

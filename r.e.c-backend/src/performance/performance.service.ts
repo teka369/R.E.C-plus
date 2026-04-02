@@ -69,36 +69,18 @@ type RecomputedGradePerformance = GradePerformanceRow & {
   derivedSignals: DerivedSignals;
 };
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
 
 @Injectable()
-export class PerformanceService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new ForbiddenException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
-  }
-
-  private groupWhere(actor: Actor): { institutionId?: number } {
-    if (actor.role === UserRole.SUPER_ADMIN) return {};
-    return { institutionId: this.getActorInstitutionId(actor) };
+export class PerformanceService extends TenantScopedService {
+  constructor(private readonly prisma: PrismaService) {
+    super();
   }
 
   private async findGroupByGradeName(actor: Actor, grade: string) {
     const group = await this.prisma.group.findFirst({
-      where: { nombre: grade, ...this.groupWhere(actor) },
+      where: { nombre: grade, ...this.scopeToInstitution(actor) },
     });
     if (!group) throw new NotFoundException('Grado/Grupo no encontrado');
     return group;
@@ -110,7 +92,7 @@ export class PerformanceService {
       actor.role === UserRole.SUPER_ADMIN
     ) {
       const group = await this.prisma.group.findFirst({
-        where: { id: groupId, ...this.groupWhere(actor) },
+        where: { id: groupId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (!group) throw new ForbiddenException('Grupo fuera de su institucion');
@@ -122,7 +104,7 @@ export class PerformanceService {
         where: {
           id: groupId,
           directorId: actor.userId,
-          ...this.groupWhere(actor),
+          ...this.scopeToInstitution(actor),
         },
       });
       if (isDirector) return;
@@ -131,7 +113,7 @@ export class PerformanceService {
         where: {
           groupId,
           teacherId: actor.userId,
-          group: this.groupWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
       });
       if (assign) return;
@@ -148,7 +130,7 @@ export class PerformanceService {
       actor.role === UserRole.SUPER_ADMIN
     ) {
       const group = await this.prisma.group.findFirst({
-        where: { id: groupId, ...this.groupWhere(actor) },
+        where: { id: groupId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (!group) throw new ForbiddenException('Grupo fuera de su institucion');
@@ -160,7 +142,7 @@ export class PerformanceService {
         where: {
           id: groupId,
           directorId: actor.userId,
-          ...this.groupWhere(actor),
+          ...this.scopeToInstitution(actor),
         },
         select: { id: true },
       });
@@ -170,7 +152,7 @@ export class PerformanceService {
         where: {
           groupId,
           teacherId: actor.userId,
-          group: this.groupWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
         select: { id: true },
       });
@@ -181,7 +163,7 @@ export class PerformanceService {
       const studentGroup = await this.prisma.studentGroup.findFirst({
         where: {
           studentId: actor.userId,
-          group: this.groupWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
         select: { groupId: true },
       });
@@ -197,7 +179,7 @@ export class PerformanceService {
       actor.role === UserRole.SUPER_ADMIN
     ) {
       const exists = await this.prisma.group.findFirst({
-        where: { gradeId, ...this.groupWhere(actor) },
+        where: { gradeId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (!exists) throw new ForbiddenException('No autorizado');
@@ -206,7 +188,7 @@ export class PerformanceService {
 
     if (actor.role === UserRole.PROFESOR) {
       const directorGroup = await this.prisma.group.findFirst({
-        where: { gradeId, directorId: actor.userId, ...this.groupWhere(actor) },
+        where: { gradeId, directorId: actor.userId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (directorGroup) return;
@@ -214,7 +196,7 @@ export class PerformanceService {
       const assignment = await this.prisma.teacherAssignment.findFirst({
         where: {
           teacherId: actor.userId,
-          group: { gradeId, ...this.groupWhere(actor) },
+          group: { gradeId, ...this.scopeToInstitution(actor) },
         },
         select: { id: true },
       });
@@ -225,7 +207,7 @@ export class PerformanceService {
       const studentGroup = await this.prisma.studentGroup.findFirst({
         where: {
           studentId: actor.userId,
-          group: this.groupWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
         include: { group: true },
       });
@@ -706,7 +688,7 @@ export class PerformanceService {
       actor.role === UserRole.SUPER_ADMIN
     ) {
       const belongs = await this.prisma.user.findFirst({
-        where: { id: studentId, ...this.groupWhere(actor) },
+        where: { id: studentId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (!belongs) throw new ForbiddenException('No autorizado');
@@ -719,7 +701,7 @@ export class PerformanceService {
     }
 
     const assignment = await this.prisma.studentGroup.findFirst({
-      where: { studentId, group: this.groupWhere(actor) },
+      where: { studentId, group: this.scopeToInstitution(actor) },
       select: { groupId: true },
     });
     if (!assignment)
@@ -729,7 +711,7 @@ export class PerformanceService {
       where: {
         id: assignment.groupId,
         directorId: actor.userId,
-        ...this.groupWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -739,7 +721,7 @@ export class PerformanceService {
       where: {
         groupId: assignment.groupId,
         teacherId: actor.userId,
-        group: this.groupWhere(actor),
+        group: this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -752,7 +734,7 @@ export class PerformanceService {
       actor.role === UserRole.SUPER_ADMIN
     ) {
       const group = await this.prisma.group.findFirst({
-        where: { id: groupId, ...this.groupWhere(actor) },
+        where: { id: groupId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (!group) throw new ForbiddenException('No autorizado para este grupo');
@@ -763,7 +745,7 @@ export class PerformanceService {
       where: {
         id: groupId,
         directorId: actor.userId,
-        ...this.groupWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -773,7 +755,7 @@ export class PerformanceService {
       where: {
         groupId,
         teacherId: actor.userId,
-        group: this.groupWhere(actor),
+        group: this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -796,7 +778,7 @@ export class PerformanceService {
       where: {
         id: groupId,
         directorId: actor.userId,
-        ...this.groupWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -807,7 +789,7 @@ export class PerformanceService {
         groupId,
         subjectId,
         teacherId: actor.userId,
-        group: this.groupWhere(actor),
+        group: this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -845,7 +827,7 @@ export class PerformanceService {
     await this.ensureCanViewGradePerformance(actor, gradeId);
 
     const groups = await this.prisma.group.findMany({
-      where: { gradeId, ...this.groupWhere(actor) },
+      where: { gradeId, ...this.scopeToInstitution(actor) },
       include: { grade: true },
       orderBy: { nombre: 'asc' },
     });

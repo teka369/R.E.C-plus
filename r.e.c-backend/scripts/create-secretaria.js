@@ -35,8 +35,6 @@ async function createSecretaria() {
       email:
         (process.env.SECRETARIA_EMAIL ||
           `secretaria.${institutionId}@colegio.local`).trim().toLowerCase(),
-      documento_identidad:
-        process.env.SECRETARIA_DOCUMENTO || `SEC-${Date.now()}`,
       password: process.env.SECRETARIA_PASSWORD || 'Admin@2026',
       role: 'SECRETARIA',
     };
@@ -58,10 +56,8 @@ async function createSecretaria() {
         nombres: secretariaData.nombres,
         apellidos: secretariaData.apellidos,
         email: secretariaData.email,
-        documento_identidad: secretariaData.documento_identidad,
         password: hashedPassword,
         role: secretariaData.role,
-        telefono: null,
       },
     });
 

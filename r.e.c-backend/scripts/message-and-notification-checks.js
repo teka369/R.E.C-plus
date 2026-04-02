@@ -11,7 +11,6 @@ async function ensureUser(role, prefix) {
       nombres: `${prefix} ${role}`,
       apellidos: 'Usuario',
       email: `${prefix}_${role}_${ts}@example.com`,
-      documento_identidad: `${prefix}_${role}_${ts}`,
       password: hashed,
       role,
     },

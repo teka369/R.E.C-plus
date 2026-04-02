@@ -21,6 +21,7 @@ import { UserRole } from '../users/dto/user-role.enum';
 import { UpdateStudentGroupDto } from './dto/update-student-group.dto';
 import { AssignGroupDirectorDto } from './dto/assign-group-director.dto';
 import type { PromoteGradeDto } from './dto/promote-grade.dto';
+import { PaginationQuery } from '../common/dto/pagination.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -46,8 +47,8 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('grades')
-  listGrades(@Req() req: AuthenticatedRequest) {
-    return this.academic.listGrades(req.user);
+  listGrades(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+    return this.academic.listGrades(req.user, pagination);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -92,8 +93,8 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('groups')
-  listGroups(@Req() req: AuthenticatedRequest) {
-    return this.academic.listGroups(req.user);
+  listGroups(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+    return this.academic.listGroups(req.user, pagination);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -149,8 +150,8 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('subjects')
-  listSubjects(@Req() req: AuthenticatedRequest) {
-    return this.academic.listSubjects(req.user);
+  listSubjects(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+    return this.academic.listSubjects(req.user, pagination);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -358,8 +359,8 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('periods')
-  listAcademicPeriods(@Req() req: AuthenticatedRequest) {
-    return this.academic.listAcademicPeriods(req.user);
+  listAcademicPeriods(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+    return this.academic.listAcademicPeriods(req.user, pagination);
   }
 
   @UseGuards(JwtAuthGuard)

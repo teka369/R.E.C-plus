@@ -36,14 +36,12 @@ async function main() {
       nombres,
       apellidos,
       email,
-      documento_identidad,
-      telefono,
       role,
       password,
     } = item;
 
     // Validaciones mínimas
-    if (!nombres || !apellidos || !email || !documento_identidad) {
+    if (!nombres || !apellidos || !email) {
       console.warn(`Saltando usuario por campos faltantes: ${email}`);
       continue;
     }
@@ -59,10 +57,6 @@ async function main() {
     let passwordFinal = password;
 
     if (roleFinal === UserRole.PROFESOR) {
-      if (!telefono) {
-        console.warn(`Profesor sin teléfono, se omite: ${email}`);
-        continue;
-      }
       if (!passwordFinal) {
         console.warn(`Profesor sin contraseña, se omite: ${email}`);
         continue;
@@ -72,9 +66,6 @@ async function main() {
         console.warn(`Secretaría sin contraseña, se omite: ${email}`);
         continue;
       }
-    } else {
-      // ESTUDIANTE: usar documento como contraseña si no se provee
-      passwordFinal = passwordFinal || documento_identidad;
     }
 
     const hashedPassword = await bcrypt.hash(passwordFinal, 10);
@@ -84,8 +75,6 @@ async function main() {
         nombres,
         apellidos,
         email,
-        documento_identidad,
-        telefono: telefono || null,
         password: hashedPassword,
         role: roleFinal,
       },

@@ -1,0 +1,190 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Navbar from "@/components/layouts/Navbar";
+import api from "@/lib/axios";
+import { getErrorMessage } from "@/lib/errors";
+
+export default function ForgotPasswordPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"email" | "codigo">("email");
+
+  const onSubmitEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post("/auth/forgot-password", {
+        email: email.trim().toLowerCase(),
+      });
+      setSent(true);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Error al enviar la solicitud"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmitCodigo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.post("/auth/recover-by-code", {
+        codigo: codigo.trim(),
+      });
+      const token = res.data?.token;
+      if (token) {
+        router.push(`/reset-password?token=${token}`);
+      } else {
+        setError("No se pudo verificar el código. Revisa que sea correcto o contacta a tu secretaría.");
+      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Error al verificar el código"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#f0f8f3_0%,_#f8fbf9_40%,_#ffffff_100%)]">
+      <Navbar />
+      <section className="mx-auto max-w-md px-4 py-12">
+        <div className="rounded-3xl border border-[color:var(--rec-soft)] bg-white p-6 shadow-[0_22px_55px_-35px_rgba(19,52,35,0.5)] md:p-8">
+          {sent ? (
+            <>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--rec-soft)]">
+                <span className="text-xl">✉️</span>
+              </div>
+              <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Revisa tu correo</h1>
+              <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+                Si existe una cuenta con <strong>{email}</strong>, recibirás un enlace para restablecer tu contraseña. Revisa también la carpeta de spam.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setMode("codigo"); setSent(false); }}
+                className="mt-4 text-sm font-semibold text-[color:var(--rec-primary)] hover:underline"
+              >
+                ¿No recibiste el correo? Usa tu código
+              </button>
+              <Link
+                href="/login"
+                className="mt-3 inline-block text-sm font-semibold text-[color:var(--rec-primary)] hover:underline"
+              >
+                ← Volver al inicio de sesión
+              </Link>
+            </>
+          ) : mode === "email" ? (
+            <>
+              <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Restablecer contraseña</h1>
+              <p className="mt-2 text-sm text-slate-600">
+                Ingresa tu correo institucional y te enviaremos un enlace para crear una nueva contraseña.
+              </p>
+
+              <form onSubmit={onSubmitEmail} className="mt-6 flex flex-col gap-4" noValidate>
+                <label className="text-sm font-semibold text-slate-700" htmlFor="forgot-email">
+                  Correo
+                </label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[color:var(--rec-primary)] focus:ring-2 focus:ring-[color:var(--rec-primary)]/20"
+                  placeholder="tu.correo@institucion.edu"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+
+                {error && (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  disabled={loading}
+                  className="mt-1 rounded-xl bg-[color:var(--rec-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[color:var(--rec-primary-strong)] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loading ? "Enviando..." : "Enviar enlace"}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => { setMode("codigo"); setError(null); }}
+                className="mt-4 text-sm text-slate-600 hover:text-[color:var(--rec-primary)]"
+              >
+                ¿No tienes acceso al correo? Usa tu código
+              </button>
+
+              <Link
+                href="/login"
+                className="mt-3 inline-block text-sm text-slate-600 hover:text-[color:var(--rec-primary)]"
+              >
+                ← Volver al inicio de sesión
+              </Link>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Recuperar con código</h1>
+              <p className="mt-2 text-sm text-slate-600">
+                Ingresa el código que te asignó la secretaría de tu institución.
+              </p>
+
+              <form onSubmit={onSubmitCodigo} className="mt-6 flex flex-col gap-4" noValidate>
+                <label className="text-sm font-semibold text-slate-700" htmlFor="forgot-codigo">
+                  Código
+                </label>
+                <input
+                  id="forgot-codigo"
+                  type="text"
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[color:var(--rec-primary)] focus:ring-2 focus:ring-[color:var(--rec-primary)]/20"
+                  placeholder="Tu código de usuario"
+                  autoComplete="off"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  required
+                />
+
+                {error && (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  disabled={loading}
+                  className="mt-1 rounded-xl bg-[color:var(--rec-primary)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[color:var(--rec-primary-strong)] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loading ? "Verificando..." : "Verificar código"}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => { setMode("email"); setError(null); }}
+                className="mt-4 text-sm text-slate-600 hover:text-[color:var(--rec-primary)]"
+              >
+                ← Recuperar por correo electrónico
+              </button>
+
+              <Link
+                href="/login"
+                className="mt-3 inline-block text-sm text-slate-600 hover:text-[color:var(--rec-primary)]"
+              >
+                ← Volver al inicio de sesión
+              </Link>
+            </>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}

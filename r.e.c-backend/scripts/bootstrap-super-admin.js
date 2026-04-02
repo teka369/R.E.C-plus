@@ -4,12 +4,10 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = (process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
-  const password = process.env.SUPER_ADMIN_PASSWORD || '';
+  const email = (process.env.SUPER_ADMIN_EMAIL || 'guarinromerojuandavid@gmail.com').trim().toLowerCase();
+  const password = process.env.SUPER_ADMIN_PASSWORD || 'Akaza1314$1043978875';
   const nombres = process.env.SUPER_ADMIN_NOMBRES || 'Admin';
   const apellidos = process.env.SUPER_ADMIN_APELLIDOS || 'Plataforma';
-  const documento = process.env.SUPER_ADMIN_DOCUMENTO || `SAAS-${Date.now()}`;
-
   if (!email) {
     throw new Error('SUPER_ADMIN_EMAIL es requerido');
   }
@@ -40,7 +38,6 @@ async function main() {
       nombres,
       apellidos,
       email,
-      documento_identidad: documento,
       password: hashed,
       role: 'SUPER_ADMIN',
     },

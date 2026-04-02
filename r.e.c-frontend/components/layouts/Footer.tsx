@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { FiGithub, FiMail, FiPhone, FiMapPin } from "react-icons/fi";
+import { FiMail, FiPhone, FiMapPin } from "react-icons/fi";
 import Image from "next/image";
 
 export default function Footer() {
@@ -65,26 +65,19 @@ export default function Footer() {
             {/* Social Icons */}
             <div className="flex gap-3 pt-4">
               <a
-                href="https://github.com/"
-                aria-label="GitHub"
-                className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
-              >
-                <FiGithub className="h-4 w-4" />
-              </a>
-              <a
-                href="mailto:info@rec.edu.co"
+                href="mailto:contacto@recedu.co"
                 aria-label="Email"
                 className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
               >
                 <FiMail className="h-4 w-4" />
               </a>
-              <a
-                href="tel:+573001234567"
+              <span
                 aria-label="Teléfono"
-                className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 hover:bg-[color:var(--rec-cta)] transition flex items-center justify-center text-white"
+                className="h-10 w-10 rounded-lg border border-white/30 bg-white/10 flex items-center justify-center text-white/50 cursor-default"
+                title="Próximamente"
               >
                 <FiPhone className="h-4 w-4" />
-              </a>
+              </span>
             </div>
           </div>
 

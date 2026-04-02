@@ -1,9 +1,10 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { TenantBoundaryGuard } from '../../../src/common/guards/tenant-boundary.guard';
 import { UserRole } from '../../../src/users/dto/user-role.enum';
 
 describe('TenantBoundaryGuard', () => {
-  const guard = new TenantBoundaryGuard();
+  const guard = new TenantBoundaryGuard({ verify: () => ({}) } as unknown as JwtService);
 
   function buildContext(
     user?: {

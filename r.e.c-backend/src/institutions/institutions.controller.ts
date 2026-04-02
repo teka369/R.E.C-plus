@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -49,5 +50,51 @@ export class InstitutionsController {
     @Body() dto: UpdateInstitutionDto,
   ) {
     return this.institutions.update(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.institutions.delete(id);
+  }
+
+  @Get(':id/periods')
+  listPeriods(@Param('id', ParseIntPipe) id: number) {
+    return this.institutions.listPeriods(id);
+  }
+
+  @Get(':id/periods/active')
+  getActivePeriod(@Param('id', ParseIntPipe) id: number) {
+    return this.institutions.getActivePeriod(id);
+  }
+
+  @Post(':id/periods')
+  createPeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    dto: {
+      nombre: string;
+      codigo: string;
+      tipo?: string;
+      fechaInicio: string;
+      fechaFin: string;
+    },
+  ) {
+    return this.institutions.createPeriod(id, dto);
+  }
+
+  @Patch(':id/periods/:periodId/activate')
+  activatePeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('periodId', ParseIntPipe) periodId: number,
+  ) {
+    return this.institutions.activatePeriod(id, periodId);
+  }
+
+  @Patch(':id/periods/:periodId/close')
+  closePeriod(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('periodId', ParseIntPipe) periodId: number,
+  ) {
+    return this.institutions.closePeriod(id, periodId);
   }
 }

@@ -48,8 +48,6 @@ async function createTeacher() {
         apellidos: process.env.TEACHER_APELLIDOS || 'Acosta Velez',
         email,
         password: hashedPassword,
-        documento_identidad: process.env.TEACHER_DOCUMENTO || `PROF-${Date.now()}`,
-        telefono: process.env.TEACHER_TELEFONO || '+57 3000000000',
         role: 'PROFESOR',
       },
     });
