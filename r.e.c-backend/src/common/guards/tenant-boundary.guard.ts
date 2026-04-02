@@ -3,10 +3,10 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '../../users/dto/user-role.enum';
+import { AppLoggerService } from '../../logger/logger.service';
 
 type Actor = {
   userId: number;
@@ -26,9 +26,10 @@ type RequestWithActor = {
 
 @Injectable()
 export class TenantBoundaryGuard implements CanActivate {
-  private readonly logger = new Logger(TenantBoundaryGuard.name);
-
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly logger: AppLoggerService,
+  ) {}
   private parseInstitutionId(value: unknown): number | null {
     if (value === undefined || value === null || value === '') {
       return null;
@@ -113,14 +114,13 @@ export class TenantBoundaryGuard implements CanActivate {
 
     if (hasCrossTenantTarget) {
       // Logging de seguridad: registrar intentos de acceso cross-tenant
-      this.logger.warn({
+      this.logger.logTenantViolation({
         event: 'CROSS_TENANT_ACCESS_ATTEMPT',
         actorUserId: actor.userId,
         actorInstitutionId: actor.institutionId,
         requestedInstitutionIds,
         endpoint: request.url || 'unknown',
         method: request.method || 'unknown',
-        timestamp: new Date().toISOString(),
       });
       throw new ForbiddenException('Cross-institution access denied');
     }

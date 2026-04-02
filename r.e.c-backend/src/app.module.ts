@@ -16,6 +16,11 @@ import { RecoverySettingsModule } from './recovery-settings/recovery-settings.mo
 import { InstitutionsModule } from './institutions/institutions.module';
 import { TenantBoundaryGuard } from './common/guards/tenant-boundary.guard';
 import { RedisCacheModule } from './common/cache/cache.module';
+import { HealthModule } from './health/health.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { AppLoggerService } from './logger/logger.service';
+import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -46,6 +51,8 @@ import { RedisCacheModule } from './common/cache/cache.module';
     AuthModule,
     PrismaModule,
     RedisCacheModule,
+    HealthModule,
+    CustomLoggerModule,
   ],
   controllers: [AppController],
   providers: [
@@ -56,6 +63,10 @@ import { RedisCacheModule } from './common/cache/cache.module';
     {
       provide: APP_GUARD,
       useClass: TenantBoundaryGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
     },
   ],
 })
