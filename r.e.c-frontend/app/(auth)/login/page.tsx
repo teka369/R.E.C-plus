@@ -60,13 +60,13 @@ export default function LoginPage() {
         email: normalizedEmail,
         password,
       });
-      const { access_token, user } = res.data;
+      const { access_token, refresh_token, user } = res.data;
       // Este login es exclusivo para Estudiantes y Docentes
       if (user.role === "SECRETARIA" || user.role === "SUPER_ADMIN") {
         setError("Este acceso es para estudiantes y docentes. Usa 'Acceso Secretaría'.");
         return;
       }
-      await login(user, access_token);
+      await login(user, access_token, refresh_token);
       const target = user.role === "PROFESOR" ? "/docente" : "/estudiante";
       window.location.href = target;
     } catch (error: unknown) {

@@ -209,7 +209,7 @@ describe('AcademicService', () => {
     it('devuelve resultado paginado con meta', async () => {
       prisma.grade.findMany.mockResolvedValue([{ id: 1, nombre: '1°' }]);
       prisma.grade.count.mockResolvedValue(1);
-      const result = await service.listGrades(secretariaActor, { page: 1, limit: 20 });
+      const result = await service.listGrades(secretariaActor, { page: 1, limit: 20 }) as any;
       expect(result).toHaveProperty('data');
       expect(result).toHaveProperty('meta');
       expect(result.meta.total).toBe(1);
@@ -244,7 +244,7 @@ describe('AcademicService', () => {
     it('devuelve paginado con meta', async () => {
       prisma.group.findMany.mockResolvedValue([{ id: 1 }]);
       prisma.group.count.mockResolvedValue(1);
-      const result = await service.listGroups(secretariaActor, { page: 1, limit: 10 });
+      const result = await service.listGroups(secretariaActor, { page: 1, limit: 10 }) as any;
       expect(result.meta.total).toBe(1);
       expect(result.data).toHaveLength(1);
     });

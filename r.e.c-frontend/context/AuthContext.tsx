@@ -13,7 +13,7 @@ export type AuthUser = {
 type AuthContextType = {
   user: AuthUser | null;
   token: string | null;
-  login: (user: AuthUser, token: string) => Promise<void>;
+  login: (user: AuthUser, token: string, refreshToken?: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, token]);
 
-  const login = async (u: AuthUser, t: string) => {
+  const login = async (u: AuthUser, t: string, refreshToken?: string) => {
     setUser(u);
     setToken(t);
     // Cookies HttpOnly vía API (JWT validado en servidor; proxy usa rec_token)
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: t }),
+        body: JSON.stringify({ token: t, refreshToken }),
       });
     } catch {
       // Ignorar errores de red; el proxy depende de cookies, pero el contexto mantiene estado en memoria para esta sesión

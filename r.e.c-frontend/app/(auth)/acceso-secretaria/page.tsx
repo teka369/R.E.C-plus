@@ -57,12 +57,12 @@ export default function AccesoSecretariaPage() {
         email: normalizedEmail,
         password,
       });
-      const { access_token, user } = res.data;
+      const { access_token, refresh_token, user } = res.data;
       if (user.role !== "SECRETARIA" && user.role !== "SUPER_ADMIN") {
         setError("Acceso exclusivo para Secretaría y Super Admin");
         return;
       }
-      await login(user, access_token);
+      await login(user, access_token, refresh_token);
       window.location.href = user.role === "SUPER_ADMIN" ? "/super-admin" : "/secretaria";
     } catch (error: unknown) {
       setError(getErrorMessage(error, "Error al iniciar sesión"));

@@ -8,7 +8,7 @@ describe('TenantBoundaryGuard', () => {
   const mockLogger = {
     logTenantViolation: jest.fn(),
   } as unknown as AppLoggerService;
-  
+
   const guard = new TenantBoundaryGuard(
     { verify: () => ({}) } as unknown as JwtService,
     mockLogger,

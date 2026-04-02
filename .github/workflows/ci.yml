@@ -1,0 +1,163 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Stage 1 — Lint
+  # ──────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - app: r.e.c-backend
+            lint-script: lint
+          - app: r.e.c-frontend
+            lint-script: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache node_modules (${{ matrix.app }})
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.app }}/node_modules
+          key: ${{ runner.os }}-node-${{ matrix.app }}-${{ hashFiles(format('{0}/package-lock.json', matrix.app)) }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.app }}-
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: npm ci
+
+      - name: Run linter
+        working-directory: ${{ matrix.app }}
+        run: npm run ${{ matrix.lint-script }}
+
+  # ──────────────────────────────────────────────
+  # Stage 2 — Unit Tests (backend)
+  # ──────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache node_modules (backend)
+        uses: actions/cache@v4
+        with:
+          path: r.e.c-backend/node_modules
+          key: ${{ runner.os }}-node-r.e.c-backend-${{ hashFiles('r.e.c-backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-r.e.c-backend-
+
+      - name: Install dependencies
+        working-directory: r.e.c-backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: r.e.c-backend
+        run: npx prisma generate
+
+      - name: Run unit tests with coverage
+        working-directory: r.e.c-backend
+        run: npm run test:cov
+
+      - name: Check line coverage >= 50%
+        working-directory: r.e.c-backend
+        run: |
+          COVERAGE=$(node -e "
+            const report = require('./coverage/unit/coverage-summary.json');
+            const pct = report.total.lines.pct;
+            console.log(pct);
+          ")
+          echo "Line coverage: ${COVERAGE}%"
+          node -e "if (${COVERAGE} < 50) { console.error('Coverage ${COVERAGE}% is below 50% threshold'); process.exit(1); }"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: r.e.c-backend/coverage/unit/
+          retention-days: 14
+
+  # ──────────────────────────────────────────────
+  # Stage 3 — Integration Tests (backend)
+  # ──────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: recedu_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL_TEST: ${{ secrets.DATABASE_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache node_modules (backend)
+        uses: actions/cache@v4
+        with:
+          path: r.e.c-backend/node_modules
+          key: ${{ runner.os }}-node-r.e.c-backend-${{ hashFiles('r.e.c-backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-r.e.c-backend-
+
+      - name: Install dependencies
+        working-directory: r.e.c-backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: r.e.c-backend
+        run: npx prisma generate
+
+      - name: Run Prisma migrations
+        working-directory: r.e.c-backend
+        run: npx prisma migrate deploy
+
+      - name: Run integration tests
+        working-directory: r.e.c-backend
+        run: npm run test:integration
