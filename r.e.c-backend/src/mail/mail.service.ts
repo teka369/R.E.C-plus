@@ -14,7 +14,7 @@ export class MailService {
         'RESEND_API_KEY no está definida – los emails no se enviarán',
       );
     }
-    this.resend = new Resend(apiKey ?? '');
+    this.resend = new Resend(apiKey || 're_dummy_no_send');
     this.from = process.env.RESEND_FROM ?? 'R.E.C <noreply@recedu.co>';
   }
 
