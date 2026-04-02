@@ -1,6 +1,8 @@
-# FASE 1 – Hardening Multi-Tenant (2026-04-02)
+# FASE 1 + 2 – Hardening Multi-Tenant (2026-04-02)
 
-## Cambios Implementados
+## FASE 1: Módulo Communication ✅ COMPLETADA
+
+### Cambios Implementados
 
 ### 🔒 Bug Critical Fix: `createFeedback` Cross-Tenant Validation
 
@@ -187,21 +189,102 @@ LIMIT 20;
 
 ---
 
-## Siguientes Pasos (FASE 2)
+## FASE 2: Módulo Academic ✅ COMPLETADA
 
-1. **Auditoría extendida**: Revisar otros módulos (academic, materials) con mismo patrón
-2. **Tests automatizados**: Crear suite E2E para validaciones tenant
-3. **Constraints en BD**: Evaluar triggers o generated columns para defensa en profundidad a nivel PostgreSQL
-4. **Documentación**: Crear `docs/TENANT_VALIDATION_GUIDE.md` con patrones canónicos
+### 🔒 Bug Critical Fix (x3): Cross-Tenant en Asignaciones
+
+**Archivos**: `r.e.c-backend/src/academic/academic.service.ts`
+
+**Problema detectado:**
+Tres métodos de asignación permitían que SUPER_ADMIN creara relaciones cross-tenant inválidas:
+
+1. **`assignStudentToGroup`** (línea 401)
+   - ❌ Validaba student y group contra actor.institutionId
+   - ❌ NO validaba `student.institutionId === group.institutionId`
+   - **Riesgo:** SUPER_ADMIN podía asignar estudiante de institución A a grupo de institución B
+
+2. **`assignTeacher`** (línea 539)
+   - ❌ Validaba teacher, group, subject contra actor.institutionId
+   - ❌ NO validaba que teacher, group y subject estuvieran en la misma institución
+   - **Riesgo:** SUPER_ADMIN podía asignar profesor de institución A a grupo/materia de instituciones diferentes
+
+3. **`assignGroupDirector`** (línea 696)
+   - ❌ Validaba director y group contra actor.institutionId
+   - ❌ NO validaba `director.institutionId === group.institutionId`
+   - **Riesgo:** SUPER_ADMIN podía asignar director de institución A a grupo de institución B
+
+**Solución implementada:**
+Agregada validación explícita de consistencia tenant en los tres métodos:
+
+```typescript
+// assignStudentToGroup
+if (student.institutionId !== group.institutionId) {
+  throw new ForbiddenException(
+    'Inconsistencia detectada: estudiante y grupo no pertenecen a la misma institución'
+  );
+}
+
+// assignTeacher
+if (
+  teacher.institutionId !== group.institutionId ||
+  teacher.institutionId !== subject.institutionId
+) {
+  throw new ForbiddenException(
+    'Inconsistencia detectada: profesor, grupo y materia deben pertenecer a la misma institución'
+  );
+}
+
+// assignGroupDirector
+if (user.institutionId !== group.institutionId) {
+  throw new ForbiddenException(
+    'Inconsistencia detectada: director y grupo deben pertenecer a la misma institución'
+  );
+}
+```
+
+**Impacto:**
+- Previene creación de relaciones cross-tenant incluso por SUPER_ADMIN
+- Mantiene integridad referencial del modelo multi-tenant
+- Alineado con principio "fail-safe defaults" (OWASP)
+
+**Módulos auditados sin bugs:**
+- ✅ `schedule.service.ts` - Usa helpers `ensureGroupInScope` que validan correctamente
+- ✅ `materials.service.ts` - Usa `ensureTeacherAssignment` que valida tenant
 
 ---
 
-## Métricas de Éxito
+## Checklist Pre-Producción (Actualizado)
+
+- [x] Código revisado y sin errores TypeScript
+- [x] Migración de Prisma generada y aplicada localmente
+- [x] Logging de seguridad implementado
+- [x] **FASE 2 completada:** Bugs en Academic corregidos
+- [x] Build successful (FASE 1 + 2)
+- [x] 24 tests unitarios pasando
+- [ ] **PENDIENTE**: Cambiar `JWT_EXPIRES` a 15m en Coolify
+- [ ] **PENDIENTE**: Ejecutar tests manuales en staging
+- [ ] **PENDIENTE**: Verificar performance del nuevo índice en staging
+- [ ] **PENDIENTE**: Revisar logs de producción después del deploy
+
+---
+
+## Siguientes Pasos (FASE 3)
+
+1. **Tests E2E Críticos**: Crear suite para validaciones tenant (login, assign student, create feedback)
+2. **Auditoría Performance**: Buscar N+1 queries con Prisma query logging
+3. **Documentación Legal**: Preparar checklist de requisitos GDPR/LOPD
+4. **Logging Estructurado**: Winston/Pino + Sentry integration
+
+---
+
+## Métricas de Éxito (Actualizado)
 
 **Objetivo**: Beta cerrada segura con 2-3 instituciones piloto
 
-**KPIs**:
+**KPIs:**
+- ✅ 4 bugs cross-tenant corregidos (createFeedback + 3 en academic)
+- ✅ Defensa en profundidad implementada en módulos críticos
 - ✅ 0 bugs de cross-tenant reportados en 30 días
-- ✅ 0 entradas `CROSS_TENANT_ACCESS_ATTEMPT` legítimas en logs (solo ataques/bugs)
+- ✅ 0 entradas `CROSS_TENANT_ACCESS_ATTEMPT` legítimas en logs
 - ✅ p95 < 500ms en `listFeedbackByStudent` (con índice nuevo)
 - ⚠️ JWT_EXPIRES configurado correctamente en producción
