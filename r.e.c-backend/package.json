@@ -51,6 +51,7 @@
     "compression": "^1.8.1",
     "helmet": "^7.1.0",
     "ioredis": "^5.10.1",
+    "nest-winston": "^1.10.0",
     "nestjs-pino": "^4.6.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -60,7 +61,8 @@
     "reflect-metadata": "^0.2.2",
     "resend": "^6.10.0",
     "rxjs": "^7.8.1",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
