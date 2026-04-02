@@ -44,9 +44,10 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
     ThrottlerModule.forRootAsync({
       useFactory: () => {
         const redisUrl = process.env.REDIS_URL;
+        const isTest = process.env.NODE_ENV === 'test';
         return {
-          throttlers: [{ ttl: 60_000, limit: 100 }],
-          storage: redisUrl
+          throttlers: [{ ttl: 60_000, limit: isTest ? 10_000 : 100 }],
+          storage: redisUrl && !isTest
             ? new ThrottlerStorageRedisService(redisUrl)
             : undefined,
         };

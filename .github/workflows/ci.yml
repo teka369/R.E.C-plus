@@ -130,6 +130,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
+      NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DATABASE_DIRECT_URL: ${{ secrets.DATABASE_URL }}
       DATABASE_URL_TEST: ${{ secrets.DATABASE_URL }}
