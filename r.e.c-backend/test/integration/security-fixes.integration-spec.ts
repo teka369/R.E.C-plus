@@ -32,17 +32,28 @@ interface Tenant {
   estudianteToken: string;
 }
 
-async function login(app: INestApplication<App>, email: string): Promise<string> {
+async function login(
+  app: INestApplication<App>,
+  email: string,
+): Promise<string> {
   const res = await request(app.getHttpServer())
     .post('/auth/login')
     .send({ email, password: TEST_PASSWORD });
-  if (res.status !== 201) throw new Error(`Login failed for ${email}: ${res.status}`);
+  if (res.status !== 201)
+    throw new Error(`Login failed for ${email}: ${res.status}`);
   return res.body.access_token as string;
 }
 
-async function buildTenant(app: INestApplication<App>, label: string, runId: number): Promise<Tenant> {
+async function buildTenant(
+  app: INestApplication<App>,
+  label: string,
+  runId: number,
+): Promise<Tenant> {
   const inst = await prisma.institution.create({
-    data: { nombre: `Colegio ${label} ${runId}`, slug: `colegio-${label.toLowerCase()}-${runId}` },
+    data: {
+      nombre: `Colegio ${label} ${runId}`,
+      slug: `colegio-${label.toLowerCase()}-${runId}`,
+    },
   });
 
   const [secretaria, profesor, estudiante] = await Promise.all([
@@ -78,10 +89,22 @@ async function buildTenant(app: INestApplication<App>, label: string, runId: num
     }),
   ]);
 
-  const grade = await prisma.grade.create({ data: { institutionId: inst.id, nombre: `Grado ${label}` } });
-  const group = await prisma.group.create({ data: { institutionId: inst.id, nombre: `Grupo ${label}`, gradeId: grade.id } });
+  const grade = await prisma.grade.create({
+    data: { institutionId: inst.id, nombre: `Grado ${label}` },
+  });
+  const group = await prisma.group.create({
+    data: {
+      institutionId: inst.id,
+      nombre: `Grupo ${label}`,
+      gradeId: grade.id,
+    },
+  });
   const subject = await prisma.subject.create({
-    data: { institutionId: inst.id, nombre: `Materia ${label}`, codigo: `MAT-${label}-${runId}` },
+    data: {
+      institutionId: inst.id,
+      nombre: `Materia ${label}`,
+      codigo: `MAT-${label}-${runId}`,
+    },
   });
 
   const [secretariaToken, profesorToken, estudianteToken] = await Promise.all([
@@ -118,7 +141,11 @@ describe('Security Fixes Integration', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
     await app.init();
   });
@@ -142,7 +169,11 @@ describe('Security Fixes Integration', () => {
     it('PROFESOR de A no puede crear feedback para estudiante de B en grupo de B → 403', async () => {
       // Asignar profesor B a grupo B con materia B (setup mínimo para que exista la asignación en B)
       await prisma.teacherAssignment.create({
-        data: { teacherId: tB.profesorId, groupId: tB.groupId, subjectId: tB.subjectId },
+        data: {
+          teacherId: tB.profesorId,
+          groupId: tB.groupId,
+          subjectId: tB.subjectId,
+        },
       });
       // Asignar estudiante B al grupo B requiere periodo activo — sólo verificamos el error tenant
       const res = await request(app.getHttpServer())
@@ -162,7 +193,11 @@ describe('Security Fixes Integration', () => {
     it('PROFESOR de A puede crear feedback para estudiante de A en grupo de A → 201', async () => {
       // Setup: asignación profesor, periodo activo, matrícula estudiante
       await prisma.teacherAssignment.create({
-        data: { teacherId: tA.profesorId, groupId: tA.groupId, subjectId: tA.subjectId },
+        data: {
+          teacherId: tA.profesorId,
+          groupId: tA.groupId,
+          subjectId: tA.subjectId,
+        },
       });
       const period = await prisma.academicPeriod.create({
         data: {
@@ -176,7 +211,11 @@ describe('Security Fixes Integration', () => {
         },
       });
       await prisma.studentGroup.create({
-        data: { studentId: tA.estudianteId, groupId: tA.groupId, academicPeriodId: period.id },
+        data: {
+          studentId: tA.estudianteId,
+          groupId: tA.groupId,
+          academicPeriodId: period.id,
+        },
       });
 
       const res = await request(app.getHttpServer())
@@ -262,7 +301,11 @@ describe('Security Fixes Integration', () => {
       const res = await request(app.getHttpServer())
         .post('/academic/teachers/assign')
         .set('Authorization', `Bearer ${tA.secretariaToken}`)
-        .send({ teacherId: tB.profesorId, groupId: tA.groupId, subjectId: tA.subjectId });
+        .send({
+          teacherId: tB.profesorId,
+          groupId: tA.groupId,
+          subjectId: tA.subjectId,
+        });
 
       // Profesor de B no está en institución A
       expect(res.status).toBe(403);
@@ -272,7 +315,11 @@ describe('Security Fixes Integration', () => {
       const res = await request(app.getHttpServer())
         .post('/academic/teachers/assign')
         .set('Authorization', `Bearer ${tA.secretariaToken}`)
-        .send({ teacherId: tA.profesorId, groupId: tA.groupId, subjectId: tA.subjectId });
+        .send({
+          teacherId: tA.profesorId,
+          groupId: tA.groupId,
+          subjectId: tA.subjectId,
+        });
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty('id');
@@ -360,7 +407,10 @@ describe('Security Fixes Integration', () => {
     it('POST /auth/login incluye headers X-RateLimit-Limit', async () => {
       const { user } = await (async () => {
         const inst = await prisma.institution.create({
-          data: { nombre: `RL Inst ${Date.now()}`, slug: `rl-inst-${Date.now()}` },
+          data: {
+            nombre: `RL Inst ${Date.now()}`,
+            slug: `rl-inst-${Date.now()}`,
+          },
         });
         const u = await prisma.user.create({
           data: {
@@ -391,7 +441,10 @@ describe('Security Fixes Integration', () => {
 
     it('POST /auth/login bloquea tras superar el límite', async () => {
       const inst = await prisma.institution.create({
-        data: { nombre: `BF Inst ${Date.now()}`, slug: `bf-inst-${Date.now()}` },
+        data: {
+          nombre: `BF Inst ${Date.now()}`,
+          slug: `bf-inst-${Date.now()}`,
+        },
       });
       const u = await prisma.user.create({
         data: {

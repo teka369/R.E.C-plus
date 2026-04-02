@@ -188,7 +188,11 @@ export class PerformanceService extends TenantScopedService {
 
     if (actor.role === UserRole.PROFESOR) {
       const directorGroup = await this.prisma.group.findFirst({
-        where: { gradeId, directorId: actor.userId, ...this.scopeToInstitution(actor) },
+        where: {
+          gradeId,
+          directorId: actor.userId,
+          ...this.scopeToInstitution(actor),
+        },
         select: { id: true },
       });
       if (directorGroup) return;

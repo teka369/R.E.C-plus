@@ -10,7 +10,9 @@ export class MailService {
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY no está definida – los emails no se enviarán');
+      this.logger.warn(
+        'RESEND_API_KEY no está definida – los emails no se enviarán',
+      );
     }
     this.resend = new Resend(apiKey ?? '');
     this.from = process.env.RESEND_FROM ?? 'R.E.C <noreply@recedu.co>';

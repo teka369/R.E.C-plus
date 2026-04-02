@@ -131,9 +131,9 @@ describe('CommunicationService', () => {
       prisma.user.findFirst.mockResolvedValue(null); // no encontrado en institutionId=1
       prisma.studentGroup.findFirst.mockResolvedValue({ id: 20 });
 
-      await expect(service.createFeedback(baseDto as any, actor)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.createFeedback(baseDto as any, actor),
+      ).rejects.toThrow(ForbiddenException);
 
       expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
       // La verificación de grupo NO debe ejecutarse si el estudiante ya falló
@@ -145,9 +145,9 @@ describe('CommunicationService', () => {
       prisma.user.findFirst.mockResolvedValue({ id: 99 }); // estudiante de la institución correcta
       prisma.studentGroup.findFirst.mockResolvedValue(null); // pero no en este grupo
 
-      await expect(service.createFeedback(baseDto as any, actor)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.createFeedback(baseDto as any, actor),
+      ).rejects.toThrow(ForbiddenException);
 
       expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
       expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(1);
@@ -167,7 +167,10 @@ describe('CommunicationService', () => {
         teacherId: 10,
         group: { institutionId: 1 },
       });
-      prisma.feedback.update.mockResolvedValue({ id: 1, title: 'Nuevo título' });
+      prisma.feedback.update.mockResolvedValue({
+        id: 1,
+        title: 'Nuevo título',
+      });
 
       const result = await service.updateFeedback(1, dto as any, actor);
 
@@ -182,13 +185,13 @@ describe('CommunicationService', () => {
     it('rechaza con ForbiddenException si el feedback pertenece a otra institución', async () => {
       prisma.feedback.findUnique.mockResolvedValue({
         id: 1,
-        teacherId: 10,           // mismo autor
+        teacherId: 10, // mismo autor
         group: { institutionId: 2 }, // pero otra institución
       });
 
-      await expect(service.updateFeedback(1, dto as any, actor)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.updateFeedback(1, dto as any, actor),
+      ).rejects.toThrow(ForbiddenException);
 
       expect(prisma.feedback.update).not.toHaveBeenCalled();
       expect(prisma.feedbackStrength.deleteMany).not.toHaveBeenCalled();
@@ -198,13 +201,13 @@ describe('CommunicationService', () => {
     it('rechaza con ForbiddenException si el actor no es el autor', async () => {
       prisma.feedback.findUnique.mockResolvedValue({
         id: 1,
-        teacherId: 99,           // autor diferente
+        teacherId: 99, // autor diferente
         group: { institutionId: 1 },
       });
 
-      await expect(service.updateFeedback(1, dto as any, actor)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.updateFeedback(1, dto as any, actor),
+      ).rejects.toThrow(ForbiddenException);
 
       expect(prisma.feedback.update).not.toHaveBeenCalled();
     });

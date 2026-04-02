@@ -30,8 +30,8 @@ describe('HealthController', () => {
   });
 
   describe('metrics', () => {
-    it('returns memory and process info', async () => {
-      const result = await controller.metrics();
+    it('returns memory and process info', () => {
+      const result = controller.metrics();
       expect(result.memory).toBeDefined();
       expect(result.memory.rss).toContain('MB');
       expect(result.memory.heapTotal).toContain('MB');

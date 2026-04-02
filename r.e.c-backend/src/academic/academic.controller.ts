@@ -47,7 +47,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('grades')
-  listGrades(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+  listGrades(
+    @Req() req: AuthenticatedRequest,
+    @Query() pagination: PaginationQuery,
+  ) {
     return this.academic.listGrades(req.user, pagination);
   }
 
@@ -93,7 +96,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('groups')
-  listGroups(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+  listGroups(
+    @Req() req: AuthenticatedRequest,
+    @Query() pagination: PaginationQuery,
+  ) {
     return this.academic.listGroups(req.user, pagination);
   }
 
@@ -150,7 +156,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('subjects')
-  listSubjects(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+  listSubjects(
+    @Req() req: AuthenticatedRequest,
+    @Query() pagination: PaginationQuery,
+  ) {
     return this.academic.listSubjects(req.user, pagination);
   }
 
@@ -359,7 +368,10 @@ export class AcademicController {
 
   @UseGuards(JwtAuthGuard)
   @Get('periods')
-  listAcademicPeriods(@Req() req: AuthenticatedRequest, @Query() pagination: PaginationQuery) {
+  listAcademicPeriods(
+    @Req() req: AuthenticatedRequest,
+    @Query() pagination: PaginationQuery,
+  ) {
     return this.academic.listAcademicPeriods(req.user, pagination);
   }
 

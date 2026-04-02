@@ -131,7 +131,10 @@ export class AcademicService extends TenantScopedService {
   }
 
   async listGrades(actor: Actor, pagination: PaginationQuery = {}) {
-    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const instId =
+      actor.role === UserRole.SUPER_ADMIN
+        ? 'global'
+        : this.getActorInstitutionId(actor);
     const { skip, take, page, limit } = paginateParams(pagination);
     const cacheKey = `grades:${instId}:${page}:${limit}`;
     const cached = await this.cache.get(cacheKey);
@@ -139,7 +142,12 @@ export class AcademicService extends TenantScopedService {
 
     const where = this.scopeToInstitution(actor);
     const [data, total] = await Promise.all([
-      this.prisma.grade.findMany({ where, include: { groups: true }, skip, take }),
+      this.prisma.grade.findMany({
+        where,
+        include: { groups: true },
+        skip,
+        take,
+      }),
       this.prisma.grade.count({ where }),
     ]);
     const result = buildPaginatedResult(data, total, page, limit);
@@ -193,7 +201,10 @@ export class AcademicService extends TenantScopedService {
   }
 
   async listGroups(actor: Actor, pagination: PaginationQuery = {}) {
-    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const instId =
+      actor.role === UserRole.SUPER_ADMIN
+        ? 'global'
+        : this.getActorInstitutionId(actor);
     const { skip, take, page, limit } = paginateParams(pagination);
     const cacheKey = `groups:${instId}:${page}:${limit}`;
     const cached = await this.cache.get(cacheKey);
@@ -201,7 +212,12 @@ export class AcademicService extends TenantScopedService {
 
     const where = this.scopeToInstitution(actor);
     const [data, total] = await Promise.all([
-      this.prisma.group.findMany({ where, include: { grade: true, subjects: true }, skip, take }),
+      this.prisma.group.findMany({
+        where,
+        include: { grade: true, subjects: true },
+        skip,
+        take,
+      }),
       this.prisma.group.count({ where }),
     ]);
     const result = buildPaginatedResult(data, total, page, limit);
@@ -265,7 +281,10 @@ export class AcademicService extends TenantScopedService {
   }
 
   async listSubjects(actor: Actor, pagination: PaginationQuery = {}) {
-    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const instId =
+      actor.role === UserRole.SUPER_ADMIN
+        ? 'global'
+        : this.getActorInstitutionId(actor);
     const { skip, take, page, limit } = paginateParams(pagination);
     const cacheKey = `subjects:${instId}:${page}:${limit}`;
     const cached = await this.cache.get(cacheKey);
@@ -867,7 +886,12 @@ export class AcademicService extends TenantScopedService {
     const where = this.scopeToInstitution(actor);
     const { skip, take, page, limit } = paginateParams(pagination);
     const [data, total] = await Promise.all([
-      this.prisma.academicPeriod.findMany({ where, orderBy: { fechaInicio: 'desc' }, skip, take }),
+      this.prisma.academicPeriod.findMany({
+        where,
+        orderBy: { fechaInicio: 'desc' },
+        skip,
+        take,
+      }),
       this.prisma.academicPeriod.count({ where }),
     ]);
     return buildPaginatedResult(data, total, page, limit);
@@ -882,7 +906,10 @@ export class AcademicService extends TenantScopedService {
   }
 
   async getActivePeriod(actor: Actor) {
-    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const instId =
+      actor.role === UserRole.SUPER_ADMIN
+        ? 'global'
+        : this.getActorInstitutionId(actor);
     const cacheKey = `activePeriod:${instId}`;
     const cached = await this.cache.get(cacheKey);
     if (cached) return cached;

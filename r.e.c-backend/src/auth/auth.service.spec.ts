@@ -16,7 +16,12 @@ const baseUser = {
   role: 'PROFESOR',
   password: HASHED_PASSWORD,
   institutionId: 10,
-  institution: { id: 10, nombre: 'Colegio Test', slug: 'colegio-test', activa: true },
+  institution: {
+    id: 10,
+    nombre: 'Colegio Test',
+    slug: 'colegio-test',
+    activa: true,
+  },
 };
 
 function makePrisma() {
@@ -36,7 +41,9 @@ function makeJwt() {
   return {
     signAsync: jest.fn().mockResolvedValue('mock-token'),
     verifyAsync: jest.fn(),
-    decode: jest.fn().mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 }),
+    decode: jest
+      .fn()
+      .mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 }),
   };
 }
 
@@ -76,16 +83,16 @@ describe('AuthService', () => {
 
     it('lanza UnauthorizedException si el usuario no existe', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.validateUser('noexiste@test.edu', 'pass')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('noexiste@test.edu', 'pass'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('lanza UnauthorizedException si la contraseña es incorrecta', async () => {
       prisma.user.findUnique.mockResolvedValue(baseUser);
-      await expect(service.validateUser('ana@test.edu', 'wrong')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('ana@test.edu', 'wrong'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('lanza UnauthorizedException si la institución está inactiva', async () => {
@@ -94,9 +101,9 @@ describe('AuthService', () => {
         role: 'PROFESOR',
         institution: { ...baseUser.institution, activa: false },
       });
-      await expect(service.validateUser('ana@test.edu', 'secret123')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('ana@test.edu', 'secret123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('SUPER_ADMIN puede loguear aunque institución esté inactiva', async () => {
@@ -145,7 +152,9 @@ describe('AuthService', () => {
 
     it('propaga UnauthorizedException si las credenciales son inválidas', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.login('x@test.edu', 'bad')).rejects.toThrow(UnauthorizedException);
+      await expect(service.login('x@test.edu', 'bad')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -163,26 +172,47 @@ describe('AuthService', () => {
 
     it('lanza UnauthorizedException si el payload no es tipo refresh', async () => {
       jwt.verifyAsync.mockResolvedValue({ sub: 1, type: 'access', jti: 'x' });
-      await expect(service.refresh('bad-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('bad-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('lanza UnauthorizedException si la sesión fue revocada', async () => {
-      jwt.verifyAsync.mockResolvedValue({ sub: 1, type: 'refresh', jti: 'jti-abc' });
-      prisma.authSession.findUnique.mockResolvedValue({ ...session, revokedAt: new Date() });
-      await expect(service.refresh('any')).rejects.toThrow(UnauthorizedException);
+      jwt.verifyAsync.mockResolvedValue({
+        sub: 1,
+        type: 'refresh',
+        jti: 'jti-abc',
+      });
+      prisma.authSession.findUnique.mockResolvedValue({
+        ...session,
+        revokedAt: new Date(),
+      });
+      await expect(service.refresh('any')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('lanza UnauthorizedException si la sesión expiró', async () => {
-      jwt.verifyAsync.mockResolvedValue({ sub: 1, type: 'refresh', jti: 'jti-abc' });
+      jwt.verifyAsync.mockResolvedValue({
+        sub: 1,
+        type: 'refresh',
+        jti: 'jti-abc',
+      });
       prisma.authSession.findUnique.mockResolvedValue({
         ...session,
         expiresAt: new Date(Date.now() - 1000),
       });
-      await expect(service.refresh('any')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('any')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('lanza UnauthorizedException si el token no coincide con el hash', async () => {
-      jwt.verifyAsync.mockResolvedValue({ sub: 1, type: 'refresh', jti: 'jti-abc' });
+      jwt.verifyAsync.mockResolvedValue({
+        sub: 1,
+        type: 'refresh',
+        jti: 'jti-abc',
+      });
       prisma.authSession.findUnique.mockResolvedValue(session);
       await expect(service.refresh('token-que-no-coincide')).rejects.toThrow(
         UnauthorizedException,
@@ -190,9 +220,15 @@ describe('AuthService', () => {
     });
 
     it('lanza UnauthorizedException si el userId no coincide con sub', async () => {
-      jwt.verifyAsync.mockResolvedValue({ sub: 99, type: 'refresh', jti: 'jti-abc' });
+      jwt.verifyAsync.mockResolvedValue({
+        sub: 99,
+        type: 'refresh',
+        jti: 'jti-abc',
+      });
       prisma.authSession.findUnique.mockResolvedValue(session); // userId: 1
-      await expect(service.refresh('any')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('any')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -208,7 +244,9 @@ describe('AuthService', () => {
       });
       await service.logout('token');
       expect(prisma.authSession.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ revokedAt: expect.any(Date) }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ revokedAt: expect.any(Date) }),
+        }),
       );
     });
 
@@ -229,4 +267,3 @@ describe('AuthService', () => {
     });
   });
 });
-

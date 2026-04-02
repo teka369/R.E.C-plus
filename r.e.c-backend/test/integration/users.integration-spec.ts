@@ -198,9 +198,7 @@ describe('Users integration', () => {
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`);
 
       expect(res.status).toBe(200);
-      const emails = (res.body.data as { email: string }[]).map(
-        (u) => u.email,
-      );
+      const emails = (res.body.data as { email: string }[]).map((u) => u.email);
       // No debe contener usuarios de tenant B
       expect(emails).not.toContain(tenantB.profesor.email);
       expect(emails).not.toContain(tenantB.estudiante.email);
