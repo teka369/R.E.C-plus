@@ -717,7 +717,7 @@ describe('AcademicService (unit)', () => {
           groupId: 10,
           subjectId: 1,
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
