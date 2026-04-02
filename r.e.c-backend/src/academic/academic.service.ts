@@ -575,7 +575,7 @@ export class AcademicService extends TenantScopedService {
       actor.role !== UserRole.SUPER_ADMIN &&
       teacher.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         'Profesor fuera del alcance de su institucion',
       );
     }
@@ -745,7 +745,7 @@ export class AcademicService extends TenantScopedService {
       actor.role !== UserRole.SUPER_ADMIN &&
       user.institutionId !== this.getActorInstitutionId(actor)
     ) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         'Usuario fuera del alcance de su institucion',
       );
     }
