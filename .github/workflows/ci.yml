@@ -135,6 +135,8 @@ jobs:
       DATABASE_URL_TEST: ${{ secrets.DATABASE_URL }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      RESEND_API_KEY: re_test_dummy_key_for_ci
+      JWT_REFRESH_SECRET: ci-refresh-secret
     steps:
       - uses: actions/checkout@v4
 
