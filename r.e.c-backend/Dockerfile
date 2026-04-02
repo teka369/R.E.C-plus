@@ -12,7 +12,6 @@ COPY tsconfig*.json nest-cli.json ./
 COPY src ./src
 RUN npm run prisma:generate
 RUN npm run build
-RUN npm prune --omit=dev
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -20,10 +19,12 @@ ENV NODE_ENV=production
 ENV PORT=4001
 
 COPY --from=build /app/package*.json ./
-COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/scripts ./scripts
+
+# Install only production dependencies in final stage
+RUN npm ci --omit=dev && npm cache clean --force
 
 EXPOSE 4001
 
