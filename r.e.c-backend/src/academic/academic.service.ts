@@ -427,6 +427,14 @@ export class AcademicService extends TenantScopedService {
       throw new ForbiddenException('Grupo fuera del alcance de su institucion');
     }
 
+    // Defensa en profundidad: verificar consistencia tenant estudiante-grupo
+    // Crítico incluso para SUPER_ADMIN: no debe crear relaciones cross-tenant inválidas
+    if (student.institutionId !== group.institutionId) {
+      throw new ForbiddenException(
+        'Inconsistencia detectada: estudiante y grupo no pertenecen a la misma institución',
+      );
+    }
+
     // Resolver período académico activo (requerido — StudentGroup.academicPeriodId NOT NULL)
     const activePeriod = await this.prisma.academicPeriod.findFirst({
       where: {
@@ -553,8 +561,19 @@ export class AcademicService extends TenantScopedService {
       );
     }
 
-    await this.getGroup(actor, dto.groupId);
-    await this.getSubject(actor, dto.subjectId);
+    const group = await this.getGroup(actor, dto.groupId);
+    const subject = await this.getSubject(actor, dto.subjectId);
+
+    // Defensa en profundidad: verificar consistencia tenant profesor-grupo-materia
+    // Crítico incluso para SUPER_ADMIN: no debe crear relaciones cross-tenant inválidas
+    if (
+      teacher.institutionId !== group.institutionId ||
+      teacher.institutionId !== subject.institutionId
+    ) {
+      throw new ForbiddenException(
+        'Inconsistencia detectada: profesor, grupo y materia deben pertenecer a la misma institución',
+      );
+    }
 
     const assignment = await this.prisma.teacherAssignment.upsert({
       where: {
@@ -713,6 +732,14 @@ export class AcademicService extends TenantScopedService {
     }
     if (user.role !== 'PROFESOR')
       throw new BadRequestException('El usuario no es PROFESOR');
+
+    // Defensa en profundidad: verificar consistencia tenant director-grupo
+    // Crítico incluso para SUPER_ADMIN: no debe crear relaciones cross-tenant inválidas
+    if (user.institutionId !== group.institutionId) {
+      throw new ForbiddenException(
+        'Inconsistencia detectada: director y grupo deben pertenecer a la misma institución',
+      );
+    }
 
     return this.prisma.group.update({
       where: { id: groupId },
