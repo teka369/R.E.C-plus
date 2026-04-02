@@ -38,7 +38,8 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
         },
       },
     }),
-    ThrottlerModule.forRoot([{ ttl: 60, limit: 100 }]),
+    // ttl en milisegundos (v5+): 60_000ms = 60 segundos, 100 req/min global
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     UsersModule,
     AcademicModule,
     MaterialsModule,
