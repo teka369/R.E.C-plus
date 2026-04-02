@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@sentry/node": "^10.47.0",
+    "@sentry/profiling-node": "^10.47.0",
+    "nest-winston": "^1.10.2",
+    "winston": "^3.19.0"
+  }
+}
