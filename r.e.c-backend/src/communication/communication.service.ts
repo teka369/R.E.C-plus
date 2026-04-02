@@ -47,17 +47,38 @@ export class CommunicationService extends TenantScopedService {
       );
     }
 
+    // Validación cross-tenant: verificar que grupo pertenece a la institución del actor
+    const group = await this.prisma.group.findFirst({
+      where: {
+        id: dto.groupId,
+        institutionId: this.getActorInstitutionId(actor),
+      },
+      select: { id: true, institutionId: true },
+    });
+    if (!group) {
+      throw new ForbiddenException(
+        'El grupo no pertenece a su institución',
+      );
+    }
+
     const student = await this.prisma.user.findFirst({
       where: {
         id: dto.studentId,
         institutionId: this.getActorInstitutionId(actor),
         role: UserRole.ESTUDIANTE,
       },
-      select: { id: true },
+      select: { id: true, institutionId: true },
     });
     if (!student) {
       throw new ForbiddenException(
         'El estudiante no pertenece a su institución',
+      );
+    }
+
+    // Defensa en profundidad: verificar consistencia tenant grupo-estudiante
+    if (group.institutionId !== student.institutionId) {
+      throw new ForbiddenException(
+        'Inconsistencia detectada: grupo y estudiante no pertenecen a la misma institución',
       );
     }
 
@@ -118,14 +139,18 @@ export class CommunicationService extends TenantScopedService {
       include: { group: { select: { institutionId: true } } },
     });
     if (!existing) throw new NotFoundException('Feedback no encontrado');
-    if (existing.teacherId !== actor.userId) {
-      throw new ForbiddenException('Solo el autor puede editar este feedback');
-    }
+
+    // Validación tenant-first: verificar boundary antes de permisos
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
       existing.group.institutionId !== this.getActorInstitutionId(actor)
     ) {
       throw new ForbiddenException('Feedback fuera de su institución');
+    }
+
+    // Validación de autoría: solo el profesor que creó el feedback puede editarlo
+    if (existing.teacherId !== actor.userId) {
+      throw new ForbiddenException('Solo el autor puede editar este feedback');
     }
     if (dto.strengths !== undefined) {
       await this.prisma.feedbackStrength.deleteMany({ where: { feedbackId } });

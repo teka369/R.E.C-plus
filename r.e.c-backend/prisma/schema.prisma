@@ -529,6 +529,8 @@ model Feedback {
   @@index([groupId])
   // Queries frecuentes: ORDER BY createdAt DESC filtrado por groupId
   @@index([groupId, createdAt(sort: Desc)])
+  // Optimización para listFeedbackByStudent con ordenamiento
+  @@index([studentId, createdAt(sort: Desc)])
 }
 model Message {
   id          Int      @id @default(autoincrement())
