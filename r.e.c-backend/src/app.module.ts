@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { UsersModule } from './users/users.module';
@@ -38,8 +39,20 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
         },
       },
     }),
-    // ttl en milisegundos (v5+): 60_000ms = 60 segundos, 100 req/min global
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
+    // ttl en milisegundos (v6+): 60_000ms = 60 segundos, 100 req/min global
+    // Si REDIS_URL está configurado, persiste contadores en Redis (survives restarts)
+    // Si no, usa in-memory (dev/test)
+    ThrottlerModule.forRootAsync({
+      useFactory: () => {
+        const redisUrl = process.env.REDIS_URL;
+        return {
+          throttlers: [{ ttl: 60_000, limit: 100 }],
+          storage: redisUrl
+            ? new ThrottlerStorageRedisService(redisUrl)
+            : undefined,
+        };
+      },
+    }),
     UsersModule,
     AcademicModule,
     MaterialsModule,
