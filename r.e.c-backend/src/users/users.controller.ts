@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -44,12 +45,17 @@ export class UsersController {
     return this.usersService.create(req.user, dto);
   }
 
-  // Registro masivo de usuarios (SECRETARIA)
+  // Registro masivo de usuarios (SECRETARIA) — máximo 200 por request
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Post('bulk')
   bulkCreate(@Body() dtos: CreateUserDto[], @Req() req: AuthenticatedRequest) {
-    // Acepta un arreglo de CreateUserDto y retorna resumen de creación
+    if (!Array.isArray(dtos) || dtos.length === 0) {
+      throw new BadRequestException('Se requiere un arreglo con al menos 1 usuario');
+    }
+    if (dtos.length > 200) {
+      throw new BadRequestException('Máximo 200 usuarios por solicitud');
+    }
     return this.usersService.bulkCreate(req.user, dtos);
   }
 

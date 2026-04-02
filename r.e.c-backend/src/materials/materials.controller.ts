@@ -100,9 +100,13 @@ export class MaterialsController {
   ) {
     const file = await this.materials.getStudyFile(req.user, id);
     res.setHeader('Content-Type', file.mimeType);
+    // Sanitizar originalName para prevenir HTTP header injection
+    const safeFilename = (file.originalName ?? 'file')
+      .replace(/[\r\n"\\]/g, '_')
+      .slice(0, 200);
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="${file.originalName}"`,
+      `inline; filename="${safeFilename}"`,
     );
     return new StreamableFile(file.fileContent);
   }
