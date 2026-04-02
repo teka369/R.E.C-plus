@@ -17,6 +17,7 @@
     "!src/**/*.spec.ts"
   ],
   "coverageDirectory": "coverage/unit",
+  "coverageReporters": ["text", "lcov", "json-summary"],
   "coverageThreshold": {
     "global": {
       "branches": 50,
