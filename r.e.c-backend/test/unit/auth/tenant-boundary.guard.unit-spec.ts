@@ -2,9 +2,17 @@ import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TenantBoundaryGuard } from '../../../src/common/guards/tenant-boundary.guard';
 import { UserRole } from '../../../src/users/dto/user-role.enum';
+import { AppLoggerService } from '../../../src/logger/logger.service';
 
 describe('TenantBoundaryGuard', () => {
-  const guard = new TenantBoundaryGuard({ verify: () => ({}) } as unknown as JwtService);
+  const mockLogger = {
+    logTenantViolation: jest.fn(),
+  } as unknown as AppLoggerService;
+  
+  const guard = new TenantBoundaryGuard(
+    { verify: () => ({}) } as unknown as JwtService,
+    mockLogger,
+  );
 
   function buildContext(
     user?: {

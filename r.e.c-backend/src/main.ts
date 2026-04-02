@@ -11,12 +11,35 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
+  // Inicializar Sentry con configuración mejorada
   if (process.env.SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
-      tracesSampleRate: 0.1,
       environment: process.env.NODE_ENV ?? 'development',
+      release: process.env.APP_VERSION || 'dev',
+      
+      // Performance monitoring
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
+      // Filtrar información sensible
+      beforeSend(event) {
+        if (event.request?.headers) {
+          delete event.request.headers.authorization;
+          delete event.request.headers.cookie;
+        }
+        return event;
+      },
+
+      // No enviar errores de validación común
+      ignoreErrors: [
+        'UnauthorizedException',
+        'BadRequestException',
+        'NotFoundException',
+      ],
     });
+    console.log('✅ Sentry initialized');
+  } else {
+    console.warn('⚠️  SENTRY_DSN not configured. Error tracking disabled.');
   }
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
