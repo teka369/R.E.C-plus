@@ -2,6 +2,9 @@ import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import Footer from "@/components/layouts/Footer";
 
+export const dynamic = "force-static";
+export const revalidate = false;
+
 export const metadata = {
   title: "Tutorial | R.E.C",
   description: "Guía de uso de la plataforma R.E.C según tu rol",

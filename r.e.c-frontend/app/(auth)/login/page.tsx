@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import api from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,7 +62,7 @@ export default function LoginPage() {
       });
       const { access_token, user } = res.data;
       // Este login es exclusivo para Estudiantes y Docentes
-      if (user.role === "SECRETARIA") {
+      if (user.role === "SECRETARIA" || user.role === "SUPER_ADMIN") {
         setError("Este acceso es para estudiantes y docentes. Usa 'Acceso Secretaría'.");
         return;
       }
@@ -154,11 +155,13 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-5 rounded-xl border border-[color:var(--rec-soft)] bg-[color:var(--rec-soft)]/60 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--rec-primary)]">Ayuda rapida</p>
-              <p className="mt-1 text-sm text-slate-600">
-                Si olvidaste tu contraseña, solicita el cambio presencial en Secretaría.
-              </p>
+            <div className="mt-5 flex items-center justify-between">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-slate-600 hover:text-[color:var(--rec-primary)] hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
           </div>
         </div>

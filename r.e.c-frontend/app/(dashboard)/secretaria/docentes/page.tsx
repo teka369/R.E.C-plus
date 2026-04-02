@@ -310,7 +310,7 @@ export default function SecretariaDocentesPage() {
               <th className="p-2 text-left">Sel.</th>
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
-              <th className="p-2 text-left">Documento</th>
+              <th className="p-2 text-left">Código</th>
               <th className="p-2 text-left">Asignación rápida</th>
               <th className="p-2 text-left">Gestión</th>
             </tr>
@@ -328,7 +328,7 @@ export default function SecretariaDocentesPage() {
                 </td>
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
-                <td className="p-2">{u.documento_identidad}</td>
+                <td className="p-2">{u.codigo}</td>
                 <td className="p-2">
                   <div className="min-w-[360px] space-y-2">
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">

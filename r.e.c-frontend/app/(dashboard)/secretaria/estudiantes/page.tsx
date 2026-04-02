@@ -202,7 +202,7 @@ export default function SecretariaEstudiantesPage() {
               <th className="p-2 text-left">Sel.</th>
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
-              <th className="p-2 text-left">Documento</th>
+              <th className="p-2 text-left">Código</th>
               <th className="p-2 text-left">Asignar a Grupo</th>
               <th className="p-2 text-left">Acciones</th>
             </tr>
@@ -219,7 +219,7 @@ export default function SecretariaEstudiantesPage() {
                 </td>
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
-                <td className="p-2">{u.documento_identidad}</td>
+                <td className="p-2">{u.codigo}</td>
                 <td className="p-2">
                   <div className="flex items-center gap-2">
                     <Select

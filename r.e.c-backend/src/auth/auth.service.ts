@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 import type { StringValue } from 'ms';
 
 type AuthInstitution = {
@@ -69,6 +70,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly mail: MailService,
   ) {}
 
   private getRefreshSecret(): string {
@@ -308,5 +310,87 @@ export class AuthService {
         data: { revokedAt: new Date() },
       });
     }
+  }
+
+  async recoverByCode(codigo: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { codigo },
+    });
+
+    // No revelar si el código existe
+    if (!user) return null;
+
+    // Invalidar tokens previos no usados
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, token, expiresAt },
+    });
+
+    return token;
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    // Siempre responder OK para no revelar si el email existe
+    if (!user) return;
+
+    // Invalidar tokens previos no usados
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, token, expiresAt },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    await this.mail.sendPasswordReset(user.email, resetUrl);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException(
+        'El enlace de restablecimiento es inválido o ha expirado.',
+      );
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { password: hashed },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+      // Revocar todas las sesiones activas del usuario
+      this.prisma.authSession.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
   }
 }

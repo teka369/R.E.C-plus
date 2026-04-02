@@ -6,6 +6,9 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(@paralleldrive/cuid2|@noble/hashes)/)"
+  ],
   "setupFilesAfterEnv": ["<rootDir>/test/integration/setup-integration.ts"],
   "testTimeout": 30000,
   "coverageDirectory": "coverage/integration"

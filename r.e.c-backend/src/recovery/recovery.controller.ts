@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   StreamableFile,
@@ -57,8 +58,15 @@ export class RecoveryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ESTUDIANTE)
   @Get('requests/my')
-  listMyRequests(@Req() req: AuthenticatedRequest) {
-    return this.recovery.listMyRequests(req.user);
+  listMyRequests(
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.recovery.listMyRequests(req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -66,9 +74,14 @@ export class RecoveryController {
   @Get('groups/:groupId/requests')
   listGroupRequests(
     @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.recovery.listGroupRequests(req.user, groupId);
+    return this.recovery.listGroupRequests(req.user, groupId, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

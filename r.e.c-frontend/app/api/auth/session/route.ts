@@ -5,13 +5,13 @@ import {
   verifyAccessToken,
 } from "@/lib/server/verify-access-token";
 
-const isProd = process.env.NODE_ENV === "production";
+const isDev = process.env.NODE_ENV === "development";
 
 function sessionCookieOpts(maxAge: number) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: isProd,
+    secure: !isDev,
     path: "/",
     maxAge,
   };

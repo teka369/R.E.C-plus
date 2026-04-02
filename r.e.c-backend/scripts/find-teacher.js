@@ -26,8 +26,6 @@ async function findTeacher() {
           apellidos: 'Rodríguez García',
           email: 'carlos.rodriguez@iejavieralondonobarriosevilla.edu.co',
           password: hashedPassword,
-          documento_identidad: '87654321',
-          telefono: '+57 301 5555555',
           role: 'PROFESOR',
         },
       });

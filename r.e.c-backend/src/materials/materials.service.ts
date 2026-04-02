@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { promises as fs } from 'node:fs';
@@ -21,40 +22,28 @@ import { CreateSyllabusDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { UpdateGroupInfoDto } from './dto/update-group-info.dto';
 import { UserRole } from '../users/dto/user-role.enum';
+import {
+  PaginationQuery,
+  paginateParams,
+  buildPaginatedResult,
+  PaginatedResult,
+} from '../common/dto/pagination.dto';
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
 
 @Injectable()
-export class MaterialsService {
-  constructor(private readonly prisma: PrismaService) {}
+export class MaterialsService extends TenantScopedService {
+  private readonly logger = new Logger(MaterialsService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   private readonly uploadsRoot = path.join(process.cwd(), 'uploads');
 
   private toJsonValue(value: unknown): Prisma.InputJsonValue {
     return value as Prisma.InputJsonValue;
-  }
-
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new BadRequestException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new BadRequestException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
-  }
-
-  private groupInstitutionWhere(
-    actor: Actor,
-  ): { institutionId?: number } | { institutionId: number } {
-    if (actor.role === UserRole.SUPER_ADMIN) return {};
-    return { institutionId: this.getActorInstitutionId(actor) };
   }
 
   // Utilidades
@@ -92,12 +81,12 @@ export class MaterialsService {
       const sg = await this.prisma.studentGroup.findFirst({
         where: {
           studentId: actor.userId,
-          group: this.groupInstitutionWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
       });
       if (!sg) throw new ForbiddenException('Estudiante sin grupo asignado');
       const group = await this.prisma.group.findFirst({
-        where: { id: sg.groupId, ...this.groupInstitutionWhere(actor) },
+        where: { id: sg.groupId, ...this.scopeToInstitution(actor) },
       });
       if (!group) throw new NotFoundException('Grupo no encontrado');
       return { groupId: group.id, gradeId: group.gradeId };
@@ -120,6 +109,33 @@ export class MaterialsService {
     }
     if (file.buffer.length > 25 * 1024 * 1024) {
       throw new BadRequestException('El archivo supera el límite de 25MB');
+    }
+
+    const ALLOWED_MIME = new Set([
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.oasis.opendocument.text',
+      'application/vnd.oasis.opendocument.spreadsheet',
+      'text/plain',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'video/mp4',
+      'video/webm',
+      'audio/mpeg',
+      'audio/ogg',
+      'audio/wav',
+    ]);
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      throw new BadRequestException(
+        `Tipo de archivo no permitido: ${file.mimetype}`,
+      );
     }
 
     const safeBaseName =
@@ -291,7 +307,7 @@ export class MaterialsService {
           await this.cleanupEmptyDirs(path.dirname(absolutePath));
         } catch (e) {
           // Log pero no fallar
-          console.warn(`No se pudo eliminar archivo: ${absolutePath}`, e);
+          this.logger.warn(`No se pudo eliminar archivo: ${absolutePath}`, e);
         }
       }
     }
@@ -300,48 +316,75 @@ export class MaterialsService {
     return { deleted: true };
   }
 
-  async listStudyMaterials(actor: Actor) {
+  async listStudyMaterials(
+    actor: Actor,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+
     if (
       actor.role === UserRole.SECRETARIA ||
       actor.role === UserRole.SUPER_ADMIN
     ) {
-      return this.prisma.studyMaterial.findMany({
-        where:
-          actor.role === UserRole.SUPER_ADMIN
-            ? undefined
-            : { group: this.groupInstitutionWhere(actor) },
-        orderBy: { id: 'desc' },
-      });
+      const where =
+        actor.role === UserRole.SUPER_ADMIN
+          ? undefined
+          : { group: this.scopeToInstitution(actor) };
+      const [data, total] = await Promise.all([
+        this.prisma.studyMaterial.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { id: 'desc' },
+        }),
+        this.prisma.studyMaterial.count({ where }),
+      ]);
+      return buildPaginatedResult(data, total, page, limit);
     }
     if (actor.role === UserRole.PROFESOR) {
-      // Materiales en grupos donde el profesor enseña
       const assigns = await this.prisma.teacherAssignment.findMany({
         where: {
           teacherId: actor.userId,
-          group: this.groupInstitutionWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
       });
       const groupIds = assigns.map((a) => a.groupId);
       const subjectIds = assigns.map((a) => a.subjectId);
-      return this.prisma.studyMaterial.findMany({
-        where: { groupId: { in: groupIds }, subjectId: { in: subjectIds } },
-        orderBy: { id: 'desc' },
-      });
+      const where = {
+        groupId: { in: groupIds },
+        subjectId: { in: subjectIds },
+      };
+      const [data, total] = await Promise.all([
+        this.prisma.studyMaterial.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { id: 'desc' },
+        }),
+        this.prisma.studyMaterial.count({ where }),
+      ]);
+      return buildPaginatedResult(data, total, page, limit);
     }
-    // Estudiante: visibilidad por grupo/grado
     const ctx = await this.getActorContext(actor);
-    return this.prisma.studyMaterial.findMany({
-      where: {
-        OR: [
-          { groupId: ctx!.groupId },
-          {
-            visibility: Visibility.GRADE,
-            group: { gradeId: ctx!.gradeId },
-          },
-        ],
-      },
-      orderBy: { id: 'desc' },
-    });
+    const where = {
+      OR: [
+        { groupId: ctx!.groupId },
+        {
+          visibility: Visibility.GRADE,
+          group: { gradeId: ctx!.gradeId },
+        },
+      ],
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.studyMaterial.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { id: 'desc' },
+      }),
+      this.prisma.studyMaterial.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async getStudyMaterial(actor: Actor, id: number) {
@@ -546,7 +589,7 @@ export class MaterialsService {
         where:
           actor.role === UserRole.SUPER_ADMIN
             ? undefined
-            : { group: this.groupInstitutionWhere(actor) },
+            : { group: this.scopeToInstitution(actor) },
         orderBy: { id: 'desc' },
       });
     }
@@ -554,7 +597,7 @@ export class MaterialsService {
       const assigns = await this.prisma.teacherAssignment.findMany({
         where: {
           teacherId: actor.userId,
-          group: this.groupInstitutionWhere(actor),
+          group: this.scopeToInstitution(actor),
         },
       });
       const groupIds = assigns.map((a) => a.groupId);
@@ -618,7 +661,7 @@ export class MaterialsService {
   // Group Info (Leagues)
   async getGroupInfo(actor: Actor, groupId: number) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, ...this.groupInstitutionWhere(actor) },
+      where: { id: groupId, ...this.scopeToInstitution(actor) },
       select: { id: true },
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
@@ -651,7 +694,7 @@ export class MaterialsService {
     dto: UpdateGroupInfoDto,
   ) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, ...this.groupInstitutionWhere(actor) },
+      where: { id: groupId, ...this.scopeToInstitution(actor) },
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
     if (actor.role !== UserRole.PROFESOR || group.directorId !== actor.userId) {
@@ -714,7 +757,7 @@ export class MaterialsService {
     const groups = await this.prisma.group.findMany({
       where: {
         gradeId,
-        ...this.groupInstitutionWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       include: {
         info: {

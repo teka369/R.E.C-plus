@@ -11,8 +11,8 @@ async function main() {
   const group = await prisma.group.create({ data: { nombre: `TempGroup_${ts}`, gradeId: grade.id } });
   const subject = await prisma.subject.create({ data: { nombre: `TempSubject_${ts}` } });
   const hashedPwd = await bcrypt.hash('pwd', 10);
-  const teacher = await prisma.user.create({ data: { nombres: 'Temp Profe', apellidos: 'Del', email: `t_${ts}@ex.com`, documento_identidad: `t_${ts}`, telefono: '300', password: hashedPwd, role: 'PROFESOR' } });
-  const student = await prisma.user.create({ data: { nombres: 'Temp Estu', apellidos: 'Del', email: `s_${ts}@ex.com`, documento_identidad: `s_${ts}`, password: hashedPwd, role: 'ESTUDIANTE' } });
+  const teacher = await prisma.user.create({ data: { nombres: 'Temp Profe', apellidos: 'Del', email: `t_${ts}@ex.com`, password: hashedPwd, role: 'PROFESOR' } });
+  const student = await prisma.user.create({ data: { nombres: 'Temp Estu', apellidos: 'Del', email: `s_${ts}@ex.com`, password: hashedPwd, role: 'ESTUDIANTE' } });
 
   await prisma.groupSubject.create({ data: { groupId: group.id, subjectId: subject.id } });
   await prisma.studentGroup.create({ data: { studentId: student.id, groupId: group.id } });

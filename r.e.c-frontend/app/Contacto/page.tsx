@@ -2,6 +2,9 @@ import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import Footer from "@/components/layouts/Footer";
 
+export const dynamic = "force-static";
+export const revalidate = false;
+
 export const metadata = {
   title: "Contacto | R.E.C",
   description: "Canales de contacto y soporte de la plataforma R.E.C",
@@ -136,28 +139,15 @@ export default function ContactoPage() {
         </div>
       </section>
 
-      {/* Mapa / ubicación */}
+      {/* Ubicación */}
       <section className="py-16">
         <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-2xl font-extrabold mb-2 text-center" style={{ color: "var(--rec-title)" }}>Ubicación de la institución</h2>
+          <h2 className="text-2xl font-extrabold mb-2 text-center" style={{ color: "var(--rec-title)" }}>Ubicación</h2>
           <div className="h-1 w-14 mx-auto rounded-full mb-8" style={{ background: "var(--rec-primary)" }} />
-          <div className="rounded-2xl overflow-hidden shadow-lg" style={{ border: "1px solid var(--rec-soft)" }}>
-            <iframe
-              title="Ubicación institución R.E.C"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.0!2d-75.5!3d6.25!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMTUnMDAuMCJOIDc1wrAzMCcwMC4wIlc!5e0!3m2!1ses!2sco!4v1700000000000"
-              width="100%"
-              height="380"
-              style={{ border: 0, display: "block" }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { icon: "📍", label: "Dirección", value: "Antioquia, Colombia" },
-              { icon: "📞", label: "Teléfono", value: "Definido por la institución" },
-              { icon: "✉️", label: "Correo", value: "rec@institucion.edu.co" },
+              { icon: "📍", label: "Ubicación", value: "Colombia" },
+              { icon: "✉️", label: "Correo", value: "contacto@recedu.co" },
             ].map((info) => (
               <div
                 key={info.label}

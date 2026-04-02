@@ -2,6 +2,9 @@ import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import Footer from "@/components/layouts/Footer";
 
+export const dynamic = "force-static";
+export const revalidate = false;
+
 export const metadata = {
   title: "Información | R.E.C",
   description: "Conoce R.E.C: Refuerzo Educativo Complementario, la plataforma académica integral",

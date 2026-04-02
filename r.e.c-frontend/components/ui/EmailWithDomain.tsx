@@ -7,19 +7,21 @@ type Props = {
   email: string;
   onEmailChange: (value: string) => void;
   persistKey?: string; // localStorage key para el dominio
+  institutionDomain?: string | null; // dominio de la institución (prioridad sobre default)
 };
 
-export default function EmailWithDomain({ label = "Correo", email, onEmailChange, persistKey = "rec_email_domain" }: Props) {
+export default function EmailWithDomain({ label = "Correo", email, onEmailChange, persistKey = "rec_email_domain", institutionDomain }: Props) {
+  const fallbackDomain = institutionDomain || DEFAULT_EMAIL_DOMAIN;
   const [domain, setDomain] = useState<string>(() => {
     const emailDomain = email.split("@")[1];
     if (typeof window === "undefined") {
-      return emailDomain || DEFAULT_EMAIL_DOMAIN;
+      return emailDomain || fallbackDomain;
     }
     try {
       const saved = window.localStorage.getItem(persistKey);
-      return (saved && saved.trim()) || emailDomain || DEFAULT_EMAIL_DOMAIN;
+      return (saved && saved.trim()) || emailDomain || fallbackDomain;
     } catch {
-      return emailDomain || DEFAULT_EMAIL_DOMAIN;
+      return emailDomain || fallbackDomain;
     }
   });
 
@@ -27,6 +29,11 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
     const [local] = email.split("@");
     return local || "";
   }, [email]);
+
+  // Actualizar dominio si se recibe institutionDomain async
+  useEffect(() => {
+    if (institutionDomain) setDomain(institutionDomain);
+  }, [institutionDomain]);
 
   // Construir email completo cada vez que cambian las partes
   useEffect(() => {

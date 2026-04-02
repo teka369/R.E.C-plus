@@ -114,7 +114,7 @@ export default function EstudiantePerfilPage() {
               {[
                 { label: "Nombre completo", value: nombreCompleto },
                 { label: "Correo institucional", value: profile?.email || user?.email || "–" },
-                { label: "Documento de identidad", value: profile?.documento_identidad || "No especificado" },
+                { label: "Código", value: profile?.codigo || "No especificado" },
                 { label: "Grupo académico", value: groupLabel },
               ].map((item) => (
                 <div

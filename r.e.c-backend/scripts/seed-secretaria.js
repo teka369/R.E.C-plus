@@ -11,8 +11,6 @@ const prisma = new PrismaClient();
         nombres: 'Sec',
         apellidos: 'Retaria',
         email: 'secretaria@iejavieralondonobarriosevilla.edu.co',
-        documento_identidad: '99999999',
-        telefono: null,
         password: hashed,
         role: 'SECRETARIA',
       },

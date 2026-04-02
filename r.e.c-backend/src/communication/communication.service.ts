@@ -12,27 +12,20 @@ import { CreateFeedbackDto, UpdateFeedbackDto } from './dto/feedback.dto';
 import { SendMessageDto } from './dto/message.dto';
 import { CreateNotificationDto } from './dto/notification.dto';
 import { UserRole } from '../users/dto/user-role.enum';
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
+import {
+  PaginationQuery,
+  paginateParams,
+  buildPaginatedResult,
+  PaginatedResult,
+} from '../common/dto/pagination.dto';
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
 
 @Injectable()
-export class CommunicationService {
-  constructor(private prisma: PrismaService) {}
-
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new ForbiddenException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
+export class CommunicationService extends TenantScopedService {
+  constructor(private prisma: PrismaService) {
+    super();
   }
 
   // Feedback
@@ -51,6 +44,34 @@ export class CommunicationService {
     if (!assignment) {
       throw new ForbiddenException(
         'No puede crear feedback para este grupo/materia',
+      );
+    }
+
+    const student = await this.prisma.user.findFirst({
+      where: {
+        id: dto.studentId,
+        institutionId: this.getActorInstitutionId(actor),
+        role: UserRole.ESTUDIANTE,
+      },
+      select: { id: true },
+    });
+    if (!student) {
+      throw new ForbiddenException(
+        'El estudiante no pertenece a su institución',
+      );
+    }
+
+    const enrollment = await this.prisma.studentGroup.findFirst({
+      where: {
+        studentId: dto.studentId,
+        groupId: dto.groupId,
+        status: 'ACTIVE',
+      },
+      select: { id: true },
+    });
+    if (!enrollment) {
+      throw new ForbiddenException(
+        'El estudiante no está activo en ese grupo',
       );
     }
 
@@ -94,10 +115,17 @@ export class CommunicationService {
   ) {
     const existing = await this.prisma.feedback.findUnique({
       where: { id: feedbackId },
+      include: { group: { select: { institutionId: true } } },
     });
     if (!existing) throw new NotFoundException('Feedback no encontrado');
     if (existing.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede editar este feedback');
+    }
+    if (
+      actor.role !== UserRole.SUPER_ADMIN &&
+      existing.group.institutionId !== this.getActorInstitutionId(actor)
+    ) {
+      throw new ForbiddenException('Feedback fuera de su institución');
     }
     if (dto.strengths !== undefined) {
       await this.prisma.feedbackStrength.deleteMany({ where: { feedbackId } });
@@ -165,20 +193,27 @@ export class CommunicationService {
     return { deleted: true };
   }
 
-  async listFeedbackByGroup(groupId: number, actor: Actor) {
+  async listFeedbackByGroup(
+    groupId: number,
+    actor: Actor,
+    pagination: PaginationQuery = {},
+  ) {
+    const { skip, take, page, limit } = paginateParams(pagination);
     if (
       actor.role === UserRole.SECRETARIA ||
       actor.role === UserRole.SUPER_ADMIN
     ) {
-      return this.prisma.feedback.findMany({
-        where: {
-          groupId,
-          ...(actor.role === UserRole.SUPER_ADMIN
-            ? {}
-            : { group: { institutionId: this.getActorInstitutionId(actor) } }),
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const where = {
+        groupId,
+        ...(actor.role === UserRole.SUPER_ADMIN
+          ? {}
+          : { group: { institutionId: this.getActorInstitutionId(actor) } }),
+      };
+      const [data, total] = await Promise.all([
+        this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+        this.prisma.feedback.count({ where }),
+      ]);
+      return buildPaginatedResult(data, total, page, limit);
     }
     if (actor.role === UserRole.PROFESOR) {
       const teaches = await this.prisma.teacherAssignment.findFirst({
@@ -189,32 +224,41 @@ export class CommunicationService {
         },
       });
       if (!teaches) throw new ForbiddenException('No enseña en este grupo');
-      return this.prisma.feedback.findMany({
-        where: {
-          groupId,
-          group: { institutionId: this.getActorInstitutionId(actor) },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const where = {
+        groupId,
+        group: { institutionId: this.getActorInstitutionId(actor) },
+      };
+      const [data, total] = await Promise.all([
+        this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+        this.prisma.feedback.count({ where }),
+      ]);
+      return buildPaginatedResult(data, total, page, limit);
     }
     throw new ForbiddenException('No autorizado');
   }
 
-  async listFeedbackByStudent(studentId: number, actor: Actor) {
+  async listFeedbackByStudent(
+    studentId: number,
+    actor: Actor,
+    pagination: PaginationQuery = {},
+  ) {
+    const { skip, take, page, limit } = paginateParams(pagination);
     if (
       actor.role === UserRole.SECRETARIA ||
       actor.role === UserRole.SUPER_ADMIN ||
       actor.userId === studentId
     ) {
-      return this.prisma.feedback.findMany({
-        where: {
-          studentId,
-          ...(actor.role === UserRole.SUPER_ADMIN
-            ? {}
-            : { group: { institutionId: this.getActorInstitutionId(actor) } }),
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const where = {
+        studentId,
+        ...(actor.role === UserRole.SUPER_ADMIN
+          ? {}
+          : { group: { institutionId: this.getActorInstitutionId(actor) } }),
+      };
+      const [data, total] = await Promise.all([
+        this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+        this.prisma.feedback.count({ where }),
+      ]);
+      return buildPaginatedResult(data, total, page, limit);
     }
     // Profesor: solo puede ver feedback de grupos donde efectivamente enseña.
     const studentGroups = await this.prisma.studentGroup.findMany({
@@ -226,7 +270,7 @@ export class CommunicationService {
     });
     const groupIds = studentGroups.map((g) => g.groupId);
     if (groupIds.length === 0) {
-      return [];
+      return buildPaginatedResult([], 0, page, limit);
     }
     const teacherGroups = await this.prisma.teacherAssignment.findMany({
       where: { teacherId: actor.userId, groupId: { in: groupIds } },
@@ -238,10 +282,12 @@ export class CommunicationService {
         'No autorizado para ver feedback de este estudiante',
       );
     }
-    return this.prisma.feedback.findMany({
-      where: { studentId, groupId: { in: allowedGroupIds } },
-      orderBy: { createdAt: 'desc' },
-    });
+    const where = { studentId, groupId: { in: allowedGroupIds } };
+    const [data, total] = await Promise.all([
+      this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+      this.prisma.feedback.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   // Mensajes
@@ -272,30 +318,52 @@ export class CommunicationService {
     return message;
   }
 
-  async inbox(actor: Actor) {
-    return this.prisma.message.findMany({
-      where: {
-        recipientId: actor.userId,
-        ...(actor.role === UserRole.SUPER_ADMIN
-          ? {}
-          : {
-              recipient: { institutionId: this.getActorInstitutionId(actor) },
-            }),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async inbox(
+    actor: Actor,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
+    const where = {
+      recipientId: actor.userId,
+      ...(actor.role === UserRole.SUPER_ADMIN
+        ? {}
+        : {
+            recipient: { institutionId: this.getActorInstitutionId(actor) },
+          }),
+    };
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+    const [data, total] = await Promise.all([
+      this.prisma.message.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.message.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
-  async sent(actor: Actor) {
-    return this.prisma.message.findMany({
-      where: {
-        senderId: actor.userId,
-        ...(actor.role === UserRole.SUPER_ADMIN
-          ? {}
-          : { sender: { institutionId: this.getActorInstitutionId(actor) } }),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async sent(
+    actor: Actor,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
+    const where = {
+      senderId: actor.userId,
+      ...(actor.role === UserRole.SUPER_ADMIN
+        ? {}
+        : { sender: { institutionId: this.getActorInstitutionId(actor) } }),
+    };
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+    const [data, total] = await Promise.all([
+      this.prisma.message.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.message.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async markMessageRead(messageId: number, actor: Actor) {
@@ -314,16 +382,27 @@ export class CommunicationService {
   }
 
   // Notificaciones
-  async listNotifications(actor: Actor) {
-    return this.prisma.notification.findMany({
-      where: {
-        userId: actor.userId,
-        ...(actor.role === UserRole.SUPER_ADMIN
-          ? {}
-          : { user: { institutionId: this.getActorInstitutionId(actor) } }),
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async listNotifications(
+    actor: Actor,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
+    const where = {
+      userId: actor.userId,
+      ...(actor.role === UserRole.SUPER_ADMIN
+        ? {}
+        : { user: { institutionId: this.getActorInstitutionId(actor) } }),
+    };
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+    const [data, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async createNotification(dto: CreateNotificationDto, actor: Actor) {

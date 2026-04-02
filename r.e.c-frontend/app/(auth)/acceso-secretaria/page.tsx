@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import api from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
@@ -146,9 +147,14 @@ export default function AccesoSecretariaPage() {
               </button>
             </form>
 
-            <p className="mt-5 rounded-xl border border-[color:var(--rec-soft)] bg-[color:var(--rec-soft)]/60 px-4 py-3 text-sm text-slate-600">
-              Este acceso esta habilitado para Secretaría y Super Admin de plataforma.
-            </p>
+            <div className="mt-5 flex items-center justify-between">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-slate-600 hover:text-[color:var(--rec-primary)] hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
           </div>
         </div>
       </section>

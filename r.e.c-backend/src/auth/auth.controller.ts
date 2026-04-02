@@ -2,6 +2,9 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RecoverByCodeDto } from './dto/recover-by-code.dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -13,7 +16,6 @@ export class AuthController {
   @Post('login')
   @Throttle({ default: { ttl: 60, limit: 5 } })
   async login(@Body() dto: LoginDto) {
-    // Respuesta sin cookies; el frontend gestiona el token
     const result = await this.auth.login(dto.email, dto.password);
     return result;
   }
@@ -27,5 +29,26 @@ export class AuthController {
   async logout(@Body() dto: RefreshTokenDto) {
     await this.auth.logout(dto.refresh_token);
     return { success: true };
+  }
+
+  @Post('forgot-password')
+  @Throttle({ default: { ttl: 60, limit: 3 } })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.auth.forgotPassword(dto.email);
+    return { message: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña.' };
+  }
+
+  @Post('recover-by-code')
+  @Throttle({ default: { ttl: 60, limit: 3 } })
+  async recoverByCode(@Body() dto: RecoverByCodeDto) {
+    const token = await this.auth.recoverByCode(dto.codigo);
+    return { token: token ?? null };
+  }
+
+  @Post('reset-password')
+  @Throttle({ default: { ttl: 60, limit: 5 } })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.auth.resetPassword(dto.token, dto.password);
+    return { message: 'Contraseña actualizada correctamente.' };
   }
 }

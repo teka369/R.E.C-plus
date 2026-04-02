@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  allowedDevOrigins: ["217.216.89.86"],
   images: {
     remotePatterns: [
       {

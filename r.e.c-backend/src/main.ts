@@ -1,16 +1,31 @@
+import * as Sentry from '@sentry/node';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import compression from 'compression';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
 import { SanitizeInputPipe } from './common/pipes/sanitize-input.pipe';
-// ConfigService no usado para evitar conflictos de versiones
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.use(json({ limit: '8mb' }));
-  app.use(urlencoded({ extended: true, limit: '8mb' }));
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      tracesSampleRate: 0.1,
+      environment: process.env.NODE_ENV ?? 'development',
+    });
+  }
+
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
+  // Comprimir todas las respuestas JSON >= 1KB (reduce tráfico ~60-70%)
+  app.use(compression());
+  // Body limit reducido: 8mb era un vector DoS para cualquier usuario autenticado
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ extended: true, limit: '1mb' }));
 
   const parseOrigins = (rawValue: string): string[] =>
     rawValue
@@ -50,6 +65,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new AllExceptionsFilter());
   // Swagger documentation
   const swaggerConfig = new DocumentBuilder()
     .setTitle('R.E.C API')
@@ -63,6 +79,7 @@ async function bootstrap() {
   }
   const port = parseInt(process.env.PORT ?? '3000', 10);
   await app.listen(port);
+  app.get(Logger).log(`R.E.C Backend listening on port ${port}`);
 }
 bootstrap().catch((error: unknown) => {
   console.error(error);

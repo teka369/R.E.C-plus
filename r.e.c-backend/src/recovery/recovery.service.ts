@@ -2,11 +2,15 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 import { RecoveryActivityStatus, RecoveryRequestStatus } from '@prisma/client';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import {
   CreateRecoveryActivityDto,
   CreateRecoveryMessageDto,
@@ -14,21 +18,12 @@ import {
   UpdateRecoveryActivityDto,
   UpdateRecoveryRequestStatusDto,
 } from './dto';
-
-type RecoveryActivityAttachmentRow = {
-  activityId: number;
-  originalName: string;
-  mimeType: string;
-  fileContent: Buffer;
-  uploadedAt: Date;
-};
-
-type RecoveryActivityAttachmentMeta = {
-  activityId: number;
-  originalName: string;
-  mimeType: string;
-  uploadedAt: string;
-};
+import {
+  PaginationQuery,
+  paginateParams,
+  buildPaginatedResult,
+  PaginatedResult,
+} from '../common/dto/pagination.dto';
 
 const ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES = new Set([
   'application/pdf',
@@ -44,26 +39,20 @@ const ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES = new Set([
   'application/x-zip-compressed',
 ]);
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
 
 @Injectable()
-export class RecoveryService {
-  constructor(private readonly prisma: PrismaService) {}
+export class RecoveryService extends TenantScopedService {
+  private readonly logger = new Logger(RecoveryService.name);
+  private readonly uploadsRoot = path.join(
+    process.cwd(),
+    'uploads',
+    'recovery',
+  );
 
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new ForbiddenException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
+  constructor(private readonly prisma: PrismaService) {
+    super();
   }
 
   private async isRecoveryPeriodActive(actor: Actor) {
@@ -261,40 +250,63 @@ export class RecoveryService {
     });
   }
 
-  async listMyRequests(actor: Actor) {
+  async listMyRequests(
+    actor: Actor,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
     if (actor.role !== UserRole.ESTUDIANTE)
       throw new ForbiddenException('Solo estudiantes');
 
-    return this.prisma.recoveryRequest.findMany({
-      where: {
-        studentId: actor.userId,
-        group: { institutionId: this.getActorInstitutionId(actor) },
-      },
-      include: {
-        subject: { select: { id: true, nombre: true } },
-        group: { select: { id: true, nombre: true } },
-        teacher: { select: { id: true, nombres: true, apellidos: true } },
-      },
-      orderBy: { requestedAt: 'desc' },
-    });
+    const where = {
+      studentId: actor.userId,
+      group: { institutionId: this.getActorInstitutionId(actor) },
+    };
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+    const include = {
+      subject: { select: { id: true, nombre: true } },
+      group: { select: { id: true, nombre: true } },
+      teacher: { select: { id: true, nombres: true, apellidos: true } },
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.recoveryRequest.findMany({
+        where,
+        include,
+        skip,
+        take,
+        orderBy: { requestedAt: 'desc' },
+      }),
+      this.prisma.recoveryRequest.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
-  async listGroupRequests(actor: Actor, groupId: number) {
+  async listGroupRequests(
+    actor: Actor,
+    groupId: number,
+    pagination?: PaginationQuery,
+  ): Promise<PaginatedResult<object>> {
     await this.ensureGroupViewAccess(actor, groupId);
 
-    return this.prisma.recoveryRequest.findMany({
-      where: {
-        groupId,
-        ...(actor.role === UserRole.PROFESOR
-          ? { teacherId: actor.userId }
-          : {}),
-      },
-      include: {
-        student: { select: { id: true, nombres: true, apellidos: true } },
-        subject: { select: { id: true, nombre: true } },
-      },
-      orderBy: { requestedAt: 'desc' },
-    });
+    const where = {
+      groupId,
+      ...(actor.role === UserRole.PROFESOR ? { teacherId: actor.userId } : {}),
+    };
+    const { skip, take, page, limit } = paginateParams(pagination ?? {});
+    const include = {
+      student: { select: { id: true, nombres: true, apellidos: true } },
+      subject: { select: { id: true, nombre: true } },
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.recoveryRequest.findMany({
+        where,
+        include,
+        skip,
+        take,
+        orderBy: { requestedAt: 'desc' },
+      }),
+      this.prisma.recoveryRequest.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async updateRequestStatus(
@@ -517,7 +529,12 @@ export class RecoveryService {
     actor: Actor,
     activityId: number,
     file: { originalname: string; mimetype: string; buffer: Buffer },
-  ): Promise<RecoveryActivityAttachmentMeta> {
+  ): Promise<{
+    activityId: number;
+    originalName: string;
+    mimeType: string;
+    uploadedAt: string;
+  }> {
     await this.ensureRecoveryPeriodActive(actor);
 
     if (!file?.buffer || !file.originalname || !file.mimetype) {
@@ -542,30 +559,33 @@ export class RecoveryService {
       );
     }
 
-    await this.prisma.$executeRaw`
-			INSERT INTO "RecoveryActivityAttachment"
-				("activityId", "originalName", "mimeType", "fileContent", "uploadedById", "uploadedAt")
-			VALUES
-				(${activityId}, ${file.originalname}, ${file.mimetype}, ${file.buffer}, ${actor.userId}, NOW())
-			ON CONFLICT ("activityId")
-			DO UPDATE SET
-				"originalName" = EXCLUDED."originalName",
-				"mimeType" = EXCLUDED."mimeType",
-				"fileContent" = EXCLUDED."fileContent",
-				"uploadedById" = EXCLUDED."uploadedById",
-				"uploadedAt" = NOW()
-		`;
+    const ext = path.extname(file.originalname) || '';
+    const safeName = `${randomUUID()}${ext}`;
+    const relDir = `attachments/activity-${activityId}`;
+    const absDir = path.join(this.uploadsRoot, relDir);
+    await fs.mkdir(absDir, { recursive: true });
 
-    const rows = await this.prisma.$queryRaw<RecoveryActivityAttachmentRow[]>`
-			SELECT "activityId", "originalName", "mimeType", "fileContent", "uploadedAt"
-			FROM "RecoveryActivityAttachment"
-			WHERE "activityId" = ${activityId}
-			LIMIT 1
-		`;
-    const saved = rows[0];
-    if (!saved) {
-      throw new NotFoundException('No se pudo guardar el adjunto');
-    }
+    const filePath = path.join(absDir, safeName);
+    await fs.writeFile(filePath, file.buffer);
+    const dbPath = path.join(relDir, safeName);
+
+    const saved = await this.prisma.recoveryActivityAttachment.upsert({
+      where: { activityId },
+      create: {
+        activityId,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        filePath: dbPath,
+        uploadedById: actor.userId,
+      },
+      update: {
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        filePath: dbPath,
+        uploadedById: actor.userId,
+        uploadedAt: new Date(),
+      },
+    });
 
     return {
       activityId: saved.activityId,
@@ -578,23 +598,40 @@ export class RecoveryService {
   async getActivityAttachment(
     actor: Actor,
     activityId: number,
-  ): Promise<RecoveryActivityAttachmentRow> {
+  ): Promise<{
+    activityId: number;
+    originalName: string;
+    mimeType: string;
+    fileContent: Buffer;
+    uploadedAt: Date;
+  }> {
     const activity = await this.getActivityOrThrow(activityId);
     await this.ensureRequestAccess(actor, activity.requestId);
 
-    const rows = await this.prisma.$queryRaw<RecoveryActivityAttachmentRow[]>`
-			SELECT "activityId", "originalName", "mimeType", "fileContent", "uploadedAt"
-			FROM "RecoveryActivityAttachment"
-			WHERE "activityId" = ${activityId}
-			LIMIT 1
-		`;
+    const attachment = await this.prisma.recoveryActivityAttachment.findUnique({
+      where: { activityId },
+    });
 
-    const attachment = rows[0];
     if (!attachment) {
       throw new NotFoundException('La actividad no tiene archivo adjunto');
     }
 
-    return attachment;
+    const absPath = path.join(this.uploadsRoot, attachment.filePath);
+    try {
+      const fileContent = await fs.readFile(absPath);
+      return {
+        activityId: attachment.activityId,
+        originalName: attachment.originalName,
+        mimeType: attachment.mimeType,
+        fileContent,
+        uploadedAt: attachment.uploadedAt,
+      };
+    } catch {
+      this.logger.error(`Archivo adjunto no encontrado en disco: ${absPath}`);
+      throw new NotFoundException(
+        'El archivo adjunto no se encuentra en el servidor',
+      );
+    }
   }
 
   async listMessages(actor: Actor, requestId: number) {

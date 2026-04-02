@@ -6,7 +6,6 @@ import {
   IsString,
   Length,
   IsEnum,
-  ValidateIf,
 } from 'class-validator';
 import { UserRole } from './user-role.enum';
 
@@ -22,17 +21,7 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @IsString()
-  @Length(6, 20)
-  documento_identidad: string;
-
-  // Teléfono es requerido solo para profesores
-  @ValidateIf((o: CreateUserDto) => o.role === UserRole.PROFESOR)
-  @IsString()
-  @Length(10, 15)
-  telefono?: string;
-
-  // Password es opcional en creación (se auto-genera para estudiantes)
+  // Password es opcional en creación (se auto-genera si no se proporciona)
   @IsOptional()
   @IsString()
   @Length(6, 50)

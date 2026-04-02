@@ -72,22 +72,34 @@ async function main() {
   );
 
   // Backfill: StudentGroup y GroupSubject de la institucion sin periodo.
-  const sgUpdated = await prisma.studentGroup.updateMany({
+  const sgWithoutPeriod = await prisma.studentGroup.findMany({
     where: {
       academicPeriodId: null,
       group: { institutionId },
     },
-    data: { academicPeriodId: period.id },
+    select: { id: true },
   });
+  const sgUpdated = sgWithoutPeriod.length > 0
+    ? await prisma.studentGroup.updateMany({
+        where: { id: { in: sgWithoutPeriod.map(sg => sg.id) } },
+        data: { academicPeriodId: period.id },
+      })
+    : { count: 0 };
   console.log(`  StudentGroup vinculados: ${sgUpdated.count}`);
 
-  const gsUpdated = await prisma.groupSubject.updateMany({
+  const gsWithoutPeriod = await prisma.groupSubject.findMany({
     where: {
       academicPeriodId: null,
       group: { institutionId },
     },
-    data: { academicPeriodId: period.id },
+    select: { id: true },
   });
+  const gsUpdated = gsWithoutPeriod.length > 0
+    ? await prisma.groupSubject.updateMany({
+        where: { id: { in: gsWithoutPeriod.map(gs => gs.id) } },
+        data: { academicPeriodId: period.id },
+      })
+    : { count: 0 };
   console.log(`  GroupSubject vinculados: ${gsUpdated.count}`);
 
   // Sincronizar AcademicOffering para la institucion.
@@ -122,27 +134,41 @@ async function main() {
   console.log(`  AcademicOffering sincronizados: ${offeringsCreated}`);
 
   // Backfill por institucion en entidades con academicPeriodId opcional.
-  await prisma.recoveryConfig.updateMany({
-    where: {
-      academicPeriodId: null,
-    },
-    data: { academicPeriodId: period.id },
-  }).catch(() => {});
+  const rcWithoutPeriod = await prisma.recoveryConfig.findMany({
+    where: { academicPeriodId: null },
+    select: { id: true },
+  }).catch(() => []);
+  if (rcWithoutPeriod.length > 0) {
+    await prisma.recoveryConfig.updateMany({
+      where: { id: { in: rcWithoutPeriod.map(rc => rc.id) } },
+      data: { academicPeriodId: period.id },
+    }).catch(() => {});
+  }
 
-  await prisma.recoverySchedule.updateMany({
-    where: {
-      academicPeriodId: null,
-    },
-    data: { academicPeriodId: period.id },
-  }).catch(() => {});
+  const rsWithoutPeriod = await prisma.recoverySchedule.findMany({
+    where: { academicPeriodId: null },
+    select: { id: true },
+  }).catch(() => []);
+  if (rsWithoutPeriod.length > 0) {
+    await prisma.recoverySchedule.updateMany({
+      where: { id: { in: rsWithoutPeriod.map(rs => rs.id) } },
+      data: { academicPeriodId: period.id },
+    }).catch(() => {});
+  }
 
-  await prisma.gradePerformance.updateMany({
+  const gpWithoutPeriod = await prisma.gradePerformance.findMany({
     where: {
       academicPeriodId: null,
       group: { institutionId },
     },
-    data: { academicPeriodId: period.id },
-  }).catch(() => {});
+    select: { id: true },
+  }).catch(() => []);
+  if (gpWithoutPeriod.length > 0) {
+    await prisma.gradePerformance.updateMany({
+      where: { id: { in: gpWithoutPeriod.map(gp => gp.id) } },
+      data: { academicPeriodId: period.id },
+    }).catch(() => {});
+  }
 
   // Vincular StudentAcademicRecord al offering correspondiente.
   const offerings = await prisma.academicOffering.findMany({

@@ -2,21 +2,19 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 type RecoveryPeriodView = {
   active: boolean;
   startAt: string;
   endAt: string;
-};
-
-type RecoveryScheduleFile = {
-  originalName: string;
-  mimeType: string;
-  fileContent: Buffer;
 };
 
 type RecoveryScheduleMeta = {
@@ -26,26 +24,20 @@ type RecoveryScheduleMeta = {
   uploadedAt: string;
 };
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
 
 @Injectable()
-export class RecoverySettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+export class RecoverySettingsService extends TenantScopedService {
+  private readonly logger = new Logger(RecoverySettingsService.name);
+  private readonly uploadsRoot = path.join(
+    process.cwd(),
+    'uploads',
+    'recovery',
+  );
 
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new ForbiddenException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
+  constructor(private readonly prisma: PrismaService) {
+    super();
   }
 
   private async getActiveAcademicPeriodId(actor: Actor) {
@@ -162,23 +154,39 @@ export class RecoverySettingsService {
     };
   }
 
-  async getScheduleFile(actor: Actor): Promise<RecoveryScheduleFile> {
+  async getScheduleFile(
+    actor: Actor,
+  ): Promise<{ originalName: string; mimeType: string; fileContent: Buffer }> {
     const activePeriodId = await this.getActiveAcademicPeriodId(actor);
     if (!activePeriodId) {
       throw new NotFoundException('No hay período académico activo');
     }
 
-    const fileRows = await this.prisma.$queryRaw<RecoveryScheduleFile[]>`
-      SELECT "originalName", "mimeType", "fileContent"
-      FROM "RecoverySchedule"
-      WHERE "academicPeriodId" = ${activePeriodId}
-      LIMIT 1
-    `;
-    const file = fileRows[0];
-    if (!file) {
+    const schedule = await this.prisma.recoverySchedule.findUnique({
+      where: { academicPeriodId: activePeriodId },
+      select: { originalName: true, mimeType: true, filePath: true },
+    });
+
+    if (!schedule) {
       throw new NotFoundException('No hay horario de recuperación cargado');
     }
-    return file;
+
+    const absPath = path.join(this.uploadsRoot, schedule.filePath);
+    try {
+      const fileContent = await fs.readFile(absPath);
+      return {
+        originalName: schedule.originalName,
+        mimeType: schedule.mimeType,
+        fileContent,
+      };
+    } catch {
+      this.logger.error(
+        `Archivo de horario no encontrado en disco: ${absPath}`,
+      );
+      throw new NotFoundException(
+        'El archivo de horario no se encuentra en el servidor',
+      );
+    }
   }
 
   async uploadSchedule(
@@ -200,7 +208,16 @@ export class RecoverySettingsService {
       throw new BadRequestException('El archivo supera el límite de 10MB');
     }
 
-    const fileBytes = Uint8Array.from(file.buffer);
+    const ext = path.extname(file.originalname) || '';
+    const safeName = `${randomUUID()}${ext}`;
+    const relDir = 'schedules';
+    const absDir = path.join(this.uploadsRoot, relDir);
+    await fs.mkdir(absDir, { recursive: true });
+
+    const diskPath = path.join(absDir, safeName);
+    await fs.writeFile(diskPath, file.buffer);
+    const dbPath = path.join(relDir, safeName);
+
     const existingSchedule = await this.prisma.recoverySchedule.findUnique({
       where: { academicPeriodId: activePeriodId },
       select: { id: true },
@@ -212,7 +229,7 @@ export class RecoverySettingsService {
           data: {
             originalName: file.originalname,
             mimeType: file.mimetype,
-            fileContent: fileBytes,
+            filePath: dbPath,
             uploadedById: actor.userId,
             uploadedAt: new Date(),
           },
@@ -233,7 +250,7 @@ export class RecoverySettingsService {
               id: (lastSchedule?.id ?? 0) + 1,
               originalName: file.originalname,
               mimeType: file.mimetype,
-              fileContent: fileBytes,
+              filePath: dbPath,
               uploadedById: actor.userId,
               academicPeriodId: activePeriodId,
             },

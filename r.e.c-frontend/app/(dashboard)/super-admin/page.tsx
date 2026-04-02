@@ -15,6 +15,16 @@ type Institution = {
   activa: boolean;
 };
 
+type AcademicPeriod = {
+  id: number;
+  nombre: string;
+  codigo: string;
+  tipo: string;
+  estado: string;
+  fechaInicio: string;
+  fechaFin: string;
+};
+
 type SortKey = "nombre" | "slug" | "activa" | "users" | "maxUsers";
 type SortDirection = "asc" | "desc";
 
@@ -23,13 +33,13 @@ type SecretariaForm = {
   nombres: string;
   apellidos: string;
   email: string;
-  documento_identidad: string;
   password: string;
 };
 
 type ProvisionForm = {
   institutionNombre: string;
   institutionSlug: string;
+  institutionDominio: string;
   secretarias: SecretariaForm[];
 };
 
@@ -38,13 +48,13 @@ const emptySecretaria = (): SecretariaForm => ({
   nombres: "",
   apellidos: "",
   email: "",
-  documento_identidad: "",
   password: "",
 });
 
 const emptyProvision: ProvisionForm = {
   institutionNombre: "",
   institutionSlug: "",
+  institutionDominio: "",
   secretarias: [emptySecretaria()],
 };
 
@@ -78,10 +88,98 @@ export default function SuperAdminDashboardPage() {
   const [editingInstitutionId, setEditingInstitutionId] = useState<number | null>(null);
   const [editingInstitutionNombre, setEditingInstitutionNombre] = useState("");
   const [editingInstitutionSlug, setEditingInstitutionSlug] = useState("");
+  const [editingInstitutionDominio, setEditingInstitutionDominio] = useState("");
   const [editingMaxUsersId, setEditingMaxUsersId] = useState<number | null>(null);
   const [editingMaxUsersValue, setEditingMaxUsersValue] = useState<string>("");
 
   const [success, setSuccess] = useState<string | null>(null);
+  const [expandedPeriods, setExpandedPeriods] = useState<Record<number, boolean>>({});
+  const [periods, setPeriods] = useState<Record<number, AcademicPeriod[]>>({});
+  const [loadingPeriods, setLoadingPeriods] = useState<Record<number, boolean>>({});
+  const [creatingPeriod, setCreatingPeriod] = useState<Record<number, boolean>>({});
+  const [periodForm, setPeriodForm] = useState<Record<number, { nombre: string; codigo: string; fechaInicio: string; fechaFin: string }>>({});
+  const [deleteTarget, setDeleteTarget] = useState<Institution | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchPeriods = async (institutionId: number) => {
+    setLoadingPeriods((p) => ({ ...p, [institutionId]: true }));
+    try {
+      const res = await api.get<AcademicPeriod[]>(`/institutions/${institutionId}/periods`);
+      setPeriods((p) => ({ ...p, [institutionId]: res.data }));
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingPeriods((p) => ({ ...p, [institutionId]: false }));
+    }
+  };
+
+  const togglePeriods = (institutionId: number) => {
+    const isExpanded = expandedPeriods[institutionId];
+    setExpandedPeriods((p) => ({ ...p, [institutionId]: !isExpanded }));
+    if (!isExpanded && !periods[institutionId]) {
+      void fetchPeriods(institutionId);
+    }
+  };
+
+  const handleCreatePeriod = async (institutionId: number) => {
+    const form = periodForm[institutionId];
+    if (!form?.nombre || !form?.codigo || !form?.fechaInicio || !form?.fechaFin) {
+      setError("Todos los campos del periodo son requeridos");
+      return;
+    }
+    setCreatingPeriod((p) => ({ ...p, [institutionId]: true }));
+    setError(null);
+    try {
+      await api.post(`/institutions/${institutionId}/periods`, form);
+      setSuccess("Periodo creado y activado correctamente.");
+      setPeriodForm((p) => ({ ...p, [institutionId]: { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" } }));
+      await fetchPeriods(institutionId);
+    } catch (err) {
+      setError(getErrorMessage(err, "No se pudo crear el periodo"));
+    } finally {
+      setCreatingPeriod((p) => ({ ...p, [institutionId]: false }));
+    }
+  };
+
+  const handleActivatePeriod = async (institutionId: number, periodId: number) => {
+    setError(null);
+    try {
+      await api.patch(`/institutions/${institutionId}/periods/${periodId}/activate`);
+      setSuccess("Periodo activado.");
+      await fetchPeriods(institutionId);
+    } catch (err) {
+      setError(getErrorMessage(err, "No se pudo activar el periodo"));
+    }
+  };
+
+  const handleClosePeriod = async (institutionId: number, periodId: number) => {
+    setError(null);
+    try {
+      await api.patch(`/institutions/${institutionId}/periods/${periodId}/close`);
+      setSuccess("Periodo cerrado.");
+      await fetchPeriods(institutionId);
+    } catch (err) {
+      setError(getErrorMessage(err, "No se pudo cerrar el periodo"));
+    }
+  };
+
+  const handleDeleteInstitution = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await api.delete(`/institutions/${deleteTarget.id}`);
+      setSuccess(`Institucion "${deleteTarget.nombre}" eliminada con todos sus datos.`);
+      setDeleteTarget(null);
+      setDeleteConfirmText("");
+      await fetchInstitutions();
+    } catch (err) {
+      setError(getErrorMessage(err, "No se pudo eliminar la institucion"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const fetchInstitutions = async () => {
     setLoading(true);
@@ -232,12 +330,12 @@ export default function SuperAdminDashboardPage() {
         institution: {
           nombre: provisionForm.institutionNombre,
           slug: provisionForm.institutionSlug,
+          dominio: provisionForm.institutionDominio.trim() || undefined,
         },
         secretarias: provisionForm.secretarias.map((s) => ({
           nombres: s.nombres,
           apellidos: s.apellidos,
           email: s.email,
-          documento_identidad: s.documento_identidad,
           password: s.password,
         })),
       });
@@ -273,6 +371,7 @@ export default function SuperAdminDashboardPage() {
     setEditingInstitutionId(inst.id);
     setEditingInstitutionNombre(inst.nombre);
     setEditingInstitutionSlug(inst.slug);
+    setEditingInstitutionDominio(inst.dominio ?? "");
     setSuccess(null);
     setError(null);
   };
@@ -281,6 +380,7 @@ export default function SuperAdminDashboardPage() {
     setEditingInstitutionId(null);
     setEditingInstitutionNombre("");
     setEditingInstitutionSlug("");
+    setEditingInstitutionDominio("");
   };
 
   const handleSaveInstitution = async (inst: Institution) => {
@@ -295,7 +395,8 @@ export default function SuperAdminDashboardPage() {
       setError("El slug solo permite minusculas, numeros y guiones (ej: colegio-norte)");
       return;
     }
-    if (nombre === inst.nombre && slug === inst.slug) {
+    const dominio = editingInstitutionDominio.trim();
+    if (nombre === inst.nombre && slug === inst.slug && dominio === (inst.dominio ?? "")) {
       handleCancelEditInstitution();
       return;
     }
@@ -307,6 +408,7 @@ export default function SuperAdminDashboardPage() {
       await api.patch(`/institutions/${inst.id}`, {
         nombre,
         slug,
+        dominio: dominio || undefined,
       });
       setSuccess("Institucion actualizada correctamente.");
       handleCancelEditInstitution();
@@ -417,6 +519,14 @@ export default function SuperAdminDashboardPage() {
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 required
               />
+              <input
+                value={provisionForm.institutionDominio}
+                onChange={(e) =>
+                  setProvisionForm((p) => ({ ...p, institutionDominio: e.target.value.trim().toLowerCase().replace(/^@+/, "") }))
+                }
+                placeholder="Dominio de correo (ej: colegio.edu.co)"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
               <div className="h-px bg-slate-200" />
               <h3 className="font-semibold text-slate-700">Secretarias</h3>
 
@@ -453,13 +563,6 @@ export default function SuperAdminDashboardPage() {
                     value={secretaria.email}
                     onChange={(e) => handleUpdateSecretaria(secretaria.id, "email", e.target.value)}
                     placeholder="Correo"
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    required
-                  />
-                  <input
-                    value={secretaria.documento_identidad}
-                    onChange={(e) => handleUpdateSecretaria(secretaria.id, "documento_identidad", e.target.value)}
-                    placeholder="Documento de identidad"
                     className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
                     required
                   />
@@ -539,6 +642,7 @@ export default function SuperAdminDashboardPage() {
                         Slug{sortIndicator("slug")}
                       </button>
                     </th>
+                    <th className="py-2 pr-4 font-semibold">Dominio</th>
                     <th className="py-2 pr-4">
                       <button onClick={() => handleSort("users")} className="font-semibold">
                         Usuarios{sortIndicator("users")}
@@ -554,6 +658,7 @@ export default function SuperAdminDashboardPage() {
                         Estado{sortIndicator("activa")}
                       </button>
                     </th>
+                    <th className="py-2 pr-4 font-semibold">Periodo</th>
                     <th className="py-2 pr-4">Accion</th>
                   </tr>
                 </thead>
@@ -581,6 +686,18 @@ export default function SuperAdminDashboardPage() {
                           />
                         ) : (
                           inst.slug
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {editingInstitutionId === inst.id ? (
+                          <input
+                            value={editingInstitutionDominio}
+                            onChange={(e) => setEditingInstitutionDominio(e.target.value.trim().toLowerCase().replace(/^@+/, ""))}
+                            placeholder="dominio.edu.co"
+                            className="w-44 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-500">{inst.dominio || "—"}</span>
                         )}
                       </td>
                       <td className="py-3 pr-4">{inst.usersCount}</td>
@@ -618,6 +735,14 @@ export default function SuperAdminDashboardPage() {
                         )}
                       </td>
                       <td className="py-3 pr-4">{inst.activa ? "Activa" : "Inactiva"}</td>
+                      <td className="py-3 pr-4">
+                        <button
+                          onClick={() => togglePeriods(inst.id)}
+                          className="text-xs font-semibold text-sky-700 hover:underline"
+                        >
+                          {expandedPeriods[inst.id] ? "Ocultar" : "Periodos"} ▾
+                        </button>
+                      </td>
                       <td className="py-3 pr-4">
                         {editingInstitutionId === inst.id ? (
                           <div className="flex gap-2">
@@ -665,6 +790,16 @@ export default function SuperAdminDashboardPage() {
                                 ? "Inactivar"
                                 : "Activar"}
                             </button>
+                            <button
+                              onClick={() => { setDeleteTarget(inst); setDeleteConfirmText(""); }}
+                              disabled={
+                                editingInstitutionId === inst.id ||
+                                savingInstitutionId === inst.id
+                              }
+                              className="rounded-md border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                            >
+                              Eliminar
+                            </button>
                           </div>
                         )}
                       </td>
@@ -672,6 +807,105 @@ export default function SuperAdminDashboardPage() {
                   ))}
                 </tbody>
               </table>
+
+              {pagedInstitutions.map((inst) =>
+                expandedPeriods[inst.id] ? (
+                  <div key={`periods-${inst.id}`} className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h4 className="text-sm font-semibold text-slate-700">Periodos academicos — {inst.nombre}</h4>
+
+                    {loadingPeriods[inst.id] ? (
+                      <p className="mt-2 text-xs text-slate-500">Cargando periodos...</p>
+                    ) : (periods[inst.id] ?? []).length === 0 ? (
+                      <p className="mt-2 text-xs text-amber-700">No hay periodos creados. Crea uno para poder asignar estudiantes a grupos.</p>
+                    ) : (
+                      <div className="mt-2 overflow-x-auto">
+                        <table className="min-w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500">
+                              <th className="py-1 pr-3 text-left">Codigo</th>
+                              <th className="py-1 pr-3 text-left">Nombre</th>
+                              <th className="py-1 pr-3 text-left">Estado</th>
+                              <th className="py-1 pr-3 text-left">Inicio</th>
+                              <th className="py-1 pr-3 text-left">Fin</th>
+                              <th className="py-1 pr-3 text-left">Accion</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(periods[inst.id] ?? []).map((p) => (
+                              <tr key={p.id} className="border-b border-slate-100">
+                                <td className="py-1.5 pr-3 font-mono">{p.codigo}</td>
+                                <td className="py-1.5 pr-3">{p.nombre}</td>
+                                <td className="py-1.5 pr-3">
+                                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    p.estado === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
+                                    p.estado === "CLOSED" ? "bg-slate-200 text-slate-600" :
+                                    "bg-amber-100 text-amber-700"
+                                  }`}>
+                                    {p.estado === "ACTIVE" ? "Activo" : p.estado === "CLOSED" ? "Cerrado" : p.estado}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 pr-3">{new Date(p.fechaInicio).toLocaleDateString()}</td>
+                                <td className="py-1.5 pr-3">{new Date(p.fechaFin).toLocaleDateString()}</td>
+                                <td className="py-1.5 pr-3">
+                                  {p.estado !== "ACTIVE" ? (
+                                    <button
+                                      onClick={() => void handleActivatePeriod(inst.id, p.id)}
+                                      className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
+                                    >
+                                      Activar
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => void handleClosePeriod(inst.id, p.id)}
+                                      className="rounded bg-slate-500 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-slate-600"
+                                    >
+                                      Cerrar
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <input
+                        value={periodForm[inst.id]?.nombre ?? ""}
+                        onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.id]: { ...(p[inst.id] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), nombre: e.target.value } }))}
+                        placeholder="Nombre (ej: 2026 - I)"
+                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      />
+                      <input
+                        value={periodForm[inst.id]?.codigo ?? ""}
+                        onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.id]: { ...(p[inst.id] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), codigo: e.target.value } }))}
+                        placeholder="Codigo (ej: 2026-1)"
+                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      />
+                      <input
+                        type="date"
+                        value={periodForm[inst.id]?.fechaInicio ?? ""}
+                        onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.id]: { ...(p[inst.id] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), fechaInicio: e.target.value } }))}
+                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      />
+                      <input
+                        type="date"
+                        value={periodForm[inst.id]?.fechaFin ?? ""}
+                        onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.id]: { ...(p[inst.id] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), fechaFin: e.target.value } }))}
+                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                      />
+                    </div>
+                    <button
+                      onClick={() => void handleCreatePeriod(inst.id)}
+                      disabled={creatingPeriod[inst.id]}
+                      className="mt-2 rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                      {creatingPeriod[inst.id] ? "Creando..." : "Crear periodo activo"}
+                    </button>
+                  </div>
+                ) : null,
+              )}
             </div>
           ) : null}
 
@@ -717,6 +951,69 @@ export default function SuperAdminDashboardPage() {
           ) : null}
         </section>
       </section>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Eliminar institucion</h3>
+                <p className="text-sm text-slate-600">{deleteTarget.nombre}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm font-semibold text-red-800">Esta accion es IRREVERSIBLE.</p>
+              <p className="mt-1 text-xs text-red-700">
+                Se eliminara permanentemente:
+              </p>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-red-700">
+                <li>Todos los usuarios ({deleteTarget.usersCount})</li>
+                <li>Grados, grupos y materias</li>
+                <li>Periodos academicos y notas</li>
+                <li>Materiales de estudio y horarios</li>
+                <li>Mensajes, notificaciones y feedback</li>
+                <li>Solicitudes de recuperacion</li>
+              </ul>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-slate-700">
+                Escribe <span className="font-bold text-red-700">{deleteTarget.nombre}</span> para confirmar:
+              </label>
+              <input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={deleteTarget.nombre}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                autoFocus
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }}
+                disabled={deleting}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void handleDeleteInstitution()}
+                disabled={deleteConfirmText !== deleteTarget.nombre || deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Eliminando..." : "Eliminar permanentemente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

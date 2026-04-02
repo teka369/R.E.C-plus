@@ -15,8 +15,6 @@ export default function EditUsuarioPage() {
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [email, setEmail] = useState("");
-  const [documento, setDocumento] = useState("");
-  const [telefono, setTelefono] = useState("");
   const [role, setRole] = useState<UserRole>("ESTUDIANTE");
   const [error, setError] = useState<string | null>(null);
 
@@ -28,8 +26,6 @@ export default function EditUsuarioPage() {
         setNombres(u.nombres);
         setApellidos(u.apellidos);
         setEmail(u.email);
-        setDocumento(u.documento_identidad);
-        setTelefono(u.telefono || "");
         setRole(u.role);
       }
     });
@@ -38,8 +34,8 @@ export default function EditUsuarioPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!nombres.trim() || !apellidos.trim() || !email.trim() || !documento.trim()) {
-      setError("Nombres, apellidos, email y documento son obligatorios");
+    if (!nombres.trim() || !apellidos.trim() || !email.trim()) {
+      setError("Nombres, apellidos y email son obligatorios");
       return;
     }
     const idNum = Number(id);
@@ -48,8 +44,6 @@ export default function EditUsuarioPage() {
         nombres: nombres.trim(),
         apellidos: apellidos.trim(),
         email: email.trim(),
-        documento_identidad: documento.trim(),
-        telefono: telefono.trim() || undefined,
         role,
       });
       const target = role === "ESTUDIANTE" ? "/secretaria/estudiantes" : role === "PROFESOR" ? "/secretaria/docentes" : "/secretaria/secretaria";
@@ -75,7 +69,6 @@ export default function EditUsuarioPage() {
           <Input label="Nombres" value={nombres} onChange={(e) => setNombres(e.target.value)} />
           <Input label="Apellidos" value={apellidos} onChange={(e) => setApellidos(e.target.value)} />
           <Input label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input label="Documento de identidad" value={documento} onChange={(e) => setDocumento(e.target.value)} />
           <Select
             label="Rol"
             value={role}
@@ -86,9 +79,6 @@ export default function EditUsuarioPage() {
               { label: "Profesor", value: "PROFESOR" },
             ]}
           />
-          {role === "PROFESOR" && (
-            <Input label="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-          )}
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <div className="flex gap-2">
             <Button type="submit">Guardar cambios</Button>

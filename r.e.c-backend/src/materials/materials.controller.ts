@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   Req,
   Res,
   StreamableFile,
@@ -70,8 +71,15 @@ export class MaterialsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('study')
-  listStudy(@Req() req: AuthenticatedRequest) {
-    return this.materials.listStudyMaterials(req.user);
+  listStudy(
+    @Query('page') page: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.materials.listStudyMaterials(req.user, {
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

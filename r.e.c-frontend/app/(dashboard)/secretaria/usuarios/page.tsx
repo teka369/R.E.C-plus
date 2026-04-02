@@ -1,27 +1,31 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import { UserRole } from "@/types/user";
-import { usersApi, type UserDTO } from "@/lib/usersApi";
+import { type UserDTO } from "@/lib/usersApi";
+import { usePaginatedApi } from "@/hooks/useApi";
 
 export default function UsuariosPage() {
-  const [users, setUsers] = useState<UserDTO[]>([]);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<UserRole | "ALL">("ALL");
+  const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    usersApi.list(role === "ALL" ? undefined : role).then(setUsers);
-  }, [role]);
+  const roleParam = role === "ALL" ? undefined : role;
+  const key = `/users?page=${page}&limit=20${roleParam ? `&role=${roleParam}` : ""}`;
+  const { data: result, isLoading } = usePaginatedApi<UserDTO>("/users", page, 20);
+
+  const users = result?.data ?? [];
+  const meta = result?.meta;
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return users.filter((u) => {
-      const matchesQuery = !q || `${u.nombres} ${u.apellidos} ${u.email}`.toLowerCase().includes(q);
-      return matchesQuery;
-    });
+    if (!q) return users;
+    return users.filter((u) =>
+      `${u.nombres} ${u.apellidos} ${u.email}`.toLowerCase().includes(q),
+    );
   }, [users, query]);
 
   return (
@@ -29,7 +33,10 @@ export default function UsuariosPage() {
       <div className="sec-hero">
         <div>
           <h2 className="sec-title">Usuarios Institucionales</h2>
-          <p className="sec-subtitle">Vista transversal para filtrar por rol, buscar usuarios y acceder a mantenimiento completo.</p>
+          <p className="sec-subtitle">
+            Vista transversal para filtrar por rol, buscar usuarios y acceder a
+            mantenimiento completo.
+          </p>
         </div>
         <span className="sec-chip">Control global</span>
       </div>
@@ -40,7 +47,9 @@ export default function UsuariosPage() {
             <Button>Crear usuario</Button>
           </Link>
         </div>
-        <span className="sec-muted">Gestion centralizada de cuentas por rol</span>
+        <span className="sec-muted">
+          {meta ? `${meta.total} usuarios` : "Gestion centralizada de cuentas por rol"}
+        </span>
       </div>
 
       <div className="sec-card p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -53,12 +62,15 @@ export default function UsuariosPage() {
         <Select
           label="Rol"
           value={role}
-          onChange={(e) => setRole(e.target.value as UserRole | "ALL")}
+          onChange={(e) => {
+            setRole(e.target.value as UserRole | "ALL");
+            setPage(1);
+          }}
           options={[
             { label: "Todos", value: "ALL" },
             { label: "Estudiante", value: "ESTUDIANTE" },
             { label: "Profesor", value: "PROFESOR" },
-              { label: "Secretaría", value: "SECRETARIA" },
+            { label: "Secretaría", value: "SECRETARIA" },
           ]}
         />
       </div>
@@ -70,35 +82,82 @@ export default function UsuariosPage() {
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
               <th className="p-2 text-left">Rol</th>
-              <th className="p-2 text-left">Documento</th>
+              <th className="p-2 text-left">Código</th>
               <th className="p-2 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {visible.map((u) => (
-              <tr key={u.id} className="border-t border-gray-200">
-                <td className="p-2">{u.nombres} {u.apellidos}</td>
-                <td className="p-2">{u.email}</td>
-                <td className="p-2">{u.role}</td>
-                <td className="p-2">{u.documento_identidad}</td>
-                <td className="p-2 sec-actions">
-                    <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
-                    <Button variant="secondary" size="sm">Editar</Button>
-                  </Link>
-                    <Link href={`/secretaria/usuarios/delete/${u.id}`} prefetch={false} className="inline-block">
-                    <Button variant="danger" size="sm">Eliminar</Button>
-                  </Link>
+            {isLoading ? (
+              <tr>
+                <td className="p-3 text-center" colSpan={5}>
+                  Cargando...
                 </td>
               </tr>
-            ))}
-            {visible.length === 0 && (
+            ) : visible.length === 0 ? (
               <tr>
-                <td className="p-3 text-center" colSpan={5}>Sin resultados</td>
+                <td className="p-3 text-center" colSpan={5}>
+                  Sin resultados
+                </td>
               </tr>
+            ) : (
+              visible.map((u) => (
+                <tr key={u.id} className="border-t border-gray-200">
+                  <td className="p-2">
+                    {u.nombres} {u.apellidos}
+                  </td>
+                  <td className="p-2">{u.email}</td>
+                  <td className="p-2">{u.role}</td>
+                  <td className="p-2">{u.codigo}</td>
+                  <td className="p-2 sec-actions">
+                    <Link
+                      href={`/secretaria/usuarios/edit/${u.id}`}
+                      prefetch={false}
+                      className="inline-block"
+                    >
+                      <Button variant="secondary" size="sm">
+                        Editar
+                      </Button>
+                    </Link>
+                    <Link
+                      href={`/secretaria/usuarios/delete/${u.id}`}
+                      prefetch={false}
+                      className="inline-block"
+                    >
+                      <Button variant="danger" size="sm">
+                        Eliminar
+                      </Button>
+                    </Link>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
+
+      {meta && meta.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-slate-600">
+            Página {meta.page} de {meta.totalPages}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={page >= meta.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Siguiente
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

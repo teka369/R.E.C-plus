@@ -9,6 +9,8 @@ import { UpdateInstitutionDto } from './dto/update-institution.dto';
 import { ProvisionInstitutionDto } from './dto/provision-institution.dto';
 import { UserRole } from '../users/dto/user-role.enum';
 import * as bcrypt from 'bcryptjs';
+import { createId } from '@paralleldrive/cuid2';
+import { AcademicPeriodStatus } from '@prisma/client';
 
 @Injectable()
 export class InstitutionsService {
@@ -41,25 +43,27 @@ export class InstitutionsService {
   }
 
   async findAll() {
-    const institutions = await this.prisma.institution.findMany({
-      orderBy: { id: 'asc' },
-      select: this.institutionSelect,
-    });
-
-    // Agregar conteo de usuarios no-SECRETARIA por institución
-    const enriched = await Promise.all(
-      institutions.map(async (inst) => {
-        const usersCount = await this.prisma.user.count({
-          where: {
-            institutionId: inst.id,
-            role: { not: 'SECRETARIA' },
-          },
-        });
-        return { ...inst, usersCount };
+    // 2 queries fijas independientemente del número de instituciones (antes: 1 + N)
+    const [institutions, countRows] = await Promise.all([
+      this.prisma.institution.findMany({
+        orderBy: { id: 'asc' },
+        select: this.institutionSelect,
       }),
+      this.prisma.user.groupBy({
+        by: ['institutionId'],
+        where: { role: { not: 'SECRETARIA' }, institutionId: { not: null } },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const countMap = new Map(
+      countRows.map((r) => [r.institutionId, r._count._all]),
     );
 
-    return enriched;
+    return institutions.map((inst) => ({
+      ...inst,
+      usersCount: countMap.get(inst.id) ?? 0,
+    }));
   }
 
   async findOne(id: number) {
@@ -136,6 +140,7 @@ export class InstitutionsService {
             );
           }
 
+          const codigo = createId();
           const hashedPassword = await bcrypt.hash(sec.password, 10);
 
           return tx.user.create({
@@ -144,8 +149,8 @@ export class InstitutionsService {
               nombres: sec.nombres,
               apellidos: sec.apellidos,
               email: sec.email.trim().toLowerCase(),
-              documento_identidad: sec.documento_identidad,
               password: hashedPassword,
+              codigo,
               role: UserRole.SECRETARIA,
             },
             select: {
@@ -153,6 +158,7 @@ export class InstitutionsService {
               nombres: true,
               apellidos: true,
               email: true,
+              codigo: true,
               role: true,
               institutionId: true,
             },
@@ -171,5 +177,233 @@ export class InstitutionsService {
         secretarias,
       };
     });
+  }
+
+  async listPeriods(institutionId: number) {
+    return this.prisma.academicPeriod.findMany({
+      where: { institutionId },
+      orderBy: { fechaInicio: 'desc' },
+    });
+  }
+
+  async getActivePeriod(institutionId: number) {
+    return this.prisma.academicPeriod.findFirst({
+      where: { institutionId, estado: AcademicPeriodStatus.ACTIVE },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createPeriod(
+    institutionId: number,
+    dto: {
+      nombre: string;
+      codigo: string;
+      tipo?: string;
+      fechaInicio: string;
+      fechaFin: string;
+    },
+  ) {
+    const existing = await this.prisma.academicPeriod.findUnique({
+      where: {
+        institutionId_codigo: { institutionId, codigo: dto.codigo },
+      },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        `Ya existe un periodo con codigo "${dto.codigo}" en esta institucion`,
+      );
+    }
+
+    return this.prisma.academicPeriod.create({
+      data: {
+        institutionId,
+        nombre: dto.nombre,
+        codigo: dto.codigo,
+        tipo: (dto.tipo ?? 'TERM') as 'TERM' | 'RECOVERY' | 'INTERSESSION',
+        estado: AcademicPeriodStatus.ACTIVE,
+        fechaInicio: new Date(dto.fechaInicio),
+        fechaFin: new Date(dto.fechaFin),
+      },
+    });
+  }
+
+  async activatePeriod(institutionId: number, periodId: number) {
+    const period = await this.prisma.academicPeriod.findFirst({
+      where: { id: periodId, institutionId },
+    });
+    if (!period) throw new NotFoundException('Periodo no encontrado');
+
+    await this.prisma.$transaction([
+      this.prisma.academicPeriod.updateMany({
+        where: { institutionId, estado: AcademicPeriodStatus.ACTIVE },
+        data: { estado: AcademicPeriodStatus.CLOSED },
+      }),
+      this.prisma.academicPeriod.update({
+        where: { id: periodId },
+        data: { estado: AcademicPeriodStatus.ACTIVE },
+      }),
+    ]);
+
+    return this.prisma.academicPeriod.findUnique({
+      where: { id: periodId },
+    });
+  }
+
+  async closePeriod(institutionId: number, periodId: number) {
+    const period = await this.prisma.academicPeriod.findFirst({
+      where: { id: periodId, institutionId },
+    });
+    if (!period) throw new NotFoundException('Periodo no encontrado');
+
+    return this.prisma.academicPeriod.update({
+      where: { id: periodId },
+      data: {
+        estado: AcademicPeriodStatus.CLOSED,
+        fechaCierre: new Date(),
+      },
+    });
+  }
+
+  async delete(institutionId: number) {
+    const institution = await this.prisma.institution.findUnique({
+      where: { id: institutionId },
+    });
+    if (!institution) throw new NotFoundException('Institucion no encontrada');
+
+    await this.prisma.$transaction(async (tx) => {
+      // Obtener IDs de usuarios de la institución
+      const users = await tx.user.findMany({
+        where: { institutionId },
+        select: { id: true },
+      });
+      const userIds = users.map((u) => u.id);
+
+      if (userIds.length > 0) {
+        // Borrar datos de comunicación ligados a usuarios
+        await tx.message.deleteMany({
+          where: {
+            OR: [
+              { senderId: { in: userIds } },
+              { recipientId: { in: userIds } },
+            ],
+          },
+        });
+        await tx.notification.deleteMany({
+          where: { userId: { in: userIds } },
+        });
+        await tx.feedback.deleteMany({ where: { teacherId: { in: userIds } } });
+        await tx.authSession.deleteMany({ where: { userId: { in: userIds } } });
+
+        // Borrar recuperaciones ligadas a usuarios
+        await tx.recoveryMessage.deleteMany({
+          where: { authorId: { in: userIds } },
+        });
+        const recoveryRequests = await tx.recoveryRequest.findMany({
+          where: {
+            OR: [
+              { studentId: { in: userIds } },
+              { teacherId: { in: userIds } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (recoveryRequests.length > 0) {
+          const rrIds = recoveryRequests.map((r) => r.id);
+          const activities = await tx.recoveryActivity.findMany({
+            where: { requestId: { in: rrIds } },
+            select: { id: true },
+          });
+          if (activities.length > 0) {
+            await tx.recoveryActivityAttachment.deleteMany({
+              where: { activityId: { in: activities.map((a) => a.id) } },
+            });
+            await tx.recoveryActivity.deleteMany({
+              where: { id: { in: activities.map((a) => a.id) } },
+            });
+          }
+          await tx.recoveryRequest.deleteMany({ where: { id: { in: rrIds } } });
+        }
+      }
+
+      // Obtener grupos de la institución para borrar en cascada
+      const groups = await tx.group.findMany({
+        where: { institutionId },
+        select: { id: true },
+      });
+      const groupIds = groups.map((g) => g.id);
+
+      if (groupIds.length > 0) {
+        // Borrar asignaciones de estudiantes
+        await tx.studentGroup.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar asignaciones de profesores
+        await tx.teacherAssignment.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar horarios
+        await tx.weeklyScheduleEntry.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        await tx.scheduleNote.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        await tx.scheduleEvent.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar materiales de estudio
+        await tx.studyMaterial.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar ofrendas académicas
+        await tx.academicOffering.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar evaluaciones
+        const offerings = await tx.academicOffering.findMany({
+          where: { groupId: { in: groupIds } },
+          select: { id: true },
+        });
+        if (offerings.length > 0) {
+          await tx.academicEvaluation.deleteMany({
+            where: { academicOfferingId: { in: offerings.map((o) => o.id) } },
+          });
+        }
+        // Borrar rendimiento por grado
+        await tx.gradePerformance.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar registros académicos de estudiantes
+        await tx.studentAcademicRecord.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar relaciones grupo-materia
+        await tx.groupSubject.deleteMany({
+          where: { groupId: { in: groupIds } },
+        });
+        // Borrar info de grupo
+        await tx.groupInfo.deleteMany({ where: { groupId: { in: groupIds } } });
+      }
+
+      // Borrar usuarios de la institución
+      await tx.user.deleteMany({ where: { institutionId } });
+
+      // Borrar períodos académicos (cascade maneja recoveryConfig, recoverySchedule, syllabus)
+      await tx.academicPeriod.deleteMany({ where: { institutionId } });
+
+      // Borrar materias de la institución
+      await tx.subject.deleteMany({ where: { institutionId } });
+
+      // Borrar grados de la institución
+      await tx.grade.deleteMany({ where: { institutionId } });
+
+      // Borrar grupos de la institución
+      await tx.group.deleteMany({ where: { institutionId } });
+
+      // Finalmente, borrar la institución
+      await tx.institution.delete({ where: { id: institutionId } });
+    });
+
+    return { deleted: true, id: institutionId };
   }
 }

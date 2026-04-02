@@ -100,53 +100,56 @@ type PromotionSummaryItem = {
   afterCount?: number;
 };
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
+import {
+  PaginationQuery,
+  paginateParams,
+  buildPaginatedResult,
+} from '../common/dto/pagination.dto';
+import { RedisCacheService } from '../common/cache/cache.service';
 
 @Injectable()
-export class AcademicService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new BadRequestException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new BadRequestException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
-  }
-
-  private institutionWhere(actor: Actor): { institutionId?: number } {
-    if (actor.role === UserRole.SUPER_ADMIN) return {};
-    return { institutionId: this.getActorInstitutionId(actor) };
+export class AcademicService extends TenantScopedService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: RedisCacheService,
+  ) {
+    super();
   }
 
   // Grados
   async createGrade(actor: Actor, dto: CreateGradeDto) {
-    return this.prisma.grade.create({
+    const result = await this.prisma.grade.create({
       data: {
         institutionId: this.getActorInstitutionId(actor),
         nombre: dto.nombre,
       },
     });
+    await this.cache.delByPattern('grades:*');
+    return result;
   }
 
-  async listGrades(actor: Actor) {
-    return this.prisma.grade.findMany({
-      where: this.institutionWhere(actor),
-      include: { groups: true },
-    });
+  async listGrades(actor: Actor, pagination: PaginationQuery = {}) {
+    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const { skip, take, page, limit } = paginateParams(pagination);
+    const cacheKey = `grades:${instId}:${page}:${limit}`;
+    const cached = await this.cache.get(cacheKey);
+    if (cached) return cached;
+
+    const where = this.scopeToInstitution(actor);
+    const [data, total] = await Promise.all([
+      this.prisma.grade.findMany({ where, include: { groups: true }, skip, take }),
+      this.prisma.grade.count({ where }),
+    ]);
+    const result = buildPaginatedResult(data, total, page, limit);
+    await this.cache.set(cacheKey, result, 600);
+    return result;
   }
 
   async getGrade(actor: Actor, id: number) {
     const grade = await this.prisma.grade.findFirst({
-      where: { id, ...this.institutionWhere(actor) },
+      where: { id, ...this.scopeToInstitution(actor) },
       include: { groups: true },
     });
     if (!grade) throw new NotFoundException('Grado no encontrado');
@@ -155,44 +158,60 @@ export class AcademicService {
 
   async updateGrade(actor: Actor, id: number, dto: { nombre: string }) {
     await this.getGrade(actor, id);
-    return this.prisma.grade.update({
+    const result = await this.prisma.grade.update({
       where: { id },
       data: { nombre: dto.nombre },
     });
+    await this.cache.delByPattern('grades:*');
+    return result;
   }
 
   async deleteGrade(actor: Actor, id: number) {
     await this.getGrade(actor, id);
-    return this.prisma.grade.delete({ where: { id } });
+    const result = await this.prisma.grade.delete({ where: { id } });
+    await this.cache.delByPattern('grades:*');
+    return result;
   }
 
   // Grupos
   async createGroup(actor: Actor, dto: CreateGroupDto) {
     const grade = await this.prisma.grade.findFirst({
-      where: { id: dto.gradeId, ...this.institutionWhere(actor) },
+      where: { id: dto.gradeId, ...this.scopeToInstitution(actor) },
       select: { id: true, institutionId: true },
     });
     if (!grade) throw new BadRequestException('Grado no encontrado');
 
-    return this.prisma.group.create({
+    const result = await this.prisma.group.create({
       data: {
         institutionId: grade.institutionId,
         nombre: dto.nombre,
         gradeId: dto.gradeId,
       },
     });
+    await this.cache.delByPattern('groups:*');
+    return result;
   }
 
-  async listGroups(actor: Actor) {
-    return this.prisma.group.findMany({
-      where: this.institutionWhere(actor),
-      include: { grade: true, subjects: true },
-    });
+  async listGroups(actor: Actor, pagination: PaginationQuery = {}) {
+    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const { skip, take, page, limit } = paginateParams(pagination);
+    const cacheKey = `groups:${instId}:${page}:${limit}`;
+    const cached = await this.cache.get(cacheKey);
+    if (cached) return cached;
+
+    const where = this.scopeToInstitution(actor);
+    const [data, total] = await Promise.all([
+      this.prisma.group.findMany({ where, include: { grade: true, subjects: true }, skip, take }),
+      this.prisma.group.count({ where }),
+    ]);
+    const result = buildPaginatedResult(data, total, page, limit);
+    await this.cache.set(cacheKey, result, 600);
+    return result;
   }
 
   async getGroup(actor: Actor, id: number) {
     const group = await this.prisma.group.findFirst({
-      where: { id, ...this.institutionWhere(actor) },
+      where: { id, ...this.scopeToInstitution(actor) },
       include: { grade: true, subjects: true },
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
@@ -208,46 +227,63 @@ export class AcademicService {
 
     if (dto.gradeId) {
       const grade = await this.prisma.grade.findFirst({
-        where: { id: dto.gradeId, ...this.institutionWhere(actor) },
+        where: { id: dto.gradeId, ...this.scopeToInstitution(actor) },
         select: { id: true },
       });
       if (!grade) throw new BadRequestException('Grado destino no encontrado');
     }
 
-    return this.prisma.group.update({
+    const result = await this.prisma.group.update({
       where: { id },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre } : {}),
         ...(dto.gradeId ? { gradeId: dto.gradeId } : {}),
       },
     });
+    await this.cache.delByPattern('groups:*');
+    return result;
   }
 
   async deleteGroup(actor: Actor, id: number) {
     await this.getGroup(actor, id);
-    return this.prisma.group.delete({ where: { id } });
+    const result = await this.prisma.group.delete({ where: { id } });
+    await this.cache.delByPattern('groups:*');
+    return result;
   }
 
   // Materias
   async createSubject(actor: Actor, dto: CreateSubjectDto) {
-    return this.prisma.subject.create({
+    const result = await this.prisma.subject.create({
       data: {
         institutionId: this.getActorInstitutionId(actor),
         nombre: dto.nombre,
         codigo: dto.codigo,
       },
     });
+    await this.cache.delByPattern('subjects:*');
+    return result;
   }
 
-  async listSubjects(actor: Actor) {
-    return this.prisma.subject.findMany({
-      where: this.institutionWhere(actor),
-    });
+  async listSubjects(actor: Actor, pagination: PaginationQuery = {}) {
+    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const { skip, take, page, limit } = paginateParams(pagination);
+    const cacheKey = `subjects:${instId}:${page}:${limit}`;
+    const cached = await this.cache.get(cacheKey);
+    if (cached) return cached;
+
+    const where = this.scopeToInstitution(actor);
+    const [data, total] = await Promise.all([
+      this.prisma.subject.findMany({ where, skip, take }),
+      this.prisma.subject.count({ where }),
+    ]);
+    const result = buildPaginatedResult(data, total, page, limit);
+    await this.cache.set(cacheKey, result, 600);
+    return result;
   }
 
   async getSubject(actor: Actor, id: number) {
     const subject = await this.prisma.subject.findFirst({
-      where: { id, ...this.institutionWhere(actor) },
+      where: { id, ...this.scopeToInstitution(actor) },
     });
     if (!subject) throw new NotFoundException('Materia no encontrada');
     return subject;
@@ -259,18 +295,22 @@ export class AcademicService {
     dto: { nombre?: string; codigo?: string },
   ) {
     await this.getSubject(actor, id);
-    return this.prisma.subject.update({
+    const result = await this.prisma.subject.update({
       where: { id },
       data: {
         ...(dto.nombre ? { nombre: dto.nombre } : {}),
         ...(dto.codigo !== undefined ? { codigo: dto.codigo } : {}),
       },
     });
+    await this.cache.delByPattern('subjects:*');
+    return result;
   }
 
   async deleteSubject(actor: Actor, id: number) {
     await this.getSubject(actor, id);
-    return this.prisma.subject.delete({ where: { id } });
+    const result = await this.prisma.subject.delete({ where: { id } });
+    await this.cache.delByPattern('subjects:*');
+    return result;
   }
 
   // Asignar materias a grupo
@@ -291,7 +331,7 @@ export class AcademicService {
       const activePeriod = await this.prisma.academicPeriod.findFirst({
         where: {
           estado: AcademicPeriodStatus.ACTIVE,
-          ...this.institutionWhere(actor),
+          ...this.scopeToInstitution(actor),
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -391,7 +431,7 @@ export class AcademicService {
     const activePeriod = await this.prisma.academicPeriod.findFirst({
       where: {
         estado: AcademicPeriodStatus.ACTIVE,
-        ...this.institutionWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -537,7 +577,7 @@ export class AcademicService {
       const activePeriod = await this.prisma.academicPeriod.findFirst({
         where: {
           estado: AcademicPeriodStatus.ACTIVE,
-          ...this.institutionWhere(actor),
+          ...this.scopeToInstitution(actor),
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -655,7 +695,7 @@ export class AcademicService {
   // Asignar director de grupo
   async assignGroupDirector(actor: Actor, groupId: number, directorId: number) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, ...this.institutionWhere(actor) },
+      where: { id: groupId, ...this.scopeToInstitution(actor) },
     });
     if (!group) throw new BadRequestException('Grupo no encontrado');
 
@@ -683,7 +723,7 @@ export class AcademicService {
   // Listar estudiantes de un grupo
   async listGroupStudents(actor: Actor, groupId: number) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, ...this.institutionWhere(actor) },
+      where: { id: groupId, ...this.scopeToInstitution(actor) },
     });
     if (!group) throw new BadRequestException('Grupo no encontrado');
     const sg = await this.prisma.studentGroup.findMany({
@@ -695,8 +735,7 @@ export class AcademicService {
       nombres: x.student.nombres,
       apellidos: x.student.apellidos,
       email: x.student.email,
-      documento_identidad: x.student.documento_identidad,
-      telefono: x.student.telefono ?? null,
+      codigo: x.student.codigo,
       role: x.student.role,
     }));
   }
@@ -710,10 +749,10 @@ export class AcademicService {
     }
 
     const sourceGrade = await this.prisma.grade.findFirst({
-      where: { id: dto.sourceGradeId, ...this.institutionWhere(actor) },
+      where: { id: dto.sourceGradeId, ...this.scopeToInstitution(actor) },
     });
     const targetGrade = await this.prisma.grade.findFirst({
-      where: { id: dto.targetGradeId, ...this.institutionWhere(actor) },
+      where: { id: dto.targetGradeId, ...this.scopeToInstitution(actor) },
     });
     if (!sourceGrade)
       throw new BadRequestException('Grado origen no encontrado');
@@ -724,10 +763,10 @@ export class AcademicService {
 
     for (const map of dto.mappings) {
       const src = await this.prisma.group.findFirst({
-        where: { id: map.sourceGroupId, ...this.institutionWhere(actor) },
+        where: { id: map.sourceGroupId, ...this.scopeToInstitution(actor) },
       });
       const dst = await this.prisma.group.findFirst({
-        where: { id: map.targetGroupId, ...this.institutionWhere(actor) },
+        where: { id: map.targetGroupId, ...this.scopeToInstitution(actor) },
       });
       if (!src)
         throw new BadRequestException(
@@ -797,30 +836,39 @@ export class AcademicService {
     });
   }
 
-  async listAcademicPeriods(actor: Actor) {
-    return this.prisma.academicPeriod.findMany({
-      where: this.institutionWhere(actor),
-      orderBy: { fechaInicio: 'desc' },
-    });
+  async listAcademicPeriods(actor: Actor, pagination: PaginationQuery = {}) {
+    const where = this.scopeToInstitution(actor);
+    const { skip, take, page, limit } = paginateParams(pagination);
+    const [data, total] = await Promise.all([
+      this.prisma.academicPeriod.findMany({ where, orderBy: { fechaInicio: 'desc' }, skip, take }),
+      this.prisma.academicPeriod.count({ where }),
+    ]);
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async getAcademicPeriod(actor: Actor, id: number) {
     const p = await this.prisma.academicPeriod.findFirst({
-      where: { id, ...this.institutionWhere(actor) },
+      where: { id, ...this.scopeToInstitution(actor) },
     });
     if (!p) throw new NotFoundException('Período académico no encontrado');
     return p;
   }
 
   async getActivePeriod(actor: Actor) {
+    const instId = actor.role === 'SUPER_ADMIN' ? 'global' : this.getActorInstitutionId(actor);
+    const cacheKey = `activePeriod:${instId}`;
+    const cached = await this.cache.get(cacheKey);
+    if (cached) return cached;
+
     const p = await this.prisma.academicPeriod.findFirst({
       where: {
         estado: AcademicPeriodStatus.ACTIVE,
-        ...this.institutionWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       orderBy: { createdAt: 'desc' },
     });
     if (!p) throw new NotFoundException('No hay período académico activo');
+    await this.cache.set(cacheKey, p, 300);
     return p;
   }
 
@@ -853,29 +901,33 @@ export class AcademicService {
     await this.prisma.academicPeriod.updateMany({
       where: {
         estado: AcademicPeriodStatus.ACTIVE,
-        ...this.institutionWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       data: { estado: AcademicPeriodStatus.CLOSED },
     });
-    return this.prisma.academicPeriod.update({
+    const result = await this.prisma.academicPeriod.update({
       where: { id },
       data: { estado: AcademicPeriodStatus.ACTIVE },
     });
+    await this.cache.delByPattern('activePeriod:*');
+    return result;
   }
 
   async closeAcademicPeriod(actor: Actor, id: number) {
     await this.getAcademicPeriod(actor, id);
-    return this.prisma.academicPeriod.update({
+    const result = await this.prisma.academicPeriod.update({
       where: { id },
       data: { estado: AcademicPeriodStatus.CLOSED, fechaCierre: new Date() },
     });
+    await this.cache.delByPattern('activePeriod:*');
+    return result;
   }
 
   // ─── Ofertas Académicas (AcademicOffering) ──────────────────────────────────
 
   async listGroupOfferings(actor: Actor, groupId: number, periodId?: number) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, ...this.institutionWhere(actor) },
+      where: { id: groupId, ...this.scopeToInstitution(actor) },
     });
     if (!group) throw new NotFoundException('Grupo no encontrado');
 
@@ -884,7 +936,7 @@ export class AcademicService {
       const active = await this.prisma.academicPeriod.findFirst({
         where: {
           estado: AcademicPeriodStatus.ACTIVE,
-          ...this.institutionWhere(actor),
+          ...this.scopeToInstitution(actor),
         },
         select: { id: true },
       });
@@ -1100,7 +1152,7 @@ export class AcademicService {
       const active = await this.prisma.academicPeriod.findFirst({
         where: {
           estado: AcademicPeriodStatus.ACTIVE,
-          ...this.institutionWhere(actor),
+          ...this.scopeToInstitution(actor),
         },
         select: { id: true },
       });
@@ -1147,10 +1199,10 @@ export class AcademicService {
     }
 
     const sourceGrade = await this.prisma.grade.findFirst({
-      where: { id: dto.sourceGradeId, ...this.institutionWhere(actor) },
+      where: { id: dto.sourceGradeId, ...this.scopeToInstitution(actor) },
     });
     const targetGrade = await this.prisma.grade.findFirst({
-      where: { id: dto.targetGradeId, ...this.institutionWhere(actor) },
+      where: { id: dto.targetGradeId, ...this.scopeToInstitution(actor) },
     });
     if (!sourceGrade)
       throw new BadRequestException('Grado origen no encontrado');
@@ -1161,7 +1213,7 @@ export class AcademicService {
     const activePeriod = await this.prisma.academicPeriod.findFirst({
       where: {
         estado: AcademicPeriodStatus.ACTIVE,
-        ...this.institutionWhere(actor),
+        ...this.scopeToInstitution(actor),
       },
       select: { id: true },
     });
@@ -1173,10 +1225,10 @@ export class AcademicService {
     await this.prisma.$transaction(async (tx) => {
       for (const map of dto.mappings) {
         const src = await tx.group.findFirst({
-          where: { id: map.sourceGroupId, ...this.institutionWhere(actor) },
+          where: { id: map.sourceGroupId, ...this.scopeToInstitution(actor) },
         });
         const dst = await tx.group.findFirst({
-          where: { id: map.targetGroupId, ...this.institutionWhere(actor) },
+          where: { id: map.targetGroupId, ...this.scopeToInstitution(actor) },
         });
         if (!src)
           throw new BadRequestException(

@@ -8,8 +8,7 @@ export type GroupStudentDTO = {
   nombres: string;
   apellidos: string;
   email: string;
-  documento_identidad: string;
-  telefono: string | null;
+  codigo: string;
   role: string;
 };
 
@@ -58,8 +57,8 @@ export type PromotionSummary = {
 export const academicApi = {
   // Grados
   async listGrades(): Promise<Grade[]> {
-    const res = await api.get<Grade[]>("/academic/grades");
-    return res.data;
+    const res = await api.get<{ data: Grade[] }>("/academic/grades");
+    return res.data.data;
   },
   async createGrade(nombre: string): Promise<Grade> {
     const res = await api.post<Grade>("/academic/grades", { nombre });
@@ -76,8 +75,8 @@ export const academicApi = {
 
   // Grupos
   async listGroups(): Promise<(Group & { grade?: Grade })[]> {
-    const res = await api.get<(Group & { grade?: Grade })[]>("/academic/groups");
-    return res.data;
+    const res = await api.get<{ data: (Group & { grade?: Grade })[] }>("/academic/groups");
+    return res.data.data;
   },
   async createGroup(nombre: string, gradeId: number): Promise<Group> {
     const res = await api.post<Group>("/academic/groups", { nombre, gradeId });
@@ -98,8 +97,8 @@ export const academicApi = {
 
   // Materias
   async listSubjects(): Promise<Subject[]> {
-    const res = await api.get<Subject[]>("/academic/subjects");
-    return res.data;
+    const res = await api.get<{ data: Subject[] }>("/academic/subjects");
+    return res.data.data;
   },
   async createSubject(nombre: string, codigo?: string): Promise<Subject> {
     const res = await api.post<Subject>("/academic/subjects", { nombre, codigo });

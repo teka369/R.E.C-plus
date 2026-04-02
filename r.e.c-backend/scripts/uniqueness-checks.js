@@ -12,10 +12,10 @@ async function main() {
 
   const hashed = await bcrypt.hash('pwd', 10);
   const student = await prisma.user.create({
-    data: { nombres: 'Estu Único', apellidos: 'Prueba', email: `estu_${ts}@example.com`, documento_identidad: `estu_${ts}`, password: hashed, role: 'ESTUDIANTE' },
+    data: { nombres: 'Estu Único', apellidos: 'Prueba', email: `estu_${ts}@example.com`, password: hashed, role: 'ESTUDIANTE' },
   });
   const teacher = await prisma.user.create({
-    data: { nombres: 'Profe Único', apellidos: 'Prueba', email: `profe_${ts}@example.com`, documento_identidad: `profe_${ts}`, telefono: '300', password: hashed, role: 'PROFESOR' },
+    data: { nombres: 'Profe Único', apellidos: 'Prueba', email: `profe_${ts}@example.com`, password: hashed, role: 'PROFESOR' },
   });
 
   // Create first records

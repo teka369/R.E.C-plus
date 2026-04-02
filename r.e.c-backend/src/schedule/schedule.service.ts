@@ -17,26 +17,13 @@ import {
 } from './dto/event.dto';
 import { Prisma } from '@prisma/client';
 
-type Actor = {
-  userId: number;
-  role: UserRole;
-  institutionId?: number | null;
-};
+import { Actor } from '../common/tenant';
+import { TenantScopedService } from '../common/tenant-scoped.service';
 
 @Injectable()
-export class ScheduleService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private getActorInstitutionId(actor: Actor): number {
-    if (actor.role === UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException(
-        'Operacion no valida para SUPER_ADMIN sin contexto de institucion',
-      );
-    }
-    if (!actor.institutionId) {
-      throw new ForbiddenException('Usuario sin institucion asociada');
-    }
-    return actor.institutionId;
+export class ScheduleService extends TenantScopedService {
+  constructor(private readonly prisma: PrismaService) {
+    super();
   }
 
   private async ensureGroupInScope(actor: Actor, groupId: number) {
