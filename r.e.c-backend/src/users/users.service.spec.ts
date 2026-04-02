@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -96,7 +96,10 @@ describe('UsersService', () => {
     });
 
     it('SUPER_ADMIN puede crear SUPER_ADMIN', async () => {
-      prisma.user.create.mockResolvedValue({ id: 99, role: UserRole.SUPER_ADMIN });
+      prisma.user.create.mockResolvedValue({
+        id: 99,
+        role: UserRole.SUPER_ADMIN,
+      });
       const r = await service.create(superAdminActor, {
         nombres: 'Root',
         apellidos: 'Admin',
@@ -154,17 +157,27 @@ describe('UsersService', () => {
   describe('update', () => {
     beforeEach(() => {
       prisma.user.findUnique.mockResolvedValue({ id: 5, institutionId: 10 });
-      prisma.user.update.mockResolvedValue({ id: 5, institutionId: 10, role: UserRole.ESTUDIANTE });
+      prisma.user.update.mockResolvedValue({
+        id: 5,
+        institutionId: 10,
+        role: UserRole.ESTUDIANTE,
+      });
     });
 
     it('lanza BadRequestException si id no es entero positivo', async () => {
-      await expect(service.update(secretariaActor, -1, {})).rejects.toThrow(BadRequestException);
-      await expect(service.update(secretariaActor, 0, {})).rejects.toThrow(BadRequestException);
+      await expect(service.update(secretariaActor, -1, {})).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.update(secretariaActor, 0, {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('lanza BadRequestException si el usuario está en otra institución', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 5, institutionId: 99 });
-      await expect(service.update(secretariaActor, 5, {})).rejects.toThrow(BadRequestException);
+      await expect(service.update(secretariaActor, 5, {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('lanza BadRequestException si no-SA intenta asignar rol SUPER_ADMIN', async () => {
@@ -184,7 +197,9 @@ describe('UsersService', () => {
   describe('remove', () => {
     it('lanza si el usuario es de otra institución', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 7, institutionId: 99 });
-      await expect(service.remove(secretariaActor, 7)).rejects.toThrow(BadRequestException);
+      await expect(service.remove(secretariaActor, 7)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('elimina cuando el usuario está en la misma institución', async () => {
@@ -224,11 +239,13 @@ describe('UsersService', () => {
     });
 
     it('lanza si la contraseña almacenada no está hasheada (no empieza con $2)', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1, password: 'plaintext' });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 1,
+        password: 'plaintext',
+      });
       await expect(
         service.changePasswordWithValidation(1, 'plaintext', 'newPass'),
       ).rejects.toThrow(BadRequestException);
     });
   });
 });
-

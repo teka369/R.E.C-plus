@@ -38,7 +38,11 @@ export class HealthController {
     }
 
     const overallStatus: HealthStatus =
-      dbStatus === 'down' ? 'down' : dbStatus === 'degraded' ? 'degraded' : 'ok';
+      dbStatus === 'down'
+        ? 'down'
+        : dbStatus === 'degraded'
+          ? 'degraded'
+          : 'ok';
 
     return {
       status: overallStatus,
@@ -56,7 +60,7 @@ export class HealthController {
   }
 
   @Get('metrics')
-  async metrics() {
+  metrics() {
     const memoryUsage = process.memoryUsage();
 
     return {

@@ -51,7 +51,9 @@ export class UsersController {
   @Post('bulk')
   bulkCreate(@Body() dtos: CreateUserDto[], @Req() req: AuthenticatedRequest) {
     if (!Array.isArray(dtos) || dtos.length === 0) {
-      throw new BadRequestException('Se requiere un arreglo con al menos 1 usuario');
+      throw new BadRequestException(
+        'Se requiere un arreglo con al menos 1 usuario',
+      );
     }
     if (dtos.length > 200) {
       throw new BadRequestException('Máximo 200 usuarios por solicitud');

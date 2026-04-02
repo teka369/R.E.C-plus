@@ -35,7 +35,10 @@ export class AuthController {
   @Throttle({ default: { ttl: 300_000, limit: 3 } }) // 3 solicitudes por 5 minutos
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.auth.forgotPassword(dto.email);
-    return { message: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña.' };
+    return {
+      message:
+        'Si el correo existe, recibirás un enlace para restablecer tu contraseña.',
+    };
   }
 
   @Post('recover-by-code')

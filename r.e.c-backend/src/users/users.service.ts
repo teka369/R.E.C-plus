@@ -249,7 +249,12 @@ export class UsersService extends TenantScopedService {
 
   // Registro masivo de usuarios con transacción
   async bulkCreate(actor: Actor, items: CreateUserDto[]) {
-    const results: { index: number; id?: number; codigo?: string; error?: string }[] = [];
+    const results: {
+      index: number;
+      id?: number;
+      codigo?: string;
+      error?: string;
+    }[] = [];
     const actorInstitutionId =
       actor.role === UserRole.SUPER_ADMIN
         ? null
@@ -263,7 +268,10 @@ export class UsersService extends TenantScopedService {
           actor.role !== UserRole.SUPER_ADMIN &&
           role === UserRole.SUPER_ADMIN
         ) {
-          results.push({ index: i, error: 'Solo SUPER_ADMIN puede crear usuarios SUPER_ADMIN' });
+          results.push({
+            index: i,
+            error: 'Solo SUPER_ADMIN puede crear usuarios SUPER_ADMIN',
+          });
           continue;
         }
 

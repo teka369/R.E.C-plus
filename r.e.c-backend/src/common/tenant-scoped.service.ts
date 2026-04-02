@@ -43,8 +43,7 @@ export abstract class TenantScopedService {
    */
   protected isAdminActor(actor: Actor): boolean {
     return (
-      actor.role === UserRole.SUPER_ADMIN ||
-      actor.role === UserRole.SECRETARIA
+      actor.role === UserRole.SUPER_ADMIN || actor.role === UserRole.SECRETARIA
     );
   }
 }

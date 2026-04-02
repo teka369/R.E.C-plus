@@ -21,7 +21,6 @@ import {
   PaginatedResult,
 } from '../common/dto/pagination.dto';
 
-
 @Injectable()
 export class CommunicationService extends TenantScopedService {
   constructor(private prisma: PrismaService) {
@@ -56,9 +55,7 @@ export class CommunicationService extends TenantScopedService {
       select: { id: true, institutionId: true },
     });
     if (!group) {
-      throw new ForbiddenException(
-        'El grupo no pertenece a su institución',
-      );
+      throw new ForbiddenException('El grupo no pertenece a su institución');
     }
 
     const student = await this.prisma.user.findFirst({
@@ -91,9 +88,7 @@ export class CommunicationService extends TenantScopedService {
       select: { id: true },
     });
     if (!enrollment) {
-      throw new ForbiddenException(
-        'El estudiante no está activo en ese grupo',
-      );
+      throw new ForbiddenException('El estudiante no está activo en ese grupo');
     }
 
     const feedback = await this.prisma.feedback.create({
@@ -235,7 +230,12 @@ export class CommunicationService extends TenantScopedService {
           : { group: { institutionId: this.getActorInstitutionId(actor) } }),
       };
       const [data, total] = await Promise.all([
-        this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+        this.prisma.feedback.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
         this.prisma.feedback.count({ where }),
       ]);
       return buildPaginatedResult(data, total, page, limit);
@@ -254,7 +254,12 @@ export class CommunicationService extends TenantScopedService {
         group: { institutionId: this.getActorInstitutionId(actor) },
       };
       const [data, total] = await Promise.all([
-        this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+        this.prisma.feedback.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
         this.prisma.feedback.count({ where }),
       ]);
       return buildPaginatedResult(data, total, page, limit);
@@ -280,7 +285,12 @@ export class CommunicationService extends TenantScopedService {
           : { group: { institutionId: this.getActorInstitutionId(actor) } }),
       };
       const [data, total] = await Promise.all([
-        this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+        this.prisma.feedback.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
         this.prisma.feedback.count({ where }),
       ]);
       return buildPaginatedResult(data, total, page, limit);
@@ -309,7 +319,12 @@ export class CommunicationService extends TenantScopedService {
     }
     const where = { studentId, groupId: { in: allowedGroupIds } };
     const [data, total] = await Promise.all([
-      this.prisma.feedback.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+      this.prisma.feedback.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
       this.prisma.feedback.count({ where }),
     ]);
     return buildPaginatedResult(data, total, page, limit);

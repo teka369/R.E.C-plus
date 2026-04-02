@@ -104,10 +104,7 @@ export class MaterialsController {
     const safeFilename = (file.originalName ?? 'file')
       .replace(/[\r\n"\\]/g, '_')
       .slice(0, 200);
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${safeFilename}"`,
-    );
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
     return new StreamableFile(file.fileContent);
   }
 

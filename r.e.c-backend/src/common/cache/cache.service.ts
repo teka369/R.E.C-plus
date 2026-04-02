@@ -19,7 +19,9 @@ export class RedisCacheService {
   }
 
   async delByPattern(pattern: string): Promise<void> {
-    const stores = this.cache.stores as unknown as { keys?: (pattern: string) => Promise<string[]> }[];
+    const stores = this.cache.stores as unknown as {
+      keys?: (pattern: string) => Promise<string[]>;
+    }[];
     const store = stores?.[0];
     if (store && typeof store.keys === 'function') {
       const keys = await store.keys(pattern);

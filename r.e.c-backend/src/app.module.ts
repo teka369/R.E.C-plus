@@ -20,7 +20,6 @@ import { RedisCacheModule } from './common/cache/cache.module';
 import { HealthModule } from './health/health.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { AppLoggerService } from './logger/logger.service';
 import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
 
 @Module({

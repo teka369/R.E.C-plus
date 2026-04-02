@@ -371,11 +371,12 @@ export class RecoveryService extends TenantScopedService {
 
     // N+1 fix: una sola consulta para todas las actividades en lugar de una por actividad
     const activityIds = activities.map((a) => a.id);
-    const attachmentsWithIds = await this.prisma.recoveryActivityAttachment.findMany({
-      where: { activityId: { in: activityIds } },
-      select: { activityId: true },
-      distinct: ['activityId'],
-    });
+    const attachmentsWithIds =
+      await this.prisma.recoveryActivityAttachment.findMany({
+        where: { activityId: { in: activityIds } },
+        select: { activityId: true },
+        distinct: ['activityId'],
+      });
     const attachmentMap = new Map(
       attachmentsWithIds.map((a) => [a.activityId, true]),
     );

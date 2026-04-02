@@ -42,7 +42,7 @@ export class LoggingInterceptor implements NestInterceptor {
             userId: user?.userId,
           });
         },
-        error: (err) => {
+        error: (err: Error) => {
           const duration = Date.now() - startTime;
           this.logger.error(`Request failed: ${method} ${url}`, err.stack, {
             method,
