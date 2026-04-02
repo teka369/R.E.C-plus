@@ -22,6 +22,7 @@ function clearSessionCookies(res: NextResponse) {
   res.cookies.set("rec_token", "", cleared);
   res.cookies.set("rec_role", "", cleared);
   res.cookies.set("rec_uid", "", cleared);
+  res.cookies.set("rec_refresh", "", cleared);
 }
 
 export async function POST(req: Request) {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = (await req.json()) as { token?: string };
+    const body = (await req.json()) as { token?: string; refreshToken?: string };
     const token = typeof body?.token === "string" ? body.token.trim() : "";
     if (!token) {
       return NextResponse.json({ ok: false, message: "token requerido" }, { status: 400 });
@@ -69,6 +70,13 @@ export async function POST(req: Request) {
     res.cookies.set("rec_token", token, sessionCookieOpts(maxAge));
     res.cookies.set("rec_role", verified.role, sessionCookieOpts(maxAge));
     res.cookies.set("rec_uid", String(verified.userId), sessionCookieOpts(maxAge));
+
+    const refreshToken = typeof body?.refreshToken === "string" ? body.refreshToken.trim() : "";
+    if (refreshToken) {
+      // Refresh tokens tienen vida más larga — 7 días
+      res.cookies.set("rec_refresh", refreshToken, sessionCookieOpts(60 * 60 * 24 * 7));
+    }
+
     return res;
   } catch {
     return NextResponse.json({ ok: false, message: "payload inválido" }, { status: 400 });
