@@ -17,7 +17,7 @@ export default function BackgroundCarousel() {
     [],
   );
 
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(0); 
 
   useEffect(() => {
     const interval = setInterval(() => {
