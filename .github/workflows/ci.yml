@@ -150,6 +150,10 @@ jobs:
         working-directory: r.e.c-backend
         run: npm ci
 
+      - name: Remove local .env files (use CI env vars only)
+        working-directory: r.e.c-backend
+        run: rm -f .env .env.test
+
       - name: Generate Prisma client
         working-directory: r.e.c-backend
         run: npx prisma generate
