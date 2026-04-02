@@ -369,20 +369,15 @@ export class RecoveryService extends TenantScopedService {
 
     if (activities.length === 0) return [];
 
-    const hasAttachmentList = await Promise.all(
-      activities.map(async (item) => {
-        const rows = await this.prisma.$queryRaw<{ activityId: number }[]>`
-					SELECT "activityId"
-					FROM "RecoveryActivityAttachment"
-					WHERE "activityId" = ${item.id}
-					LIMIT 1
-				`;
-        return { activityId: item.id, hasAttachment: rows.length > 0 };
-      }),
-    );
-
+    // N+1 fix: una sola consulta para todas las actividades en lugar de una por actividad
+    const activityIds = activities.map((a) => a.id);
+    const attachmentsWithIds = await this.prisma.recoveryActivityAttachment.findMany({
+      where: { activityId: { in: activityIds } },
+      select: { activityId: true },
+      distinct: ['activityId'],
+    });
     const attachmentMap = new Map(
-      hasAttachmentList.map((item) => [item.activityId, item.hasAttachment]),
+      attachmentsWithIds.map((a) => [a.activityId, true]),
     );
 
     return activities.map((item) => ({
