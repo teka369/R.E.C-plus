@@ -8,27 +8,23 @@ import { getErrorMessage } from "@/lib/errors";
 export default function DeleteUsuarioPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
-  const idNum = Number(id);
-  const invalidId = Number.isNaN(idNum);
   const [user, setUser] = useState<UserDTO | null>(null);
-  const [loading, setLoading] = useState(!invalidId);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (invalidId) return;
-
     usersApi
-      .get(idNum)
+      .get(id)
       .then((u) => setUser(u))
       .catch((error: unknown) => {
         setError(getErrorMessage(error, "Error al cargar usuario"));
       })
       .finally(() => setLoading(false));
-  }, [idNum, invalidId]);
+  }, [id]);
 
   const onDelete = async () => {
     try {
-      await usersApi.remove(idNum);
+      await usersApi.remove(id);
       const target = user?.role === "ESTUDIANTE" ? "/secretaria/estudiantes" : user?.role === "PROFESOR" ? "/secretaria/docentes" : "/secretaria/secretaria";
       router.push(target);
     } catch (error: unknown) {
@@ -45,7 +41,6 @@ export default function DeleteUsuarioPage() {
         </div>
         <span className="sec-chip">Acción crítica</span>
       </div>
-      {invalidId && <p className="text-sm text-red-600">ID inválido</p>}
       {loading && <p className="text-sm text-gray-600">Cargando usuario...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!loading && !error && !user ? (

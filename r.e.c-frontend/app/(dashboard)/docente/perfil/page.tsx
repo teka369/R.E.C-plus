@@ -23,7 +23,7 @@ export default function DocentePerfilPage() {
         setLoading(true);
         setError(null);
         const [userData, teacherAssignments] = await Promise.all([
-          usersApi.get(userId),
+          usersApi.me(),
           academicApi.listTeacherAssignments(userId),
         ]);
         setProfile(userData);

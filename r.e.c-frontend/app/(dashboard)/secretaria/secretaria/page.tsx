@@ -66,10 +66,10 @@ export default function SecretariaPersonalPage() {
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.codigo}</td>
                 <td className="p-2 sec-actions">
-                    <Link href={`/secretaria/usuarios/edit/${u.id}`} prefetch={false} className="inline-block">
+                    <Link href={`/secretaria/usuarios/edit/${u.publicId}`} prefetch={false} className="inline-block">
                     <Button variant="secondary" size="sm">Editar</Button>
                   </Link>
-                    <Link href={`/secretaria/usuarios/delete/${u.id}`} prefetch={false} className="inline-block">
+                    <Link href={`/secretaria/usuarios/delete/${u.publicId}`} prefetch={false} className="inline-block">
                     <Button variant="danger" size="sm">Eliminar</Button>
                   </Link>
                 </td>

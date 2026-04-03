@@ -145,6 +145,7 @@ export class UsersService extends TenantScopedService {
         role,
       },
       select: {
+        id: true,
         publicId: true,
         institutionId: true,
         nombres: true,
@@ -184,6 +185,7 @@ export class UsersService extends TenantScopedService {
         skip,
         take,
         select: {
+          id: true,
           publicId: true,
           institutionId: true,
           nombres: true,
@@ -208,6 +210,7 @@ export class UsersService extends TenantScopedService {
     return this.prisma.user.findUnique({
       where: { id },
       select: {
+        id: true,
         publicId: true,
         institutionId: true,
         nombres: true,
@@ -228,6 +231,7 @@ export class UsersService extends TenantScopedService {
     return this.prisma.user.findUnique({
       where: { publicId },
       select: {
+        id: true,
         publicId: true,
         institutionId: true,
         nombres: true,
@@ -275,6 +279,7 @@ export class UsersService extends TenantScopedService {
         role: data.role ? this.normalizeRole(data.role) : undefined,
       },
       select: {
+        id: true,
         publicId: true,
         institutionId: true,
         nombres: true,

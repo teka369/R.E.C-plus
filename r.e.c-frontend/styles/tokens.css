@@ -1,0 +1,56 @@
+/* ═══════════════════════════════════════════════════════════
+   R.E.C Design Tokens — Fuente única de verdad para variables
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. Variables globales del sistema ── */
+:root {
+  --rec-ink: #18241b;
+  --rec-primary: #32a656;
+  --rec-primary-strong: #289a4e;
+  --rec-accent: #de4d3f;
+  --rec-earth: #5b3a31;
+  --rec-title: #5b3a31;
+  --rec-cta: #de4d3f;
+  --rec-leaf: #38ad44;
+  --rec-surface: #f5fcf6;
+  --rec-soft: #e6f4e8;
+}
+
+/* ── 2. Themes por rol (API estandarizada --role-*) ── */
+
+.secretaria-theme {
+  --role-primary: #238f50;
+  --role-primary-strong: #1d7a44;
+  --role-surface: #eef7f1;
+  --role-border: color-mix(in srgb, var(--role-primary) 18%, white 82%);
+}
+
+.docente-theme {
+  --role-primary: #2563eb;
+  --role-primary-strong: #1d4ed8;
+  --role-surface: #eff6ff;
+  --role-border: color-mix(in srgb, var(--role-primary) 18%, white 82%);
+}
+
+.estudiante-theme {
+  --role-primary: #7c3aed;
+  --role-primary-strong: #6d28d9;
+  --role-surface: #f5f3ff;
+  --role-border: color-mix(in srgb, var(--role-primary) 18%, white 82%);
+}
+
+/* ── 3. Variables derivadas con color-mix ── */
+:root {
+  --rec-primary-12: color-mix(in srgb, var(--rec-primary) 12%, transparent);
+  --rec-primary-18: color-mix(in srgb, var(--rec-primary) 18%, white 82%);
+  --rec-primary-20: color-mix(in srgb, var(--rec-primary) 20%, white 80%);
+  --rec-primary-28: color-mix(in srgb, var(--rec-primary) 28%, white 72%);
+  --rec-primary-34: color-mix(in srgb, var(--rec-primary) 34%, white 66%);
+  --rec-primary-40: color-mix(in srgb, var(--rec-primary) 40%, white 60%);
+  --rec-accent-10: color-mix(in srgb, var(--rec-accent) 10%, transparent);
+  --rec-ink-58: color-mix(in srgb, var(--rec-ink) 58%, white 42%);
+  --rec-ink-74: color-mix(in srgb, var(--rec-ink) 74%, white 26%);
+  --rec-soft-55: color-mix(in srgb, var(--rec-soft) 55%, white 45%);
+  --rec-soft-65: color-mix(in srgb, var(--rec-soft) 65%, white 35%);
+  --rec-earth-85: color-mix(in srgb, var(--rec-earth) 85%, black 15%);
+}

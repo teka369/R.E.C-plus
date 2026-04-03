@@ -64,10 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user || !token) return;
       const needsProfile = !user.name || !user.email;
       if (!needsProfile) return;
-      const idNum = Number(user.id);
-      if (!Number.isFinite(idNum)) return;
       try {
-        const dto = await usersApi.get(idNum);
+        const dto = await usersApi.me();
         if (abort) return;
         const name = [dto.nombres, dto.apellidos].filter(Boolean).join(" ").trim();
         const email = dto.email || user.email || "";

@@ -15,8 +15,7 @@ export default function DocenteCambiarContrasenaPage() {
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const userId = Number(user?.id);
-    if (!userId) {
+    if (!user?.id) {
       setError("No se pudo identificar al usuario actual");
       return;
     }
@@ -40,7 +39,7 @@ export default function DocenteCambiarContrasenaPage() {
       setSaving(true);
       setError(null);
       setMessage(null);
-      await usersApi.changePassword(userId, { currentPassword, newPassword });
+      await usersApi.changeMyPassword({ currentPassword, newPassword });
       setMessage("Contraseña actualizada correctamente");
       setCurrentPassword("");
       setNewPassword("");

@@ -19,8 +19,7 @@ export default function EditUsuarioPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const idNum = Number(id);
-    usersApi.get(idNum).then((u) => {
+    usersApi.get(id).then((u) => {
       setUser(u);
       if (u) {
         setNombres(u.nombres);
@@ -38,9 +37,8 @@ export default function EditUsuarioPage() {
       setError("Nombres, apellidos y email son obligatorios");
       return;
     }
-    const idNum = Number(id);
     try {
-      await usersApi.update(idNum, {
+      await usersApi.update(id, {
         nombres: nombres.trim(),
         apellidos: apellidos.trim(),
         email: email.trim(),
