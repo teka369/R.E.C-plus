@@ -11,13 +11,21 @@ describe('InstitutionsController', () => {
       provision: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
+      findOneByPublicId: jest.fn(),
       update: jest.fn(),
+      updateByPublicId: jest.fn(),
       delete: jest.fn(),
+      deleteByPublicId: jest.fn(),
       listPeriods: jest.fn(),
+      listPeriodsByPublicId: jest.fn(),
       getActivePeriod: jest.fn(),
+      getActivePeriodByPublicId: jest.fn(),
       createPeriod: jest.fn(),
+      createPeriodByPublicId: jest.fn(),
       activatePeriod: jest.fn(),
+      activatePeriodByPublicId: jest.fn(),
       closePeriod: jest.fn(),
+      closePeriodByPublicId: jest.fn(),
     };
     controller = new InstitutionsController(
       service as unknown as InstitutionsService,
@@ -42,29 +50,29 @@ describe('InstitutionsController', () => {
   });
 
   it('findOne delegates', () => {
-    controller.findOne(5);
-    expect(service.findOne).toHaveBeenCalledWith(5);
+    controller.findOne('uuid-inst-5');
+    expect(service.findOneByPublicId).toHaveBeenCalledWith('uuid-inst-5');
   });
 
   it('update delegates', () => {
     const dto = { nombre: 'Updated' } as any;
-    controller.update(5, dto);
-    expect(service.update).toHaveBeenCalledWith(5, dto);
+    controller.update('uuid-inst-5', dto);
+    expect(service.updateByPublicId).toHaveBeenCalledWith('uuid-inst-5', dto);
   });
 
   it('remove delegates', () => {
-    controller.remove(5);
-    expect(service.delete).toHaveBeenCalledWith(5);
+    controller.remove('uuid-inst-5');
+    expect(service.deleteByPublicId).toHaveBeenCalledWith('uuid-inst-5');
   });
 
   it('listPeriods delegates', () => {
-    controller.listPeriods(5);
-    expect(service.listPeriods).toHaveBeenCalledWith(5);
+    controller.listPeriods('uuid-inst-5');
+    expect(service.listPeriodsByPublicId).toHaveBeenCalledWith('uuid-inst-5');
   });
 
   it('getActivePeriod delegates', () => {
-    controller.getActivePeriod(5);
-    expect(service.getActivePeriod).toHaveBeenCalledWith(5);
+    controller.getActivePeriod('uuid-inst-5');
+    expect(service.getActivePeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5');
   });
 
   it('createPeriod delegates', () => {
@@ -74,17 +82,17 @@ describe('InstitutionsController', () => {
       fechaInicio: '2026-01-01',
       fechaFin: '2026-06-30',
     };
-    controller.createPeriod(5, dto);
-    expect(service.createPeriod).toHaveBeenCalledWith(5, dto);
+    controller.createPeriod('uuid-inst-5', dto);
+    expect(service.createPeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5', dto);
   });
 
   it('activatePeriod delegates', () => {
-    controller.activatePeriod(5, 10);
-    expect(service.activatePeriod).toHaveBeenCalledWith(5, 10);
+    controller.activatePeriod('uuid-inst-5', 10);
+    expect(service.activatePeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5', 10);
   });
 
   it('closePeriod delegates', () => {
-    controller.closePeriod(5, 10);
-    expect(service.closePeriod).toHaveBeenCalledWith(5, 10);
+    controller.closePeriod('uuid-inst-5', 10);
+    expect(service.closePeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5', 10);
   });
 });

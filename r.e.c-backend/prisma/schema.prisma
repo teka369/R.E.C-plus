@@ -115,6 +115,7 @@ enum EvaluacionTipo {
 
 model User {
   id                 Int      @id @default(autoincrement())
+  publicId           String   @unique @default(uuid())
   institutionId      Int?
   nombres            String
   apellidos          String
@@ -124,6 +125,7 @@ model User {
   role               Role     @default(ESTUDIANTE)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
   // Relaciones académicas
   studentGroups      StudentGroup[]
   teacherAssignments TeacherAssignment[]
@@ -152,6 +154,8 @@ model User {
   institution        Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
 
   @@index([institutionId])
+  @@index([publicId])
+  @@index([deletedAt])
 }
 
 model AuthSession {
@@ -173,6 +177,7 @@ model AuthSession {
 
 model Institution {
   id          Int             @id @default(autoincrement())
+  publicId    String          @unique @default(uuid())
   nombre      String
   slug        String          @unique
   codigo      String?         @unique
@@ -181,11 +186,15 @@ model Institution {
   activa      Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
   users       User[]
   grades      Grade[]
   groups      Group[]
   subjects    Subject[]
   periods     AcademicPeriod[]
+
+  @@index([publicId])
+  @@index([deletedAt])
 }
 
 // Modelos académicos
@@ -304,14 +313,17 @@ model Subject {
   academicRecords    StudentAcademicRecord[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
   institution        Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 
   @@unique([institutionId, nombre])
   @@index([institutionId])
+  @@index([deletedAt])
 }
 
 model StudentAcademicRecord {
   id                     Int      @id @default(autoincrement())
+  publicId               String   @unique @default(uuid())
   studentId              Int
   groupId                Int
   subjectId              Int
@@ -336,6 +348,7 @@ model StudentAcademicRecord {
   @@index([groupId])
   @@index([subjectId])
   @@index([academicOfferingId])
+  @@index([publicId])
 }
 
 // Asignación de estudiante a grupo
@@ -351,10 +364,12 @@ model StudentGroup {
   academicPeriod   AcademicPeriod    @relation(fields: [academicPeriodId], references: [id], onDelete: Cascade)
   evaluationGrades EvaluationGrade[]
   createdAt        DateTime          @default(now())
+  deletedAt        DateTime?
 
   @@unique([studentId, groupId, academicPeriodId])
   @@index([studentId, academicPeriodId])
   @@index([groupId, academicPeriodId])
+  @@index([deletedAt])
 }
 
 // Materias que tiene un grupo
@@ -385,6 +400,7 @@ model AcademicOffering {
   isActive         Boolean         @default(true)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+  deletedAt        DateTime?
 
   group            Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
   subject          Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
@@ -399,6 +415,7 @@ model AcademicOffering {
 
   @@unique([groupId, subjectId, academicPeriodId])
   @@index([groupSubjectId])
+  @@index([deletedAt])
 }
 
 // Asignaciones de profesor: qué grupos y materias enseña
@@ -449,6 +466,7 @@ model StudyMaterial {
   views              Int           @default(0)
   downloads          Int           @default(0)
   createdAt          DateTime      @default(now())
+  deletedAt          DateTime?
 
   subject            Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   group              Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -461,6 +479,7 @@ model StudyMaterial {
   @@index([academicOfferingId])
   // Queries frecuentes: WHERE groupId = ? AND subjectId = ?
   @@index([groupId, subjectId])
+  @@index([deletedAt])
 }
 
 // Temarios
@@ -557,12 +576,15 @@ model Notification {
   createdAt DateTime         @default(now())
   readAt    DateTime?
 
+  deletedAt DateTime?
+
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
   // Queries frecuentes: WHERE userId = ? AND readAt IS NULL
   @@index([userId, readAt])
+  @@index([deletedAt])
 }
 
 // Horario semanal por grupo (plantilla semanal)
@@ -577,12 +599,14 @@ model WeeklyScheduleEntry {
   subjectId    Int?
   location     String?
   createdAt    DateTime @default(now())
+  deletedAt DateTime?
 
   group        Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher      User     @relation("ScheduleEntryTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
   subject      Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
 
   @@index([groupId, dayOfWeek])
+  @@index([deletedAt])
 }
 
 // Notas importantes visibles en la página de horario
@@ -593,10 +617,13 @@ model ScheduleNote {
   content   String
   createdAt DateTime @default(now())
 
+  deletedAt DateTime?
+
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher   User     @relation("ScheduleNoteTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([groupId])
+  @@index([deletedAt])
 }
 
 // Eventos asociados al módulo de horarios
@@ -610,12 +637,14 @@ model ScheduleEvent {
   endAt     DateTime
   location  String?
   createdAt DateTime @default(now())
+  deletedAt DateTime?
 
   group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher   User     @relation("ScheduleEventTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([groupId])
   @@index([startAt])
+  @@index([deletedAt])
 }
 
 // Solicitudes de recuperación/refuerzo académico
@@ -633,6 +662,7 @@ model RecoveryRequest {
   respondedAt    DateTime?
   dueDate        DateTime?
   finalScore     Float?
+  deletedAt      DateTime?
 
   student        User                  @relation("RecoveryStudent", fields: [studentId], references: [id], onDelete: Cascade)
   teacher        User                  @relation("RecoveryTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
@@ -648,6 +678,7 @@ model RecoveryRequest {
   @@index([status])
   // Queries frecuentes: WHERE groupId = ? AND status = 'PENDING'
   @@index([groupId, status])
+  @@index([deletedAt])
 }
 model RecoveryActivity {
   id             Int                  @id @default(autoincrement())
@@ -756,6 +787,7 @@ model AcademicEvaluation {
 // Nota de un estudiante en una evaluación concreta (reemplaza gradesJson)
 model EvaluationGrade {
   id                   Int                @id @default(autoincrement())
+  publicId             String             @unique @default(uuid())
   academicEvaluationId Int
   studentGroupId       Int
   nota                 Float
@@ -767,6 +799,7 @@ model EvaluationGrade {
 
   @@unique([academicEvaluationId, studentGroupId])
   @@index([studentGroupId])
+  @@index([publicId])
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -868,4 +901,27 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([token])
+}
+
+// ───────────────────────────────────────────────────────────────────
+// Audit Trail — append-only log para cambios con valor legal
+// ───────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  institutionId Int?
+  action        String   // CREATE, UPDATE, DELETE
+  tableName     String   // nombre del modelo Prisma afectado
+  recordId      String   // ID del registro (string para soportar Int y futuro UUID)
+  oldValues     Json?
+  newValues     Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([institutionId])
+  @@index([tableName])
+  @@index([createdAt])
 }

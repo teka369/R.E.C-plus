@@ -1,10 +1,11 @@
 import { PrismaService } from '../../../src/prisma/prisma.service';
+import { AuditContextService } from '../../../src/common/audit-context.service';
 
 describe('PrismaService security', () => {
   let service: PrismaService;
 
   beforeEach(() => {
-    service = new PrismaService();
+    service = new PrismaService(new AuditContextService());
   });
 
   it('bloquea $queryRawUnsafe', () => {

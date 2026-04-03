@@ -95,17 +95,19 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    const requestedId = Number(id);
+  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     const actor = req.user;
+    // If non-admin user, verify they are looking up their own profile
     if (
       actor.role !== UserRole.SECRETARIA &&
-      actor.role !== UserRole.SUPER_ADMIN &&
-      actor.userId !== requestedId
+      actor.role !== UserRole.SUPER_ADMIN
     ) {
-      throw new ForbiddenException('No autorizado');
+      const self = await this.usersService.findOne(actor, actor.userId);
+      if (!self || self.publicId !== id) {
+        throw new ForbiddenException('No autorizado');
+      }
     }
-    return this.usersService.findOne(actor, requestedId);
+    return this.usersService.findOneByPublicId(actor, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -116,7 +118,7 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.usersService.update(req.user, Number(id), dto);
+    return this.usersService.updateByPublicId(req.user, id, dto);
   }
 
   // Actualizar perfil del usuario actual (DEBE estar antes de cambiar contraseña de otros)
@@ -133,7 +135,7 @@ export class UsersController {
   @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.usersService.remove(req.user, Number(id));
+    return this.usersService.removeByPublicId(req.user, id);
   }
 
   // Cambiar contraseña: permitido para el propio usuario (requiere currentPassword)
@@ -145,8 +147,7 @@ export class UsersController {
     @Body() dto: ChangePasswordDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    const userId = Number(id);
-    const actor = req.user; // { userId, role, email }
+    const actor = req.user;
 
     if (
       (actor.role === UserRole.SECRETARIA ||
@@ -154,11 +155,13 @@ export class UsersController {
       dto.newPassword
     ) {
       // Cambio administrativo sin requerir currentPassword
-      await this.usersService.findOne(actor, userId);
-      return this.usersService.changePassword(userId, dto.newPassword);
+      await this.usersService.findOneByPublicId(actor, id);
+      return this.usersService.changePasswordByPublicId(id, dto.newPassword);
     }
 
-    if (actor.userId !== userId) {
+    // Verify the publicId belongs to the current user
+    const self = await this.usersService.findOne(actor, actor.userId);
+    if (!self || self.publicId !== id) {
       throw new ForbiddenException('No autorizado');
     }
 
@@ -166,8 +169,8 @@ export class UsersController {
       throw new ForbiddenException('La contraseña actual es requerida');
     }
 
-    return this.usersService.changePasswordWithValidation(
-      userId,
+    return this.usersService.changePasswordWithValidationByPublicId(
+      id,
       dto.currentPassword,
       dto.newPassword,
     );
