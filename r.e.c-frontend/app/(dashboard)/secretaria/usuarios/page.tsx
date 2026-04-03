@@ -4,6 +4,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
+import { PageHero, DataTable, Chip } from "@/components/ui";
 import { UserRole } from "@/types/user";
 import { type UserDTO } from "@/lib/usersApi";
 import { usePaginatedApi } from "@/hooks/useApi";
@@ -26,18 +27,53 @@ export default function UsuariosPage() {
     );
   }, [result?.data, query]);
 
+  const columns = useMemo(
+    () => [
+      {
+        key: "nombre",
+        header: "Nombre",
+        render: (u: UserDTO) => <>{u.nombres} {u.apellidos}</>,
+      },
+      { key: "email", header: "Correo", render: (u: UserDTO) => u.email },
+      { key: "role", header: "Rol", render: (u: UserDTO) => u.role },
+      { key: "codigo", header: "Código", render: (u: UserDTO) => u.codigo },
+      {
+        key: "acciones",
+        header: "Acciones",
+        render: (u: UserDTO) => (
+          <div className="sec-actions">
+            <Link
+              href={`/secretaria/usuarios/edit/${u.publicId}`}
+              prefetch={false}
+              className="inline-block"
+            >
+              <Button variant="secondary" size="sm">
+                Editar
+              </Button>
+            </Link>
+            <Link
+              href={`/secretaria/usuarios/delete/${u.publicId}`}
+              prefetch={false}
+              className="inline-block"
+            >
+              <Button variant="danger" size="sm">
+                Eliminar
+              </Button>
+            </Link>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <section className="sec-page space-y-5">
-      <div className="sec-hero">
-        <div>
-          <h2 className="sec-title">Usuarios Institucionales</h2>
-          <p className="sec-subtitle">
-            Vista transversal para filtrar por rol, buscar usuarios y acceder a
-            mantenimiento completo.
-          </p>
-        </div>
-        <span className="sec-chip">Control global</span>
-      </div>
+      <PageHero
+        title="Usuarios Institucionales"
+        subtitle="Vista transversal para filtrar por rol, buscar usuarios y acceder a mantenimiento completo."
+        chips={["Control global"]}
+      />
 
       <div className="sec-toolbar">
         <div className="sec-toolbar-group">
@@ -73,65 +109,12 @@ export default function UsuariosPage() {
         />
       </div>
 
-      <div className="overflow-x-auto sec-table">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Nombre</th>
-              <th className="p-2 text-left">Correo</th>
-              <th className="p-2 text-left">Rol</th>
-              <th className="p-2 text-left">Código</th>
-              <th className="p-2 text-left">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td className="p-3 text-center" colSpan={5}>
-                  Cargando...
-                </td>
-              </tr>
-            ) : visible.length === 0 ? (
-              <tr>
-                <td className="p-3 text-center" colSpan={5}>
-                  Sin resultados
-                </td>
-              </tr>
-            ) : (
-              visible.map((u) => (
-                <tr key={u.id} className="border-t border-gray-200">
-                  <td className="p-2">
-                    {u.nombres} {u.apellidos}
-                  </td>
-                  <td className="p-2">{u.email}</td>
-                  <td className="p-2">{u.role}</td>
-                  <td className="p-2">{u.codigo}</td>
-                  <td className="p-2 sec-actions">
-                    <Link
-                      href={`/secretaria/usuarios/edit/${u.id}`}
-                      prefetch={false}
-                      className="inline-block"
-                    >
-                      <Button variant="secondary" size="sm">
-                        Editar
-                      </Button>
-                    </Link>
-                    <Link
-                      href={`/secretaria/usuarios/delete/${u.id}`}
-                      prefetch={false}
-                      className="inline-block"
-                    >
-                      <Button variant="danger" size="sm">
-                        Eliminar
-                      </Button>
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable<UserDTO>
+        columns={columns}
+        data={visible}
+        isLoading={isLoading}
+        emptyMessage="Sin resultados"
+      />
 
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">

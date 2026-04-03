@@ -11,7 +11,7 @@ function generateNonce(): string {
 function setSecurityHeaders(response: NextResponse, nonce: string): NextResponse {
   response.headers.set(
     "Content-Security-Policy",
-    `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'; img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com https://media2.giphy.com; font-src 'self'; frame-src 'self' https://www.google.com https://docs.google.com; connect-src 'self' https://*.sentry.io`,
+    `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com https://media2.giphy.com; font-src 'self'; frame-src 'self' https://www.google.com https://docs.google.com; connect-src 'self' https://*.sentry.io`,
   );
   response.headers.set("x-nonce", nonce);
   response.headers.set(

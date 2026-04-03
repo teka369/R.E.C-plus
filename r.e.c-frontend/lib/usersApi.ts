@@ -3,11 +3,13 @@ import { UserRole } from "@/types/user";
 
 export type UserDTO = {
   id: number;
+  publicId: string;
   nombres: string;
   apellidos: string;
   email: string;
   codigo: string;
   role: UserRole;
+  institutionId?: number | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -42,6 +44,11 @@ export type PaginatedResult<T> = {
 };
 
 export const usersApi = {
+  async me(): Promise<UserDTO> {
+    const res = await api.get<UserDTO>("/users/me");
+    if (!res.data) throw new Error("User not found");
+    return res.data;
+  },
   async list(role?: UserRole): Promise<UserDTO[]> {
     const res = await api.get<PaginatedResult<UserDTO>>("/users", { params: role ? { role } : undefined });
     return res.data.data;
@@ -52,8 +59,8 @@ export const usersApi = {
     });
     return res.data;
   },
-  async get(id: number): Promise<UserDTO> {
-    const res = await api.get<UserDTO | null>(`/users/${id}`);
+  async get(publicId: string): Promise<UserDTO> {
+    const res = await api.get<UserDTO | null>(`/users/${publicId}`);
     if (!res.data) throw new Error("User not found");
     return res.data;
   },
@@ -61,15 +68,19 @@ export const usersApi = {
     const res = await api.post<UserDTO>("/users", dto);
     return res.data;
   },
-  async update(id: number, dto: UpdateUserDto): Promise<UserDTO> {
-    const res = await api.patch<UserDTO>(`/users/${id}`, dto);
+  async update(publicId: string, dto: UpdateUserDto): Promise<UserDTO> {
+    const res = await api.patch<UserDTO>(`/users/${publicId}`, dto);
     return res.data;
   },
-  async changePassword(id: number, dto: ChangePasswordDto): Promise<void> {
-    await api.patch(`/users/${id}/password`, dto);
+  async changePassword(publicId: string, dto: ChangePasswordDto): Promise<void> {
+    await api.patch(`/users/${publicId}/password`, dto);
   },
-  async remove(id: number): Promise<void> {
-    await api.delete(`/users/${id}`);
+  async changeMyPassword(dto: ChangePasswordDto): Promise<void> {
+    const me = await api.get<UserDTO>("/users/me");
+    await api.patch(`/users/${me.data.publicId}/password`, dto);
+  },
+  async remove(publicId: string): Promise<void> {
+    await api.delete(`/users/${publicId}`);
   },
   async bulkCreate(items: CreateUserDto[]): Promise<BulkCreateResult> {
     const res = await api.post<BulkCreateResult>("/users/bulk", items);

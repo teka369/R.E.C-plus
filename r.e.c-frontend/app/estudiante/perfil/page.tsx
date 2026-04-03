@@ -22,7 +22,7 @@ export default function EstudiantePerfilPage() {
         setLoading(true);
         setError(null);
         const [userData, groupData, subjectData] = await Promise.all([
-          usersApi.get(userId),
+          usersApi.me(),
           academicApi.getStudentGroup(userId),
           academicApi.listStudentSubjects(userId),
         ]);
