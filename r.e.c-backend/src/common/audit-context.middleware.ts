@@ -32,13 +32,13 @@ export class AuditContextMiddleware implements NestMiddleware {
     }
 
     const ipAddress =
-      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-      req.socket.remoteAddress;
+      (req.headers['x-forwarded-for'] as string | undefined)
+        ?.split(',')[0]
+        ?.trim() ?? req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
 
-    this.auditContext.run(
-      { userId, institutionId, ipAddress, userAgent },
-      () => next(),
+    this.auditContext.run({ userId, institutionId, ipAddress, userAgent }, () =>
+      next(),
     );
   }
 }

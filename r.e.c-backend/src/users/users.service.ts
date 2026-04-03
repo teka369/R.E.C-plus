@@ -414,10 +414,7 @@ export class UsersService extends TenantScopedService {
     });
   }
 
-  async changePasswordByPublicId(
-    publicId: string,
-    newPassword: string,
-  ) {
+  async changePasswordByPublicId(publicId: string, newPassword: string) {
     const internalId = await this.resolveInternalId(publicId);
     return this.changePassword(internalId, newPassword);
   }
@@ -428,6 +425,10 @@ export class UsersService extends TenantScopedService {
     newPassword: string,
   ) {
     const internalId = await this.resolveInternalId(publicId);
-    return this.changePasswordWithValidation(internalId, currentPassword, newPassword);
+    return this.changePasswordWithValidation(
+      internalId,
+      currentPassword,
+      newPassword,
+    );
   }
 }

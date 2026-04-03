@@ -45,10 +45,7 @@ export class InstitutionsController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateInstitutionDto,
-  ) {
+  update(@Param('id') id: string, @Body() dto: UpdateInstitutionDto) {
     return this.institutions.updateByPublicId(id, dto);
   }
 

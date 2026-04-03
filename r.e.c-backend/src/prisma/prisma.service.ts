@@ -89,9 +89,30 @@ export class PrismaService
 
   // ── Soft-delete interceptors (delegate wrapping) ───────────────
 
+  /** Safely retrieve a Prisma delegate by its camelCase key. */
+  private getDelegate(key: string): Record<string, unknown> | null {
+    const value = (this as unknown as Record<string, unknown>)[key];
+    if (value && typeof value === 'object' && 'findUnique' in value) {
+      return value as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call,
+     @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return,
+     @typescript-eslint/no-base-to-string */
+
+  /**
+   * Dynamic delegate wrapping for soft-delete behavior.
+   * This is metaprogramming code that patches Prisma delegates at runtime —
+   * dynamic dispatch inherently requires `any` at the boundary.
+   */
   private installSoftDeleteInterceptors() {
     for (const delegateKey of SOFT_DELETE_DELEGATES) {
-      const delegate = (this as Record<string, any>)[delegateKey];
+      const delegate = this.getDelegate(delegateKey) as Record<
+        string,
+        any
+      > | null;
       if (!delegate) continue;
 
       // ── Read operations: inject { deletedAt: null } ──────────
@@ -99,17 +120,20 @@ export class PrismaService
         const originalFn = delegate[op];
         if (typeof originalFn !== 'function') continue;
 
-        delegate[op] = function softDeleteReadWrapper(
-          args?: Record<string, any>,
-        ) {
-          args = args ?? {};
-          args.where = args.where ?? {};
+        const boundOriginal = originalFn.bind(delegate);
 
-          if (!hasExplicitDeletedAt(args.where)) {
-            args.where.deletedAt = null;
+        delegate[op] = function softDeleteReadWrapper(
+          args?: Record<string, unknown>,
+        ) {
+          const safeArgs = args ?? {};
+          const where = (safeArgs.where ?? {}) as Record<string, unknown>;
+          safeArgs.where = where;
+
+          if (!hasExplicitDeletedAt(where)) {
+            where.deletedAt = null;
           }
 
-          return originalFn.call(delegate, args);
+          return boundOriginal(safeArgs);
         };
       }
 
@@ -119,25 +143,23 @@ export class PrismaService
         if (typeof originalFn !== 'function') continue;
 
         if (op === 'delete') {
-          // delete → update with deletedAt = now()
-          const updateFn = delegate.update;
+          const boundUpdate = delegate.update.bind(delegate);
           delegate[op] = function softDeleteWrapper(
-            args: Record<string, any>,
+            args: Record<string, unknown>,
           ) {
-            return updateFn.call(delegate, {
+            return boundUpdate({
               where: args.where,
               data: { deletedAt: new Date() },
             });
           };
         } else {
-          // deleteMany → updateMany with deletedAt = now()
-          const updateManyFn = delegate.updateMany;
+          const boundUpdateMany = delegate.updateMany.bind(delegate);
           delegate[op] = function softDeleteManyWrapper(
-            args?: Record<string, any>,
+            args?: Record<string, unknown>,
           ) {
-            args = args ?? {};
-            return updateManyFn.call(delegate, {
-              where: args.where ?? {},
+            const safeArgs = args ?? {};
+            return boundUpdateMany({
+              where: safeArgs.where ?? {},
               data: { deletedAt: new Date() },
             });
           };
@@ -146,43 +168,53 @@ export class PrismaService
     }
   }
 
-  // ── Audit interceptors (Prisma v6 — wrapping de delegates) ────
-
+  /**
+   * Dynamic delegate wrapping for audit-log behavior.
+   * Same rationale as installSoftDeleteInterceptors.
+   */
   private installAuditInterceptors() {
     for (const [delegateKey, tableName] of AUDITED_DELEGATES) {
-      const delegate = (this as Record<string, any>)[delegateKey];
-      if (!delegate) continue; // modelo aún no existe (e.g. Attendance)
+      const delegate = this.getDelegate(delegateKey) as Record<
+        string,
+        any
+      > | null;
+      if (!delegate) continue;
 
       for (const op of AUDITED_OPS) {
         const originalFn = delegate[op];
         if (typeof originalFn !== 'function') continue;
 
-        const self = this;
+        const boundOriginal = originalFn.bind(delegate);
+        const boundFindUnique = delegate.findUnique.bind(delegate);
+        const auditCtx = this.auditContext;
+        const auditLogDelegate = this.auditLog;
 
         delegate[op] = async function auditWrapper(
-          args: Record<string, any>,
+          args: Record<string, unknown>,
         ) {
           // ── 1. Snapshot previo (update / delete) ──────────
           let oldValues: unknown = null;
           if ((op === 'update' || op === 'delete') && args?.where) {
             try {
-              oldValues = await delegate.findUnique({ where: args.where });
+              oldValues = await boundFindUnique({ where: args.where });
             } catch {
               /* lectura previa falló — continuamos sin oldValues */
             }
           }
 
           // ── 2. Ejecutar operación original ────────────────
-          const result = await originalFn.call(delegate, args);
+          const result: unknown = await boundOriginal(args);
 
           // ── 3. Escribir AuditLog de forma asíncrona ───────
           try {
-            const ctx = self.auditContext.get();
-            const recordId = String(
-              (result as any)?.id ?? args?.where?.id ?? '',
-            );
+            const ctx = auditCtx.get();
+            const resultObj = result as Record<string, unknown> | null;
+            const argsWhere = args?.where as
+              | Record<string, unknown>
+              | undefined;
+            const recordId = String(resultObj?.id ?? argsWhere?.id ?? '');
 
-            self.auditLog
+            auditLogDelegate
               .create({
                 data: {
                   userId: ctx?.userId ?? null,
@@ -190,8 +222,10 @@ export class PrismaService
                   action: op.toUpperCase(),
                   tableName,
                   recordId,
-                  oldValues: (oldValues as Prisma.InputJsonValue) ?? Prisma.JsonNull,
-                  newValues: (result as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+                  oldValues:
+                    (oldValues as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+                  newValues:
+                    (result as Prisma.InputJsonValue) ?? Prisma.JsonNull,
                   ipAddress: ctx?.ipAddress ?? null,
                   userAgent: ctx?.userAgent ?? null,
                 },
@@ -208,6 +242,10 @@ export class PrismaService
       }
     }
   }
+
+  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call,
+     @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return,
+     @typescript-eslint/no-base-to-string */
 
   // Bloqueo defensivo: evita consultas raw inseguras en toda la aplicacion.
   override $queryRawUnsafe<T = unknown>(
