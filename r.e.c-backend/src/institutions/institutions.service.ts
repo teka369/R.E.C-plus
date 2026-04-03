@@ -104,6 +104,8 @@ export class InstitutionsService {
       },
     });
 
+    // Exclude internal `id` from response — expose publicId only
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _id, ...rest } = institution;
     return { ...rest, usersCount };
   }

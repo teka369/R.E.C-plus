@@ -187,7 +187,10 @@ describe('UsersService (unit)', () => {
     });
 
     it('SUPER_ADMIN puede ver cualquier usuario', async () => {
-      prisma.user.findUnique.mockResolvedValue({ publicId: 'uuid-5', nombres: 'X' });
+      prisma.user.findUnique.mockResolvedValue({
+        publicId: 'uuid-5',
+        nombres: 'X',
+      });
 
       const result = await service.findOne(superAdmin, 5);
 
@@ -344,7 +347,10 @@ describe('UsersService (unit)', () => {
         password: '$2b$10$hashedOldPassword',
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      prisma.user.update.mockResolvedValue({ publicId: 'uuid-5', nombres: 'Test' });
+      prisma.user.update.mockResolvedValue({
+        publicId: 'uuid-5',
+        nombres: 'Test',
+      });
 
       const result = await service.changePasswordWithValidation(
         5,

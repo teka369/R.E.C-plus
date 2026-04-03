@@ -72,7 +72,9 @@ describe('InstitutionsController', () => {
 
   it('getActivePeriod delegates', () => {
     controller.getActivePeriod('uuid-inst-5');
-    expect(service.getActivePeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5');
+    expect(service.getActivePeriodByPublicId).toHaveBeenCalledWith(
+      'uuid-inst-5',
+    );
   });
 
   it('createPeriod delegates', () => {
@@ -83,16 +85,25 @@ describe('InstitutionsController', () => {
       fechaFin: '2026-06-30',
     };
     controller.createPeriod('uuid-inst-5', dto);
-    expect(service.createPeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5', dto);
+    expect(service.createPeriodByPublicId).toHaveBeenCalledWith(
+      'uuid-inst-5',
+      dto,
+    );
   });
 
   it('activatePeriod delegates', () => {
     controller.activatePeriod('uuid-inst-5', 10);
-    expect(service.activatePeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5', 10);
+    expect(service.activatePeriodByPublicId).toHaveBeenCalledWith(
+      'uuid-inst-5',
+      10,
+    );
   });
 
   it('closePeriod delegates', () => {
     controller.closePeriod('uuid-inst-5', 10);
-    expect(service.closePeriodByPublicId).toHaveBeenCalledWith('uuid-inst-5', 10);
+    expect(service.closePeriodByPublicId).toHaveBeenCalledWith(
+      'uuid-inst-5',
+      10,
+    );
   });
 });
