@@ -63,6 +63,34 @@ export class UsersService extends TenantScopedService {
     }
   }
 
+  private async assertTenantVisibilityByPublicId(
+    actor: Actor,
+    publicId: string,
+  ): Promise<void> {
+    if (actor.role === UserRole.SUPER_ADMIN) return;
+
+    const actorInstitutionId = this.getActorInstitutionId(actor);
+    const target = await this.prisma.user.findUnique({
+      where: { publicId },
+      select: { institutionId: true },
+    });
+
+    if (!target || target.institutionId !== actorInstitutionId) {
+      throw new BadRequestException(
+        'Usuario fuera del alcance de su institucion',
+      );
+    }
+  }
+
+  private async resolveInternalId(publicId: string): Promise<number> {
+    const user = await this.prisma.user.findUnique({
+      where: { publicId },
+      select: { id: true },
+    });
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+    return user.id;
+  }
+
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error) return error.message;
     return 'Error desconocido';
@@ -117,7 +145,7 @@ export class UsersService extends TenantScopedService {
         role,
       },
       select: {
-        id: true,
+        publicId: true,
         institutionId: true,
         nombres: true,
         apellidos: true,
@@ -156,7 +184,7 @@ export class UsersService extends TenantScopedService {
         skip,
         take,
         select: {
-          id: true,
+          publicId: true,
           institutionId: true,
           nombres: true,
           apellidos: true,
@@ -180,7 +208,7 @@ export class UsersService extends TenantScopedService {
     return this.prisma.user.findUnique({
       where: { id },
       select: {
-        id: true,
+        publicId: true,
         institutionId: true,
         nombres: true,
         apellidos: true,
@@ -190,7 +218,26 @@ export class UsersService extends TenantScopedService {
         createdAt: true,
         updatedAt: true,
         institution: { select: { dominio: true } },
-        // No incluir password
+      },
+    });
+  }
+
+  async findOneByPublicId(actor: Actor, publicId: string) {
+    await this.assertTenantVisibilityByPublicId(actor, publicId);
+
+    return this.prisma.user.findUnique({
+      where: { publicId },
+      select: {
+        publicId: true,
+        institutionId: true,
+        nombres: true,
+        apellidos: true,
+        email: true,
+        codigo: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        institution: { select: { dominio: true } },
       },
     });
   }
@@ -228,7 +275,7 @@ export class UsersService extends TenantScopedService {
         role: data.role ? this.normalizeRole(data.role) : undefined,
       },
       select: {
-        id: true,
+        publicId: true,
         institutionId: true,
         nombres: true,
         apellidos: true,
@@ -239,6 +286,16 @@ export class UsersService extends TenantScopedService {
         updatedAt: true,
       },
     });
+  }
+
+  async updateByPublicId(actor: Actor, publicId: string, data: UpdateUserDto) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.update(actor, internalId, data);
+  }
+
+  async removeByPublicId(actor: Actor, publicId: string) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.remove(actor, internalId);
   }
 
   async remove(actor: Actor, id: number) {
@@ -314,7 +371,7 @@ export class UsersService extends TenantScopedService {
       where: { id },
       data: { password: hashed },
       select: {
-        id: true,
+        publicId: true,
         nombres: true,
         apellidos: true,
         email: true,
@@ -349,11 +406,28 @@ export class UsersService extends TenantScopedService {
       where: { id },
       data: { password: hashed },
       select: {
-        id: true,
+        publicId: true,
         nombres: true,
         apellidos: true,
         email: true,
       },
     });
+  }
+
+  async changePasswordByPublicId(
+    publicId: string,
+    newPassword: string,
+  ) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.changePassword(internalId, newPassword);
+  }
+
+  async changePasswordWithValidationByPublicId(
+    publicId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.changePasswordWithValidation(internalId, currentPassword, newPassword);
   }
 }

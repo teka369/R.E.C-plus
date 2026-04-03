@@ -56,6 +56,7 @@ describe('UsersService', () => {
       prisma.user.count.mockResolvedValue(5);
       prisma.user.create.mockResolvedValue({
         id: 20,
+        publicId: 'uuid-user-20',
         institutionId: 10,
         nombres: 'Juan',
         apellidos: 'Pérez',
@@ -75,7 +76,7 @@ describe('UsersService', () => {
         password: 'pass1234',
         role: UserRole.ESTUDIANTE,
       });
-      expect(result.id).toBe(20);
+      expect(result.publicId).toBe('uuid-user-20');
       expect(prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ institutionId: 10 }),
@@ -98,6 +99,7 @@ describe('UsersService', () => {
     it('SUPER_ADMIN puede crear SUPER_ADMIN', async () => {
       prisma.user.create.mockResolvedValue({
         id: 99,
+        publicId: 'uuid-user-99',
         role: UserRole.SUPER_ADMIN,
       });
       const r = await service.create(superAdminActor, {

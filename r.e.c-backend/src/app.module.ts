@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { APP_GUARD } from '@nestjs/core';
@@ -21,6 +21,8 @@ import { HealthModule } from './health/health.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
+import { AuditContextMiddleware } from './common/audit-context.middleware';
+import { RestoreModule } from './admin/restore/restore.module';
 
 @Module({
   imports: [
@@ -68,6 +70,7 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
     RedisCacheModule,
     HealthModule,
     CustomLoggerModule,
+    RestoreModule,
   ],
   controllers: [AppController],
   providers: [
@@ -85,4 +88,8 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuditContextMiddleware).forRoutes('*');
+  }
+}

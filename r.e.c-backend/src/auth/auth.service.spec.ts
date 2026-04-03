@@ -10,6 +10,7 @@ const HASHED_PASSWORD = bcrypt.hashSync('secret123', 10);
 
 const baseUser = {
   id: 1,
+  publicId: 'uuid-user-1',
   nombres: 'Ana',
   apellidos: 'Gómez',
   email: 'ana@test.edu',
@@ -136,7 +137,7 @@ describe('AuthService', () => {
       const result = await service.login('ana@test.edu', 'secret123');
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
-      expect(result.user.id).toBe(1);
+      expect(result.user.id).toBe('uuid-user-1');
       expect(result.user).not.toHaveProperty('password');
     });
 

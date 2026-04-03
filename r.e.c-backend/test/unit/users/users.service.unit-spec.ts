@@ -187,11 +187,11 @@ describe('UsersService (unit)', () => {
     });
 
     it('SUPER_ADMIN puede ver cualquier usuario', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 5, nombres: 'X' });
+      prisma.user.findUnique.mockResolvedValue({ publicId: 'uuid-5', nombres: 'X' });
 
       const result = await service.findOne(superAdmin, 5);
 
-      expect(result!.id).toBe(5);
+      expect(result!.publicId).toBe('uuid-5');
     });
   });
 
@@ -323,14 +323,14 @@ describe('UsersService (unit)', () => {
   describe('changePassword', () => {
     it('cambia la contraseña hasheada', async () => {
       prisma.user.update.mockResolvedValue({
-        id: 5,
+        publicId: 'uuid-5',
         nombres: 'Test',
       });
 
       const result = await service.changePassword(5, 'NewPass123!');
 
       expect(bcrypt.hash).toHaveBeenCalledWith('NewPass123!', 10);
-      expect(result.id).toBe(5);
+      expect(result.publicId).toBe('uuid-5');
     });
   });
 
@@ -344,7 +344,7 @@ describe('UsersService (unit)', () => {
         password: '$2b$10$hashedOldPassword',
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      prisma.user.update.mockResolvedValue({ id: 5, nombres: 'Test' });
+      prisma.user.update.mockResolvedValue({ publicId: 'uuid-5', nombres: 'Test' });
 
       const result = await service.changePasswordWithValidation(
         5,
@@ -352,7 +352,7 @@ describe('UsersService (unit)', () => {
         'NewPass',
       );
 
-      expect(result.id).toBe(5);
+      expect(result.publicId).toBe('uuid-5');
     });
 
     it('rechaza si usuario no existe', async () => {

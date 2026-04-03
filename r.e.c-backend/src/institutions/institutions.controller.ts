@@ -40,36 +40,36 @@ export class InstitutionsController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.institutions.findOne(id);
+  findOne(@Param('id') id: string) {
+    return this.institutions.findOneByPublicId(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateInstitutionDto,
   ) {
-    return this.institutions.update(id, dto);
+    return this.institutions.updateByPublicId(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.institutions.delete(id);
+  remove(@Param('id') id: string) {
+    return this.institutions.deleteByPublicId(id);
   }
 
   @Get(':id/periods')
-  listPeriods(@Param('id', ParseIntPipe) id: number) {
-    return this.institutions.listPeriods(id);
+  listPeriods(@Param('id') id: string) {
+    return this.institutions.listPeriodsByPublicId(id);
   }
 
   @Get(':id/periods/active')
-  getActivePeriod(@Param('id', ParseIntPipe) id: number) {
-    return this.institutions.getActivePeriod(id);
+  getActivePeriod(@Param('id') id: string) {
+    return this.institutions.getActivePeriodByPublicId(id);
   }
 
   @Post(':id/periods')
   createPeriod(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body()
     dto: {
       nombre: string;
@@ -79,22 +79,22 @@ export class InstitutionsController {
       fechaFin: string;
     },
   ) {
-    return this.institutions.createPeriod(id, dto);
+    return this.institutions.createPeriodByPublicId(id, dto);
   }
 
   @Patch(':id/periods/:periodId/activate')
   activatePeriod(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Param('periodId', ParseIntPipe) periodId: number,
   ) {
-    return this.institutions.activatePeriod(id, periodId);
+    return this.institutions.activatePeriodByPublicId(id, periodId);
   }
 
   @Patch(':id/periods/:periodId/close')
   closePeriod(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Param('periodId', ParseIntPipe) periodId: number,
   ) {
-    return this.institutions.closePeriod(id, periodId);
+    return this.institutions.closePeriodByPublicId(id, periodId);
   }
 }

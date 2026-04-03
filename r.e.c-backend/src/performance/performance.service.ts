@@ -969,7 +969,7 @@ export class PerformanceService extends TenantScopedService {
         evaluaciones.map((e) => e.nota),
       );
       return {
-        id: record.id,
+        id: record.publicId,
         subjectId: record.subjectId,
         subject: { id: record.subject.id, nombre: record.subject.nombre },
         evaluaciones,
@@ -1128,7 +1128,7 @@ export class PerformanceService extends TenantScopedService {
           evaluaciones.map((e) => e.nota),
         );
         return {
-          id: record.id,
+          id: record.publicId,
           subjectId: record.subjectId,
           subject: { id: record.subject.id, nombre: record.subject.nombre },
           evaluaciones,
@@ -1333,7 +1333,7 @@ export class PerformanceService extends TenantScopedService {
     );
 
     return {
-      id: result.id,
+      id: result.publicId,
       studentId: result.studentId,
       groupId: result.groupId,
       subjectId: result.subjectId,

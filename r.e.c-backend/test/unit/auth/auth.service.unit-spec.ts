@@ -44,6 +44,7 @@ describe('AuthService (unit)', () => {
 
   const fakeUser = {
     id: 10,
+    publicId: 'uuid-user-10',
     nombres: 'Ana',
     apellidos: 'Perez',
     email: 'ana@test.dev',
@@ -88,7 +89,7 @@ describe('AuthService (unit)', () => {
       expect(result.refresh_token).toBe('refresh-token-1');
       expect(prisma.authSession.create).toHaveBeenCalled();
       expect(result.user).toMatchObject({
-        id: 10,
+        id: 'uuid-user-10',
         role: 'SECRETARIA',
         institutionId: 2,
       });

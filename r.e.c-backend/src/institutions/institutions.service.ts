@@ -17,7 +17,7 @@ export class InstitutionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private institutionSelect = {
-    id: true,
+    publicId: true,
     nombre: true,
     slug: true,
     codigo: true,
@@ -47,7 +47,7 @@ export class InstitutionsService {
     const [institutions, countRows] = await Promise.all([
       this.prisma.institution.findMany({
         orderBy: { id: 'asc' },
-        select: this.institutionSelect,
+        select: { ...this.institutionSelect, id: true },
       }),
       this.prisma.user.groupBy({
         by: ['institutionId'],
@@ -60,9 +60,9 @@ export class InstitutionsService {
       countRows.map((r) => [r.institutionId, r._count._all]),
     );
 
-    return institutions.map((inst) => ({
+    return institutions.map(({ id: _id, ...inst }) => ({
       ...inst,
-      usersCount: countMap.get(inst.id) ?? 0,
+      usersCount: countMap.get(_id) ?? 0,
     }));
   }
 
@@ -85,6 +85,36 @@ export class InstitutionsService {
     });
 
     return { ...institution, usersCount };
+  }
+
+  async findOneByPublicId(publicId: string) {
+    const institution = await this.prisma.institution.findUnique({
+      where: { publicId },
+      select: { ...this.institutionSelect, id: true },
+    });
+
+    if (!institution) {
+      throw new NotFoundException('Institucion no encontrada');
+    }
+
+    const usersCount = await this.prisma.user.count({
+      where: {
+        institutionId: institution.id,
+        role: { not: 'SECRETARIA' },
+      },
+    });
+
+    const { id: _id, ...rest } = institution;
+    return { ...rest, usersCount };
+  }
+
+  private async resolveInternalId(publicId: string): Promise<number> {
+    const inst = await this.prisma.institution.findUnique({
+      where: { publicId },
+      select: { id: true },
+    });
+    if (!inst) throw new NotFoundException('Institucion no encontrada');
+    return inst.id;
   }
 
   async update(id: number, dto: UpdateInstitutionDto) {
@@ -112,6 +142,11 @@ export class InstitutionsService {
     });
 
     return { ...updated, usersCount };
+  }
+
+  async updateByPublicId(publicId: string, dto: UpdateInstitutionDto) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.update(internalId, dto);
   }
 
   async provision(dto: ProvisionInstitutionDto) {
@@ -154,7 +189,7 @@ export class InstitutionsService {
               role: UserRole.SECRETARIA,
             },
             select: {
-              id: true,
+              publicId: true,
               nombres: true,
               apellidos: true,
               email: true,
@@ -168,7 +203,7 @@ export class InstitutionsService {
 
       return {
         institution: {
-          id: institution.id,
+          publicId: institution.publicId,
           nombre: institution.nombre,
           slug: institution.slug,
           maxUsers: institution.maxUsers,
@@ -177,6 +212,45 @@ export class InstitutionsService {
         secretarias,
       };
     });
+  }
+
+  async deleteByPublicId(publicId: string) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.delete(internalId);
+  }
+
+  async listPeriodsByPublicId(publicId: string) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.listPeriods(internalId);
+  }
+
+  async getActivePeriodByPublicId(publicId: string) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.getActivePeriod(internalId);
+  }
+
+  async createPeriodByPublicId(
+    publicId: string,
+    dto: {
+      nombre: string;
+      codigo: string;
+      tipo?: string;
+      fechaInicio: string;
+      fechaFin: string;
+    },
+  ) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.createPeriod(internalId, dto);
+  }
+
+  async activatePeriodByPublicId(publicId: string, periodId: number) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.activatePeriod(internalId, periodId);
+  }
+
+  async closePeriodByPublicId(publicId: string, periodId: number) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.closePeriod(internalId, periodId);
   }
 
   async listPeriods(institutionId: number) {

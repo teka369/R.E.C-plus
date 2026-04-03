@@ -28,8 +28,45 @@ export default defineConfig({
     },
   },
   projects: [
+    /* ── Auth setup — runs first, creates storageState files ── */
+    {
+      name: 'auth-setup',
+      testMatch: /auth\.setup\.ts$/,
+    },
+
+    /* ── Tests that do NOT require auth (login, password recovery) ── */
+    {
+      name: 'no-auth',
+      testMatch: /auth\.spec\.ts|password-recovery\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    /* ── Teacher tests — reuse PROFESOR storageState ── */
+    {
+      name: 'teacher',
+      testMatch: /grade-entry\.spec\.ts|attendance\.spec\.ts|messaging\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/profesor-storage.json',
+      },
+    },
+
+    /* ── Secretaria tests — reuse SECRETARIA storageState ── */
+    {
+      name: 'secretaria',
+      testMatch: /subject-assignment\.spec\.ts|reports\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/secretaria-storage.json',
+      },
+    },
+
+    /* ── Legacy / routing tests (no storageState) ── */
     {
       name: 'chromium',
+      testIgnore: /auth\.setup\.ts|auth\.spec\.ts|password-recovery\.spec\.ts|grade-entry\.spec\.ts|attendance\.spec\.ts|messaging\.spec\.ts|subject-assignment\.spec\.ts|reports\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

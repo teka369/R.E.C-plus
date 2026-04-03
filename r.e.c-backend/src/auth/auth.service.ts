@@ -19,6 +19,7 @@ type AuthInstitution = {
 
 type AuthUser = {
   id: number;
+  publicId: string;
   nombres: string;
   apellidos: string;
   email: string;
@@ -29,7 +30,7 @@ type AuthUser = {
 };
 
 type AuthUserView = {
-  id: number;
+  id: string;
   nombres: string;
   apellidos: string;
   email: string;
@@ -119,7 +120,7 @@ export class AuthService {
 
   private mapUser(user: AuthUser): AuthUserView {
     return {
-      id: user.id,
+      id: user.publicId,
       nombres: user.nombres,
       apellidos: user.apellidos,
       email: user.email,
@@ -201,6 +202,7 @@ export class AuthService {
     const user = await this.validateUser(email, password);
     const issued = await this.issueTokensForUser({
       id: user.id,
+      publicId: user.publicId,
       nombres: user.nombres,
       apellidos: user.apellidos,
       email: user.email,
@@ -266,6 +268,7 @@ export class AuthService {
 
     const issued = await this.issueTokensForUser({
       id: user.id,
+      publicId: user.publicId,
       nombres: user.nombres,
       apellidos: user.apellidos,
       email: user.email,
