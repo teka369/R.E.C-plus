@@ -44,6 +44,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
+  // Confiar en la IP del proxy (Docker/Nginx/Coolify) para rate limiting correcto
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback');
   // Comprimir todas las respuestas JSON >= 1KB (reduce tráfico ~60-70%)
   app.use(compression());
   // Body limit reducido: 8mb era un vector DoS para cualquier usuario autenticado

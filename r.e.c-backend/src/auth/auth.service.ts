@@ -266,6 +266,16 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
+    // Bloquear refresh si la institución fue inactivada
+    if (user.institution && !user.institution.activa) {
+      // Revocar la sesión actual para evitar reintentos
+      await this.prisma.authSession.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException('La institución está inactiva');
+    }
+
     const issued = await this.issueTokensForUser({
       id: user.id,
       publicId: user.publicId,
@@ -365,8 +375,16 @@ export class AuthService {
       data: { userId: user.id, token, expiresAt },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          'FRONTEND_URL no está configurada. No se puede generar el enlace de recuperación en producción.',
+        );
+      }
+      // Solo en desarrollo se permite fallback a localhost
+    }
+    const resetUrl = `${frontendUrl || 'http://localhost:3000'}/reset-password?token=${token}`;
 
     await this.mail.sendPasswordReset(user.email, resetUrl);
   }
