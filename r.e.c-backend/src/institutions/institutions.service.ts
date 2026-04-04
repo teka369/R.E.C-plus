@@ -120,7 +120,7 @@ export class InstitutionsService {
   }
 
   async update(id: number, dto: UpdateInstitutionDto) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
 
     const updated = await this.prisma.institution.update({
       where: { id },
@@ -134,6 +134,23 @@ export class InstitutionsService {
       },
       select: this.institutionSelect,
     });
+
+    // Si la institución se inactiva, revocar todas las sesiones activas de sus usuarios
+    if (dto.activa === false && current.activa === true) {
+      const userIds = await this.prisma.user.findMany({
+        where: { institutionId: id },
+        select: { id: true },
+      });
+      if (userIds.length > 0) {
+        await this.prisma.authSession.updateMany({
+          where: {
+            userId: { in: userIds.map((u) => u.id) },
+            revokedAt: null,
+          },
+          data: { revokedAt: new Date() },
+        });
+      }
+    }
 
     // Agregar conteo de usuarios no-SECRETARIA
     const usersCount = await this.prisma.user.count({
@@ -255,6 +272,26 @@ export class InstitutionsService {
     return this.closePeriod(internalId, periodId);
   }
 
+  async updatePeriodByPublicId(
+    publicId: string,
+    periodId: number,
+    dto: {
+      nombre?: string;
+      codigo?: string;
+      tipo?: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+    },
+  ) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.updatePeriod(internalId, periodId, dto);
+  }
+
+  async deletePeriodByPublicId(publicId: string, periodId: number) {
+    const internalId = await this.resolveInternalId(publicId);
+    return this.deletePeriod(internalId, periodId);
+  }
+
   async listPeriods(institutionId: number) {
     return this.prisma.academicPeriod.findMany({
       where: { institutionId },
@@ -338,6 +375,47 @@ export class InstitutionsService {
         fechaCierre: new Date(),
       },
     });
+  }
+
+  async updatePeriod(
+    institutionId: number,
+    periodId: number,
+    dto: {
+      nombre?: string;
+      codigo?: string;
+      tipo?: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+    },
+  ) {
+    const period = await this.prisma.academicPeriod.findFirst({
+      where: { id: periodId, institutionId },
+    });
+    if (!period) throw new NotFoundException('Periodo no encontrado');
+
+    return this.prisma.academicPeriod.update({
+      where: { id: periodId },
+      data: {
+        ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+        ...(dto.codigo !== undefined ? { codigo: dto.codigo } : {}),
+        ...(dto.tipo !== undefined
+          ? { tipo: dto.tipo as 'TERM' | 'RECOVERY' | 'INTERSESSION' }
+          : {}),
+        ...(dto.fechaInicio
+          ? { fechaInicio: new Date(dto.fechaInicio) }
+          : {}),
+        ...(dto.fechaFin ? { fechaFin: new Date(dto.fechaFin) } : {}),
+      },
+    });
+  }
+
+  async deletePeriod(institutionId: number, periodId: number) {
+    const period = await this.prisma.academicPeriod.findFirst({
+      where: { id: periodId, institutionId },
+    });
+    if (!period) throw new NotFoundException('Periodo no encontrado');
+
+    return this.prisma.academicPeriod.delete({ where: { id: periodId } });
   }
 
   async delete(institutionId: number) {

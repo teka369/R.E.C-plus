@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
@@ -16,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RecoverySettingsModule } from './recovery-settings/recovery-settings.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { TenantBoundaryGuard } from './common/guards/tenant-boundary.guard';
+import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { RedisCacheModule } from './common/cache/cache.module';
 import { HealthModule } from './health/health.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -76,7 +77,7 @@ import { RestoreModule } from './admin/restore/restore.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CustomThrottlerGuard,
     },
     {
       provide: APP_GUARD,

@@ -94,4 +94,28 @@ export class InstitutionsController {
   ) {
     return this.institutions.closePeriodByPublicId(id, periodId);
   }
+
+  @Patch(':id/periods/:periodId')
+  updatePeriod(
+    @Param('id') id: string,
+    @Param('periodId', ParseIntPipe) periodId: number,
+    @Body()
+    dto: {
+      nombre?: string;
+      codigo?: string;
+      tipo?: string;
+      fechaInicio?: string;
+      fechaFin?: string;
+    },
+  ) {
+    return this.institutions.updatePeriodByPublicId(id, periodId, dto);
+  }
+
+  @Delete(':id/periods/:periodId')
+  deletePeriod(
+    @Param('id') id: string,
+    @Param('periodId', ParseIntPipe) periodId: number,
+  ) {
+    return this.institutions.deletePeriodByPublicId(id, periodId);
+  }
 }

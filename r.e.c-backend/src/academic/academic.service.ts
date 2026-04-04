@@ -465,7 +465,7 @@ export class AcademicService extends TenantScopedService {
     if (!activePeriod)
       throw new BadRequestException('No hay período académico activo');
 
-    // Verificar si ya existe una asignación previa
+    // Verificar si ya existe una asignación previa (activa, no soft-deleted)
     const existing = await this.prisma.studentGroup.findFirst({
       where: { studentId: dto.studentId },
     });
@@ -480,6 +480,26 @@ export class AcademicService extends TenantScopedService {
       throw new BadRequestException(
         'El estudiante ya tiene un grupo asignado. Elimine la asignación antes de reasignar.',
       );
+    }
+
+    // Verificar si existe un registro soft-deleted que colisionaría con la unique constraint.
+    // El filtro explícito `deletedAt: { not: null }` bypasea el interceptor de soft-delete
+    // (ver hasExplicitDeletedAt en PrismaService).
+    const softDeleted = await this.prisma.studentGroup.findFirst({
+      where: {
+        studentId: dto.studentId,
+        groupId: dto.groupId,
+        academicPeriodId: activePeriod.id,
+        deletedAt: { not: null },
+      },
+    });
+
+    if (softDeleted) {
+      // Restaurar el registro soft-deleted en vez de crear uno nuevo
+      return this.prisma.studentGroup.update({
+        where: { id: softDeleted.id },
+        data: { deletedAt: null },
+      });
     }
 
     // Crear la asignación con el período activo

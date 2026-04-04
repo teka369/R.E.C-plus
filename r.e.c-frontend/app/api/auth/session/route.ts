@@ -4,6 +4,7 @@ import {
   cookieMaxAgeSeconds,
   verifyAccessToken,
 } from "@/lib/server/verify-access-token";
+import { getUpstreamBaseUrl } from "@/lib/server/upstream";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -94,6 +95,11 @@ export async function GET() {
     const store = await cookies();
     const token = store.get("rec_token")?.value ?? null;
     if (!token) {
+      // Sin access token: intentar refresh silencioso si hay refresh token
+      const refreshToken = store.get("rec_refresh")?.value ?? null;
+      if (refreshToken) {
+        return attemptSilentRefresh(refreshToken);
+      }
       return NextResponse.json({ ok: false, role: null, userId: null });
     }
 
@@ -101,11 +107,73 @@ export async function GET() {
       const { userId, role } = await verifyAccessToken(token);
       return NextResponse.json({ ok: true, role, userId });
     } catch {
+      // Access token expirado/inválido: intentar refresh antes de limpiar sesión
+      const refreshToken = store.get("rec_refresh")?.value ?? null;
+      if (refreshToken) {
+        return attemptSilentRefresh(refreshToken);
+      }
       const res = NextResponse.json({ ok: false, role: null, userId: null });
       clearSessionCookies(res);
       return res;
     }
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 });
+  }
+}
+
+async function attemptSilentRefresh(refreshToken: string): Promise<NextResponse> {
+  try {
+    const base = getUpstreamBaseUrl();
+    const upstream = await fetch(`${base}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!upstream.ok) {
+      const res = NextResponse.json({ ok: false, role: null, userId: null });
+      clearSessionCookies(res);
+      return res;
+    }
+
+    const body = (await upstream.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+    };
+    const newAccess = body.access_token;
+    const newRefresh = body.refresh_token;
+
+    if (!newAccess) {
+      const res = NextResponse.json({ ok: false, role: null, userId: null });
+      clearSessionCookies(res);
+      return res;
+    }
+
+    const verified = await verifyAccessToken(newAccess);
+    const maxAge = cookieMaxAgeSeconds(verified.exp);
+    const res = NextResponse.json({
+      ok: true,
+      role: verified.role,
+      userId: verified.userId,
+    });
+    res.cookies.set("rec_token", newAccess, sessionCookieOpts(maxAge));
+    res.cookies.set("rec_role", verified.role, sessionCookieOpts(maxAge));
+    res.cookies.set(
+      "rec_uid",
+      String(verified.userId),
+      sessionCookieOpts(maxAge),
+    );
+    if (newRefresh) {
+      res.cookies.set(
+        "rec_refresh",
+        newRefresh,
+        sessionCookieOpts(60 * 60 * 24 * 7),
+      );
+    }
+    return res;
+  } catch {
+    const res = NextResponse.json({ ok: false, role: null, userId: null });
+    clearSessionCookies(res);
+    return res;
   }
 }

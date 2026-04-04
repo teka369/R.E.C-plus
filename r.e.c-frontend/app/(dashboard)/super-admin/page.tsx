@@ -101,6 +101,8 @@ export default function SuperAdminDashboardPage() {
   const [deleteTarget, setDeleteTarget] = useState<Institution | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<{ institutionId: string; period: AcademicPeriod } | null>(null);
+  const [editPeriodForm, setEditPeriodForm] = useState<{ nombre: string; codigo: string; fechaInicio: string; fechaFin: string }>({ nombre: "", codigo: "", fechaInicio: "", fechaFin: "" });
 
   const fetchPeriods = async (institutionId: string) => {
     setLoadingPeriods((p) => ({ ...p, [institutionId]: true }));
@@ -161,6 +163,40 @@ export default function SuperAdminDashboardPage() {
       await fetchPeriods(institutionId);
     } catch (err) {
       setError(getErrorMessage(err, "No se pudo cerrar el periodo"));
+    }
+  };
+
+  const handleStartEditPeriod = (institutionId: string, period: AcademicPeriod) => {
+    setEditingPeriod({ institutionId, period });
+    setEditPeriodForm({
+      nombre: period.nombre,
+      codigo: period.codigo,
+      fechaInicio: period.fechaInicio.slice(0, 10),
+      fechaFin: period.fechaFin.slice(0, 10),
+    });
+  };
+
+  const handleSaveEditPeriod = async () => {
+    if (!editingPeriod) return;
+    setError(null);
+    try {
+      await api.patch(`/institutions/${editingPeriod.institutionId}/periods/${editingPeriod.period.id}`, editPeriodForm);
+      setSuccess("Periodo actualizado.");
+      setEditingPeriod(null);
+      await fetchPeriods(editingPeriod.institutionId);
+    } catch (err) {
+      setError(getErrorMessage(err, "No se pudo actualizar el periodo"));
+    }
+  };
+
+  const handleDeletePeriod = async (institutionId: string, periodId: number) => {
+    setError(null);
+    try {
+      await api.delete(`/institutions/${institutionId}/periods/${periodId}`);
+      setSuccess("Periodo eliminado.");
+      await fetchPeriods(institutionId);
+    } catch (err) {
+      setError(getErrorMessage(err, "No se pudo eliminar el periodo"));
     }
   };
 
@@ -831,7 +867,48 @@ export default function SuperAdminDashboardPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {(periods[inst.publicId] ?? []).map((p) => (
+                            {(periods[inst.publicId] ?? []).map((p) =>
+                              editingPeriod?.period.id === p.id ? (
+                              <tr key={p.id} className="border-b border-slate-100 bg-blue-50">
+                                <td className="py-1.5 pr-3">
+                                  <input value={editPeriodForm.codigo} onChange={(e) => setEditPeriodForm((f) => ({ ...f, codigo: e.target.value }))} className="w-full rounded border border-slate-300 px-1 py-0.5 text-xs font-mono" />
+                                </td>
+                                <td className="py-1.5 pr-3">
+                                  <input value={editPeriodForm.nombre} onChange={(e) => setEditPeriodForm((f) => ({ ...f, nombre: e.target.value }))} className="w-full rounded border border-slate-300 px-1 py-0.5 text-xs" />
+                                </td>
+                                <td className="py-1.5 pr-3">
+                                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    p.estado === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
+                                    p.estado === "CLOSED" ? "bg-slate-200 text-slate-600" :
+                                    "bg-amber-100 text-amber-700"
+                                  }`}>
+                                    {p.estado === "ACTIVE" ? "Activo" : p.estado === "CLOSED" ? "Cerrado" : p.estado}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 pr-3">
+                                  <input type="date" value={editPeriodForm.fechaInicio} onChange={(e) => setEditPeriodForm((f) => ({ ...f, fechaInicio: e.target.value }))} className="rounded border border-slate-300 px-1 py-0.5 text-xs" />
+                                </td>
+                                <td className="py-1.5 pr-3">
+                                  <input type="date" value={editPeriodForm.fechaFin} onChange={(e) => setEditPeriodForm((f) => ({ ...f, fechaFin: e.target.value }))} className="rounded border border-slate-300 px-1 py-0.5 text-xs" />
+                                </td>
+                                <td className="py-1.5 pr-3">
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => void handleSaveEditPeriod()}
+                                      className="rounded bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-blue-700"
+                                    >
+                                      Guardar
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingPeriod(null)}
+                                      className="rounded border border-slate-300 px-2 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              ) : (
                               <tr key={p.id} className="border-b border-slate-100">
                                 <td className="py-1.5 pr-3 font-mono">{p.codigo}</td>
                                 <td className="py-1.5 pr-3">{p.nombre}</td>
@@ -847,24 +924,39 @@ export default function SuperAdminDashboardPage() {
                                 <td className="py-1.5 pr-3">{new Date(p.fechaInicio).toLocaleDateString()}</td>
                                 <td className="py-1.5 pr-3">{new Date(p.fechaFin).toLocaleDateString()}</td>
                                 <td className="py-1.5 pr-3">
-                                  {p.estado !== "ACTIVE" ? (
+                                  <div className="flex gap-1">
+                                    {p.estado !== "ACTIVE" ? (
+                                      <button
+                                        onClick={() => void handleActivatePeriod(inst.publicId, p.id)}
+                                        className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
+                                      >
+                                        Activar
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => void handleClosePeriod(inst.publicId, p.id)}
+                                        className="rounded bg-slate-500 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-slate-600"
+                                      >
+                                        Cerrar
+                                      </button>
+                                    )}
                                     <button
-                                      onClick={() => void handleActivatePeriod(inst.publicId, p.id)}
-                                      className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
+                                      onClick={() => handleStartEditPeriod(inst.publicId, p)}
+                                      className="rounded border border-slate-300 px-2 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
                                     >
-                                      Activar
+                                      Editar
                                     </button>
-                                  ) : (
                                     <button
-                                      onClick={() => void handleClosePeriod(inst.publicId, p.id)}
-                                      className="rounded bg-slate-500 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-slate-600"
+                                      onClick={() => void handleDeletePeriod(inst.publicId, p.id)}
+                                      className="rounded border border-red-300 px-2 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
                                     >
-                                      Cerrar
+                                      Eliminar
                                     </button>
-                                  )}
+                                  </div>
                                 </td>
                               </tr>
-                            ))}
+                              )
+                            )}
                           </tbody>
                         </table>
                       </div>
