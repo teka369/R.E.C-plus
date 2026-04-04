@@ -27,6 +27,13 @@ async function proxyRequest(req: NextRequest, pathSegments: string[] | undefined
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // Reenviar IP del cliente real al backend para rate-limit per-IP
+  const forwarded = req.headers.get("x-forwarded-for");
+  const clientIp = forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || req.ip;
+  if (clientIp) {
+    headers.set("X-Forwarded-For", clientIp);
+  }
+
   const contentType = req.headers.get("content-type");
   if (contentType) {
     headers.set("content-type", contentType);

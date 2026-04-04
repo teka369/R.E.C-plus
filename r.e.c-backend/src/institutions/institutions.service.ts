@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisCacheService } from '../common/cache/cache.service';
 import { CreateInstitutionDto } from './dto/create-institution.dto';
 import { UpdateInstitutionDto } from './dto/update-institution.dto';
 import { ProvisionInstitutionDto } from './dto/provision-institution.dto';
@@ -14,7 +15,10 @@ import { AcademicPeriodStatus } from '@prisma/client';
 
 @Injectable()
 export class InstitutionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: RedisCacheService,
+  ) {}
 
   private institutionSelect = {
     publicId: true,
@@ -136,6 +140,7 @@ export class InstitutionsService {
     });
 
     // Si la institución se inactiva, revocar todas las sesiones activas de sus usuarios
+    // e invalidar la caché de estado activo para que el guard lo detecte inmediatamente
     if (dto.activa === false && current.activa === true) {
       const userIds = await this.prisma.user.findMany({
         where: { institutionId: id },
@@ -150,6 +155,12 @@ export class InstitutionsService {
           data: { revokedAt: new Date() },
         });
       }
+      // Invalidar caché para que TenantBoundaryGuard lo detecte de inmediato
+      await this.cache.del(`inst_active:${id}`);
+    }
+    // Si se reactiva, también invalidar caché
+    if (dto.activa === true && current.activa === false) {
+      await this.cache.del(`inst_active:${id}`);
     }
 
     // Agregar conteo de usuarios no-SECRETARIA

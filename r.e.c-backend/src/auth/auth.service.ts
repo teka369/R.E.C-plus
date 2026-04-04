@@ -375,18 +375,29 @@ export class AuthService {
       data: { userId: user.id, token, expiresAt },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL;
-    if (!frontendUrl) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error(
-          'FRONTEND_URL no está configurada. No se puede generar el enlace de recuperación en producción.',
-        );
-      }
-      // Solo en desarrollo se permite fallback a localhost
-    }
-    const resetUrl = `${frontendUrl || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      (process.env.NODE_ENV !== 'production'
+        ? 'http://localhost:3000'
+        : undefined);
 
-    await this.mail.sendPasswordReset(user.email, resetUrl);
+    if (!frontendUrl) {
+      // Log pero no explotar — el usuario no debe recibir 500
+      console.error(
+        'FRONTEND_URL no está configurada en producción. No se enviará el correo de recuperación.',
+      );
+      return;
+    }
+
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    try {
+      await this.mail.sendPasswordReset(user.email, resetUrl);
+    } catch (err) {
+      // Loguear el error del servicio de correo pero NO devolver 500
+      // al usuario — por seguridad no debemos revelar si el envío falló
+      console.error('Error enviando correo de recuperación:', err);
+    }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
