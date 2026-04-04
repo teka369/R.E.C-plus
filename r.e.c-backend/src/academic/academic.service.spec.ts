@@ -242,7 +242,8 @@ describe('AcademicService', () => {
       expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
       expect(prisma.group.findUnique).toHaveBeenCalledTimes(1);
       expect(prisma.academicPeriod.findFirst).toHaveBeenCalledTimes(1);
-      expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(1);
+      // 2 llamadas: 1) buscar asignación activa, 2) buscar soft-deleted
+      expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(2);
       expect(prisma.studentGroup.create).toHaveBeenCalledTimes(1);
       const userReadOrder = prisma.user.findUnique.mock.invocationCallOrder[0];
       const groupReadOrder =
@@ -641,7 +642,8 @@ describe('AcademicService', () => {
     expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.group.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.academicPeriod.findFirst).toHaveBeenCalledTimes(1);
-    expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(1);
+    // 2 llamadas: 1) buscar asignación activa, 2) buscar soft-deleted
+    expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(2);
     expect(prisma.studentGroup.create).toHaveBeenCalledTimes(1);
 
     const userReadOrder = prisma.user.findUnique.mock.invocationCallOrder[0];

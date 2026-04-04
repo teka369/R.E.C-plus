@@ -3,10 +3,13 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '../../users/dto/user-role.enum';
 import { AppLoggerService } from '../../logger/logger.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RedisCacheService } from '../cache/cache.service';
 
 type Actor = {
   userId: number;
@@ -24,11 +27,16 @@ type RequestWithActor = {
   method?: string;
 };
 
+/** TTL de la caché de estado activo de institución (segundos). */
+const INSTITUTION_ACTIVE_CACHE_TTL = 30;
+
 @Injectable()
 export class TenantBoundaryGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly logger: AppLoggerService,
+    private readonly prisma: PrismaService,
+    private readonly cache: RedisCacheService,
   ) {}
   private parseInstitutionId(value: unknown): number | null {
     if (value === undefined || value === null || value === '') {
@@ -86,7 +94,25 @@ export class TenantBoundaryGuard implements CanActivate {
     }
   }
 
-  canActivate(context: ExecutionContext): boolean {
+  /**
+   * Verifica si la institución sigue activa, con caché breve
+   * para no golpear la DB en cada request.
+   */
+  private async isInstitutionActive(institutionId: number): Promise<boolean> {
+    const cacheKey = `inst_active:${institutionId}`;
+    const cached = await this.cache.get<boolean>(cacheKey);
+    if (cached !== null) return cached;
+
+    const inst = await this.prisma.institution.findUnique({
+      where: { id: institutionId },
+      select: { activa: true },
+    });
+    const active = inst?.activa ?? false;
+    await this.cache.set(cacheKey, active, INSTITUTION_ACTIVE_CACHE_TTL);
+    return active;
+  }
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithActor>();
     const actor = this.resolveActor(request);
 
@@ -102,6 +128,14 @@ export class TenantBoundaryGuard implements CanActivate {
     if (!actor.institutionId) {
       throw new ForbiddenException(
         'Contexto de tenant invalido: institutionId es obligatorio',
+      );
+    }
+
+    // Verificar que la institución siga activa en CADA request
+    const active = await this.isInstitutionActive(actor.institutionId);
+    if (!active) {
+      throw new UnauthorizedException(
+        'La institución ha sido desactivada. Tu sesión ha finalizado.',
       );
     }
 
