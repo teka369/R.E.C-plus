@@ -1,11 +1,9 @@
 /**
- * URL del backend Nest visto solo desde Route Handlers (servidor Next).
- * En Docker usar el hostname del servicio (p. ej. http://backend:4001).
+ * URL del backend Nest solo en el servidor Next (BFF, /api/auth/*).
+ * En producción: INTERNAL_API_URL=http://127.0.0.1:4000 (mismo host que PM2).
+ * No usar NEXT_PUBLIC_* aquí: evita apuntar por error al dominio público o al puerto equivocado.
  */
 export function getUpstreamBaseUrl(): string {
-  const raw =
-    process.env.INTERNAL_API_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    "http://localhost:4001";
+  const raw = process.env.INTERNAL_API_URL || "http://127.0.0.1:4000";
   return raw.replace(/\/$/, "");
 }

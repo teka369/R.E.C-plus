@@ -69,6 +69,12 @@ export class RecoveryController {
     });
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('pending-count')
+  getPendingCount(@Req() req: AuthenticatedRequest) {
+    return this.recovery.getPendingCount(req.user);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
   @Get('groups/:groupId/requests')

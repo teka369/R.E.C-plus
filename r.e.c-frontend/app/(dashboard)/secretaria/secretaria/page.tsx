@@ -51,7 +51,7 @@ export default function SecretariaPersonalPage() {
 
       <div className="overflow-x-auto sec-table">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
+          <thead className="bg-rec-bg-muted">
             <tr>
               <th className="p-2 text-left">Nombre</th>
               <th className="p-2 text-left">Correo</th>
@@ -61,7 +61,7 @@ export default function SecretariaPersonalPage() {
           </thead>
           <tbody>
             {visible.map((u) => (
-              <tr key={u.id} className="border-t border-gray-200">
+              <tr key={u.id} className="border-t border-rec-border-default">
                 <td className="p-2">{u.nombres} {u.apellidos}</td>
                 <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.codigo}</td>

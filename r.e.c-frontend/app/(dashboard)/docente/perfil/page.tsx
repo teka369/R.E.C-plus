@@ -68,9 +68,9 @@ export default function DocentePerfilPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-1 sm:px-0">
-      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center">
+      <div id="tour-perfil-header" className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center">
         <div
-          className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl text-2xl font-extrabold text-white shadow-sm"
+          className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl text-2xl font-extrabold text-rec-text-on-media shadow-sm"
           style={{ background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))" }}
         >
           {loading ? "…" : initials}
@@ -83,13 +83,13 @@ export default function DocentePerfilPage() {
             Docente
           </p>
           {!loading && (
-            <p className="mt-1 text-sm text-slate-500">{profile?.email || user?.email || ""}</p>
+            <p className="mt-1 text-sm text-rec-text-subtle">{profile?.email || user?.email || ""}</p>
           )}
         </div>
         <div className="sm:ml-auto">
           <Link
             href="/docente/cambiar-contrasena"
-            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-rec-text-on-media transition hover:opacity-90"
             style={{ background: "var(--rec-primary)" }}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +108,7 @@ export default function DocentePerfilPage() {
       {error && (
         <div
           className="mb-6 rounded-xl px-5 py-4 text-sm font-medium"
-          style={{ background: "#fdecea", color: "var(--rec-cta)" }}
+          style={{ background: "var(--rec-alert-soft-bg)", color: "var(--rec-cta)" }}
         >
           {error}
         </div>
@@ -116,7 +116,8 @@ export default function DocentePerfilPage() {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <div
-          className="rounded-2xl bg-white p-7 shadow-sm md:col-span-2"
+          id="tour-perfil-datos"
+          className="rounded-2xl bg-rec-bg-elevated p-7 shadow-sm md:col-span-2"
           style={{ border: "1px solid var(--rec-soft)" }}
         >
           <div className="mb-5 flex items-center gap-3">
@@ -154,7 +155,7 @@ export default function DocentePerfilPage() {
                 { label: "Código", value: profile?.codigo || "No especificado" },
               ].map((item) => (
                 <div key={item.label} className="rounded-xl px-4 py-3" style={{ background: "var(--rec-soft)" }}>
-                  <p className="mb-0.5 text-xs font-semibold text-slate-500">{item.label}</p>
+                  <p className="mb-0.5 text-xs font-semibold text-rec-text-subtle">{item.label}</p>
                   <p className="text-sm font-medium" style={{ color: "var(--rec-title)" }}>
                     {item.value}
                   </p>
@@ -164,7 +165,7 @@ export default function DocentePerfilPage() {
           )}
         </div>
 
-        <div className="rounded-2xl bg-white p-7 shadow-sm" style={{ border: "1px solid var(--rec-soft)" }}>
+        <div id="tour-perfil-resumen" className="rounded-2xl bg-rec-bg-elevated p-7 shadow-sm" style={{ border: "1px solid var(--rec-soft)" }}>
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "var(--rec-soft)" }}>
               <svg
@@ -197,7 +198,7 @@ export default function DocentePerfilPage() {
                 className="flex items-center justify-between border-b py-2 last:border-0"
                 style={{ borderColor: "var(--rec-soft)" }}
               >
-                <span className="text-sm text-slate-500">{stat.label}</span>
+                <span className="text-sm text-rec-text-subtle">{stat.label}</span>
                 <span className="text-sm font-bold" style={{ color: "var(--rec-primary)" }}>
                   {stat.value}
                 </span>
@@ -206,7 +207,7 @@ export default function DocentePerfilPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-7 shadow-sm" style={{ border: "1px solid var(--rec-soft)" }}>
+        <div id="tour-perfil-materias" className="rounded-2xl bg-rec-bg-elevated p-7 shadow-sm" style={{ border: "1px solid var(--rec-soft)" }}>
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "var(--rec-soft)" }}>
               <svg
@@ -229,7 +230,7 @@ export default function DocentePerfilPage() {
             </h2>
             {!loading && (
               <span
-                className="ml-auto rounded-full px-3 py-0.5 text-xs font-semibold text-white"
+                className="ml-auto rounded-full px-3 py-0.5 text-xs font-semibold text-rec-text-on-media"
                 style={{ background: "var(--rec-primary)" }}
               >
                 {subjects.length}
@@ -243,7 +244,7 @@ export default function DocentePerfilPage() {
               ))}
             </div>
           ) : subjects.length === 0 ? (
-            <p className="text-sm text-slate-500">Sin materias asignadas.</p>
+            <p className="text-sm text-rec-text-subtle">Sin materias asignadas.</p>
           ) : (
             <ul className="space-y-2">
               {subjects.map((subject) => (
@@ -261,7 +262,8 @@ export default function DocentePerfilPage() {
         </div>
 
         <div
-          className="rounded-2xl bg-white p-7 shadow-sm md:col-span-2"
+          id="tour-perfil-grupos"
+          className="rounded-2xl bg-rec-bg-elevated p-7 shadow-sm md:col-span-2"
           style={{ border: "1px solid var(--rec-soft)" }}
         >
           <div className="mb-5 flex items-center gap-3">
@@ -286,7 +288,7 @@ export default function DocentePerfilPage() {
             </h2>
             {!loading && (
               <span
-                className="ml-auto rounded-full px-3 py-0.5 text-xs font-semibold text-white"
+                className="ml-auto rounded-full px-3 py-0.5 text-xs font-semibold text-rec-text-on-media"
                 style={{ background: "var(--rec-primary)" }}
               >
                 {groups.length}
@@ -301,7 +303,7 @@ export default function DocentePerfilPage() {
             </div>
           ) : groups.length === 0 ? (
             <div className="rounded-xl px-5 py-6 text-center" style={{ background: "var(--rec-soft)" }}>
-              <p className="text-sm text-slate-500">No hay grupos asignados actualmente.</p>
+              <p className="text-sm text-rec-text-subtle">No hay grupos asignados actualmente.</p>
             </div>
           ) : (
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -312,7 +314,7 @@ export default function DocentePerfilPage() {
                   style={{ background: "var(--rec-soft)", color: "var(--rec-title)" }}
                 >
                   <span
-                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs text-white"
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs text-rec-text-on-media"
                     style={{ background: "var(--rec-primary)" }}
                   >
                     🏫
@@ -325,7 +327,7 @@ export default function DocentePerfilPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div id="tour-perfil-atajos" className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           { label: "Temarios", href: "/docente/temarios", icon: "📝" },
           { label: "Materiales", href: "/docente/materiales", icon: "📚" },
@@ -335,7 +337,7 @@ export default function DocentePerfilPage() {
           <Link
             key={link.label}
             href={link.href}
-            className="flex flex-col items-center gap-2 rounded-2xl bg-white px-3 py-5 text-center text-sm font-semibold shadow-sm transition hover:shadow-md"
+            className="flex flex-col items-center gap-2 rounded-2xl bg-rec-bg-elevated px-3 py-5 text-center text-sm font-semibold shadow-sm transition hover:shadow-md"
             style={{ border: "1px solid var(--rec-soft)", color: "var(--rec-title)" }}
           >
             <span className="text-2xl">{link.icon}</span>

@@ -1,6 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
+import * as os from 'node:os';
 import { PrismaService } from '../prisma/prisma.service';
+import { InternalApiKeyGuard } from '../common/guards/internal-api-key.guard';
 
 type HealthStatus = 'ok' | 'degraded' | 'down';
 
@@ -18,11 +20,11 @@ type HealthResponse = {
   };
 };
 
-@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @SkipThrottle()
   @Get()
   async check(): Promise<HealthResponse> {
     const startTime = Date.now();
@@ -59,6 +61,7 @@ export class HealthController {
     };
   }
 
+  @UseGuards(InternalApiKeyGuard)
   @Get('metrics')
   metrics() {
     const memoryUsage = process.memoryUsage();
@@ -72,10 +75,28 @@ export class HealthController {
         heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
         external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`,
       },
-      cpu: process.cpuUsage(),
-      nodeVersion: process.version,
-      platform: process.platform,
-      pid: process.pid,
+      cpu: {
+        percent: this.approxSystemCpuPercent(),
+      },
     };
+  }
+
+  /** Porcentaje aproximado de CPU ocupada (todas las CPUs), a partir de tiempos acumulados del SO. */
+  private approxSystemCpuPercent(): number {
+    const cpus = os.cpus();
+    if (cpus.length === 0) {
+      return 0;
+    }
+    let idle = 0;
+    let total = 0;
+    for (const cpu of cpus) {
+      const t = cpu.times;
+      idle += t.idle;
+      total += t.user + t.nice + t.sys + t.idle + t.irq;
+    }
+    if (total <= 0) {
+      return 0;
+    }
+    return Math.max(0, Math.min(100, Math.round((1 - idle / total) * 100)));
   }
 }

@@ -53,13 +53,15 @@ export default function EstudianteCambiarContrasenaPage() {
 
   return (
     <section className="p-4 max-w-xl space-y-4">
-      <h1 className="text-xl font-semibold">Cambiar contraseña</h1>
-      <p className="text-sm text-slate-600">Actualiza tu contraseña de acceso al sistema.</p>
+      <div id="tour-est-pw-header">
+        <h1 className="text-xl font-semibold">Cambiar contraseña</h1>
+        <p className="text-sm text-rec-text-muted">Actualiza tu contraseña de acceso al sistema.</p>
+      </div>
 
-      {message ? <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">{message}</div> : null}
-      {error ? <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      {message ? <div className="rounded border border-rec-success-border bg-rec-success-bg p-3 text-sm text-rec-success-text">{message}</div> : null}
+      {error ? <div className="rounded border border-rec-danger-border bg-rec-danger-bg p-3 text-sm text-rec-danger-text">{error}</div> : null}
 
-      <form onSubmit={onSubmit} className="space-y-3 rounded border border-slate-200 bg-white p-4">
+      <form id="tour-est-pw-form" onSubmit={onSubmit} className="space-y-3 rounded border border-rec-border-default bg-rec-bg-elevated p-4">
         <Field
           label="Contraseña actual"
           type="password"
@@ -82,7 +84,7 @@ export default function EstudianteCambiarContrasenaPage() {
         <button
           type="submit"
           disabled={saving}
-          className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+          className="rounded bg-rec-primary px-4 py-2 text-sm font-medium text-rec-text-on-media hover:bg-rec-primary-strong disabled:opacity-60"
         >
           {saving ? "Guardando..." : "Guardar nueva contraseña"}
         </button>
@@ -109,7 +111,7 @@ function Field({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+        className="w-full rounded border border-rec-border-strong px-3 py-2 text-sm"
       />
     </label>
   );

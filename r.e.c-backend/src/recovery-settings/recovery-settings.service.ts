@@ -9,10 +9,12 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
+import { isRecoveryWindowActive } from '../recovery/recovery.utils';
+
 type RecoveryPeriodView = {
   active: boolean;
-  startAt: string;
-  endAt: string;
+  startAt: string | null;
+  endAt: string | null;
 };
 
 type RecoveryScheduleMeta = {
@@ -51,13 +53,10 @@ export class RecoverySettingsService extends TenantScopedService {
   async getPeriod(actor: Actor): Promise<RecoveryPeriodView> {
     const activePeriodId = await this.getActiveAcademicPeriodId(actor);
     if (!activePeriodId) {
-      const now = new Date();
-      const end = new Date(now);
-      end.setDate(end.getDate() + 7);
       return {
-        active: true,
-        startAt: now.toISOString(),
-        endAt: end.toISOString(),
+        active: false,
+        startAt: null,
+        endAt: null,
       };
     }
 
@@ -72,17 +71,14 @@ export class RecoverySettingsService extends TenantScopedService {
     const config = configRows[0];
 
     if (!config) {
-      const now = new Date();
-      const end = new Date(now);
-      end.setDate(end.getDate() + 7);
       return {
-        active: true,
-        startAt: now.toISOString(),
-        endAt: end.toISOString(),
+        active: false,
+        startAt: null,
+        endAt: null,
       };
     }
 
-    const active = new Date(config.endAt).getTime() > Date.now();
+    const active = isRecoveryWindowActive(config.startAt, config.endAt);
     return {
       active,
       startAt: config.startAt.toISOString(),
@@ -146,7 +142,7 @@ export class RecoverySettingsService extends TenantScopedService {
     }
 
     return {
-      active: end.getTime() > Date.now(),
+      active: isRecoveryWindowActive(start, end),
       startAt: start.toISOString(),
       endAt: end.toISOString(),
     };

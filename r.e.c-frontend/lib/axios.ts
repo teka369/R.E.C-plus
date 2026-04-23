@@ -19,6 +19,20 @@ let refreshPromise: Promise<boolean> | null = null;
  */
 const SKIP_REFRESH_PATHS = ["auth/login", "auth/refresh", "auth/logout"];
 
+/** Rutas donde no hay sesión esperada: no intentar refresh ni redirigir (evita bucle en /login). */
+const PUBLIC_AUTH_PATH_PREFIXES = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/acceso-secretaria",
+] as const;
+
+function isPublicAuthPath(): boolean {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname;
+  return PUBLIC_AUTH_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+}
+
 function shouldSkipRefresh(config: InternalAxiosRequestConfig | undefined): boolean {
   if (!config?.url) return false;
   return SKIP_REFRESH_PATHS.some((p) => config.url!.includes(p));
@@ -46,14 +60,31 @@ async function doRefresh(): Promise<boolean> {
   }
 }
 
+function postLogoutRedirectPath(): string {
+  if (typeof window === "undefined") return "/login";
+  const p = window.location.pathname;
+  if (
+    p.startsWith("/secretaria") ||
+    p.startsWith("/super-admin") ||
+    p.startsWith("/acceso-secretaria")
+  ) {
+    return "/acceso-secretaria";
+  }
+  return "/login";
+}
+
 function redirectToLogin() {
-  // Limpiar cookies de sesión vía BFF y redirigir
+  const target = postLogoutRedirectPath();
+  const targetPath = target.split("?")[0];
   fetch("/api/auth/session", { method: "DELETE" })
     .catch(() => {})
     .finally(() => {
-      if (typeof window !== "undefined") {
-        window.location.assign("/login");
+      if (typeof window === "undefined") return;
+      // Ya en login / acceso-secretaria: solo limpiar cookies; assign() repetido causa bucle infinito
+      if (window.location.pathname === targetPath) {
+        return;
       }
+      window.location.assign(target);
     });
 }
 
@@ -73,6 +104,11 @@ api.interceptors.response.use(
 
     // Solo interceptar 401 — cualquier otro código pasa tal cual
     if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // Páginas de acceso público: no refresh (fallaría o redirigiría al mismo sitio → bucle)
+    if (isPublicAuthPath()) {
       return Promise.reject(error);
     }
 

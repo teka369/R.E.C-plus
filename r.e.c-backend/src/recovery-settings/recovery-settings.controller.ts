@@ -47,7 +47,7 @@ export class RecoverySettingsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SECRETARIA)
   @Post('config')
   setConfig(
     @Body() dto: SetRecoveryPeriodDto,
@@ -72,7 +72,7 @@ export class RecoverySettingsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SECRETARIA)
   @Post('schedule')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getUpstreamBaseUrl } from "@/lib/server/upstream";
+import {
+  applyRateLimitVisitorCookie,
+  buildRateLimitForwardHeaders,
+} from "@/lib/server/rate-limit-forward";
 
 type RouteCtx = { params: Promise<{ path?: string[] }> };
 
@@ -14,6 +18,7 @@ async function proxyRequest(req: NextRequest, pathSegments: string[] | undefined
 
   const method = req.method;
   const store = await cookies();
+  const { headers: rlHeaders, setVisitorCookie } = buildRateLimitForwardHeaders(req, store);
   const token = store.get("rec_token")?.value;
 
   const pathJoined = pathSegments?.length ? pathSegments.join("/") : "";
@@ -27,11 +32,8 @@ async function proxyRequest(req: NextRequest, pathSegments: string[] | undefined
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Reenviar IP del cliente real al backend para rate-limit per-IP
-  const forwarded = req.headers.get("x-forwarded-for");
-  const clientIp = forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || req.ip;
-  if (clientIp) {
-    headers.set("X-Forwarded-For", clientIp);
+  for (const [k, v] of Object.entries(rlHeaders)) {
+    headers.set(k, v);
   }
 
   const contentType = req.headers.get("content-type");
@@ -68,11 +70,13 @@ async function proxyRequest(req: NextRequest, pathSegments: string[] | undefined
     }
   }
 
-  return new NextResponse(upstream.body, {
+  const res = new NextResponse(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: outHeaders,
   });
+  applyRateLimitVisitorCookie(res, setVisitorCookie);
+  return res;
 }
 
 function bindHandler() {

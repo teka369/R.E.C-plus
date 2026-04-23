@@ -58,6 +58,7 @@ describe('AcademicService', () => {
       findFirst: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
       upsert: jest.Mock;
       findMany: jest.Mock;
     };
@@ -117,6 +118,7 @@ describe('AcademicService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         upsert: jest.fn(),
         findMany: jest.fn(),
       },
@@ -242,8 +244,8 @@ describe('AcademicService', () => {
       expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
       expect(prisma.group.findUnique).toHaveBeenCalledTimes(1);
       expect(prisma.academicPeriod.findFirst).toHaveBeenCalledTimes(1);
-      // 2 llamadas: 1) buscar asignación activa, 2) buscar soft-deleted
-      expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(2);
+      expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(1);
+      expect(prisma.studentGroup.updateMany).toHaveBeenCalledTimes(1);
       expect(prisma.studentGroup.create).toHaveBeenCalledTimes(1);
       const userReadOrder = prisma.user.findUnique.mock.invocationCallOrder[0];
       const groupReadOrder =
@@ -252,12 +254,15 @@ describe('AcademicService', () => {
         prisma.academicPeriod.findFirst.mock.invocationCallOrder[0];
       const existingReadOrder =
         prisma.studentGroup.findFirst.mock.invocationCallOrder[0];
+      const reviveOrder =
+        prisma.studentGroup.updateMany.mock.invocationCallOrder[0];
       const createOrder =
         prisma.studentGroup.create.mock.invocationCallOrder[0];
       expect(userReadOrder).toBeLessThan(groupReadOrder);
       expect(groupReadOrder).toBeLessThan(periodReadOrder);
       expect(periodReadOrder).toBeLessThan(existingReadOrder);
-      expect(existingReadOrder).toBeLessThan(createOrder);
+      expect(existingReadOrder).toBeLessThan(reviveOrder);
+      expect(reviveOrder).toBeLessThan(createOrder);
       expect(prisma.studentGroup.create).toHaveBeenCalledWith({
         data: { studentId: 3002, groupId: 411, academicPeriodId: 77 },
       });
@@ -476,6 +481,7 @@ describe('AcademicService', () => {
       findFirst: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
       upsert: jest.Mock;
     };
     groupSubject: {
@@ -510,6 +516,7 @@ describe('AcademicService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         upsert: jest.fn(),
       },
       groupSubject: {
@@ -642,8 +649,8 @@ describe('AcademicService', () => {
     expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.group.findUnique).toHaveBeenCalledTimes(1);
     expect(prisma.academicPeriod.findFirst).toHaveBeenCalledTimes(1);
-    // 2 llamadas: 1) buscar asignación activa, 2) buscar soft-deleted
-    expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(2);
+    expect(prisma.studentGroup.findFirst).toHaveBeenCalledTimes(1);
+    expect(prisma.studentGroup.updateMany).toHaveBeenCalledTimes(1);
     expect(prisma.studentGroup.create).toHaveBeenCalledTimes(1);
 
     const userReadOrder = prisma.user.findUnique.mock.invocationCallOrder[0];
@@ -652,12 +659,15 @@ describe('AcademicService', () => {
       prisma.academicPeriod.findFirst.mock.invocationCallOrder[0];
     const existingReadOrder =
       prisma.studentGroup.findFirst.mock.invocationCallOrder[0];
+    const reviveOrder =
+      prisma.studentGroup.updateMany.mock.invocationCallOrder[0];
     const createOrder = prisma.studentGroup.create.mock.invocationCallOrder[0];
 
     expect(userReadOrder).toBeLessThan(groupReadOrder);
     expect(groupReadOrder).toBeLessThan(periodReadOrder);
     expect(periodReadOrder).toBeLessThan(existingReadOrder);
-    expect(existingReadOrder).toBeLessThan(createOrder);
+    expect(existingReadOrder).toBeLessThan(reviveOrder);
+    expect(reviveOrder).toBeLessThan(createOrder);
 
     expect(prisma.studentGroup.create).toHaveBeenCalledWith({
       data: {

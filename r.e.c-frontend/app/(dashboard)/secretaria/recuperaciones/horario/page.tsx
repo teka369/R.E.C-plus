@@ -82,15 +82,15 @@ export default function RecoverySchedulePage() {
         <span className="sec-chip">Documento oficial</span>
       </div>
 
-      {message ? <div className="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">{message}</div> : null}
-      {error ? <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      {message ? <div className="rounded border border-rec-success-border bg-rec-success-bg p-3 text-sm text-rec-success-text">{message}</div> : null}
+      {error ? <div className="rounded border border-rec-danger-border bg-rec-danger-bg p-3 text-sm text-rec-danger-text">{error}</div> : null}
 
       <div className="sec-card p-4 flex flex-col gap-3 max-w-2xl">
         <input
           type="file"
           onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
           disabled={uploading}
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
+          className="rounded border border-rec-border-strong px-3 py-2 text-sm"
           accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
         />
         <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export default function RecoverySchedulePage() {
             {uploading ? "Subiendo..." : "Subir horario"}
           </Button>
           {scheduleUrl ? (
-            <a href={scheduleUrl} download className="text-sm text-blue-700 underline">
+            <a href={scheduleUrl} download className="text-sm text-rec-info-text underline">
               Descargar archivo actual
             </a>
           ) : null}
@@ -107,11 +107,11 @@ export default function RecoverySchedulePage() {
 
       <div className="sec-card min-h-[400px]">
         {loading ? (
-          <div className="p-4 text-sm text-gray-600">Cargando archivo...</div>
+          <div className="p-4 text-sm text-rec-text-muted">Cargando archivo...</div>
         ) : scheduleUrl ? (
           <iframe title="Horario de recuperación" src={scheduleUrl} className="w-full min-h-[600px]" />
         ) : (
-          <div className="p-4 text-sm text-gray-600">No hay archivo disponible.</div>
+          <div className="p-4 text-sm text-rec-text-muted">No hay archivo disponible.</div>
         )}
       </div>
     </section>

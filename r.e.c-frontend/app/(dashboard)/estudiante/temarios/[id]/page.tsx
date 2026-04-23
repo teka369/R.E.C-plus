@@ -171,54 +171,54 @@ export default function EstudianteSyllabusDetailPage() {
   return (
     <main className="p-4 sm:p-6">
       <div className="mx-auto max-w-4xl space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">Detalle del temario</h1>
-          <Link href="/estudiante/temarios" className="px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-700 hover:bg-slate-100">
+        <div id="tour-tem-det-header" className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold text-rec-text-primary">Detalle del temario</h1>
+          <Link href="/estudiante/temarios" className="px-3 py-2 rounded-lg border border-rec-border-strong text-sm text-rec-text-secondary hover:bg-rec-bg-muted">
             Volver
           </Link>
         </div>
 
         {loading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Cargando temario...</div>
+          <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-4 text-sm text-rec-text-muted">Cargando temario...</div>
         ) : error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+          <div className="rounded-xl border border-rec-danger-border bg-rec-danger-bg p-4 text-sm text-rec-danger-text">{error}</div>
         ) : syllabus ? (
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <article className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm space-y-4">
             <header>
-              <h2 className="text-xl font-semibold text-slate-900">{syllabus.title}</h2>
-              <p className="text-sm text-slate-600 mt-1">{subjectName} | {groupName}</p>
+              <h2 className="text-xl font-semibold text-rec-text-primary">{syllabus.title}</h2>
+              <p className="text-sm text-rec-text-muted mt-1">{subjectName} | {groupName}</p>
             </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Periodo</p>
-                <p className="mt-1 font-medium text-slate-900">{syllabus.period?.trim() || "No definido"}</p>
+            <div id="tour-tem-det-meta" className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-lg border border-rec-border-default p-3">
+                <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Periodo</p>
+                <p className="mt-1 font-medium text-rec-text-primary">{syllabus.period?.trim() || "No definido"}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Duración</p>
-                <p className="mt-1 font-medium text-slate-900">{syllabus.duration?.trim() || "No especificada"}</p>
+              <div className="rounded-lg border border-rec-border-default p-3">
+                <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Duración</p>
+                <p className="mt-1 font-medium text-rec-text-primary">{syllabus.duration?.trim() || "No especificada"}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Estado</p>
-                <p className="mt-1 font-medium text-slate-900">{STATUS_OPTIONS.find((s) => s.value === (syllabus.status ?? "BORRADOR"))?.label ?? "Borrador"}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Creado</p>
-                <p className="mt-1 font-medium text-slate-900">{formatDate(syllabus.createdAt) || "-"}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Actualizado</p>
-                <p className="mt-1 font-medium text-slate-900">{formatDate(syllabus.updatedAt) || "-"}</p>
+              <div className="rounded-lg border border-rec-border-default p-3">
+                <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Estado</p>
+                <p className="mt-1 font-medium text-rec-text-primary">{STATUS_OPTIONS.find((s) => s.value === (syllabus.status ?? "BORRADOR"))?.label ?? "Borrador"}</p>
               </div>
             </div>
 
-            <section className="space-y-2">
+            <div id="tour-tem-det-fechas" className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border border-rec-border-default p-3">
+                <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Creado</p>
+                <p className="mt-1 font-medium text-rec-text-primary">{formatDate(syllabus.createdAt) || "-"}</p>
+              </div>
+              <div className="rounded-lg border border-rec-border-default p-3">
+                <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Actualizado</p>
+                <p className="mt-1 font-medium text-rec-text-primary">{formatDate(syllabus.updatedAt) || "-"}</p>
+              </div>
+            </div>
+
+            <section id="tour-tem-det-contenido" className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Contenido del temario</h3>
-                <span className="text-xs text-slate-500">{hasStructuredContent ? "Vista por secciones" : "Vista de campo unico"}</span>
+                <h3 className="text-sm font-semibold text-rec-text-primary uppercase tracking-wide">Contenido del temario</h3>
+                <span className="text-xs text-rec-text-subtle">{hasStructuredContent ? "Vista por secciones" : "Vista de campo unico"}</span>
               </div>
 
               {hasStructuredContent ? (
@@ -228,25 +228,25 @@ export default function EstudianteSyllabusDetailPage() {
                     const wide = key === "recursos" || key === "notas";
                     const fallback = key === "notas" ? "Sin notas adicionales" : "Sin registro";
                     return (
-                      <div key={key} className={`rounded-lg border border-slate-200 bg-slate-50 p-3 ${wide ? "md:col-span-2" : ""}`}>
-                        <p className="text-xs uppercase text-slate-500 flex items-center gap-1.5">
-                          <Icon className="text-slate-500" />
+                      <div key={key} className={`rounded-lg border border-rec-border-default bg-rec-bg-base p-3 ${wide ? "md:col-span-2" : ""}`}>
+                        <p className="text-xs uppercase text-rec-text-subtle flex items-center gap-1.5">
+                          <Icon className="text-rec-text-subtle" />
                           {SECTION_TITLES[key]}
                         </p>
-                        <p className="text-sm text-slate-800 whitespace-pre-wrap mt-1">{sections[key] || fallback}</p>
+                        <p className="text-sm text-rec-text-primary whitespace-pre-wrap mt-1">{sections[key] || fallback}</p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 whitespace-pre-wrap max-h-[55vh] overflow-y-auto">
+                <div className="rounded-lg border border-rec-border-default bg-rec-bg-base p-4 text-sm text-rec-text-primary whitespace-pre-wrap max-h-[55vh] overflow-y-auto">
                   {singleFieldContent || "Sin contenido detallado."}
                 </div>
               )}
             </section>
           </article>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No se encontro el temario.</div>
+          <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-4 text-sm text-rec-text-muted">No se encontro el temario.</div>
         )}
       </div>
     </main>

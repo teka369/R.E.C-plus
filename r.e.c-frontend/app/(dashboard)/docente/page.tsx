@@ -17,6 +17,7 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 import { getErrorMessage } from "@/lib/errors";
+import DocenteGuideBarPreferenceCard from "@/components/docente/DocenteGuideBarPreferenceCard";
 
 type AssignmentInsight = {
   id: number;
@@ -223,7 +224,7 @@ export default function DocentePanel() {
       .filter((v): v is string => Boolean(v)),
   ];
   const recoveryActionDates = recoveries
-    .map((item) => item.respondedAt || item.completedAt || item.requestedAt)
+    .map((item) => item.respondedAt || item.requestedAt)
     .filter((v): v is string => Boolean(v));
 
   const publicacionesPorSemana = pointsPerWeek(publicationDates, weekSlots);
@@ -236,26 +237,46 @@ export default function DocentePanel() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-100 via-amber-50 to-cyan-100 p-4 sm:p-6 shadow-sm">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/40 blur-2xl" />
-        <div className="pointer-events-none absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-amber-300/20 blur-2xl" />
+      <section
+        id="tour-docente-hero"
+        className="relative overflow-hidden rounded-3xl border border-rec-border-default bg-gradient-to-r from-rec-success-bg via-rec-warning-bg to-rec-info-bg p-4 sm:p-6 shadow-sm"
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-rec-bg-elevated/40 blur-2xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-rec-chart-amber/20 blur-2xl" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Panel Docente</p>
-            <h1 className="mt-2 text-3xl font-black text-slate-900">Bienvenido, {user?.name || "Docente"}</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rec-success-text">Panel Docente</p>
+            <h1 className="mt-2 text-3xl font-black text-rec-text-primary">Bienvenido, {user?.name || "Docente"}</h1>
+            <p className="mt-2 max-w-2xl text-sm text-rec-text-secondary">
               Supervisa cobertura académica, recuperaciones y ritmo semanal en un solo vistazo.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3 backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Pulso de hoy</p>
-            <p className="text-2xl font-black text-slate-900">{solicitudesPendientes}</p>
-            <p className="text-xs text-slate-600">solicitudes pendientes</p>
+          <div className="flex flex-col items-stretch gap-3 sm:items-end">
+            <Link
+              id="btn-nueva-nota"
+              href="/docente/gestion-academica"
+              prefetch={false}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-rec-primary px-4 py-2.5 text-sm font-semibold text-rec-text-on-primary shadow-sm transition hover:opacity-95"
+            >
+              + Nueva nota
+            </Link>
+            <div
+              id="tour-docente-pulso"
+              className="rounded-2xl border border-white/70 bg-rec-bg-elevated/70 px-4 py-3 backdrop-blur"
+            >
+              <p className="text-xs font-semibold uppercase tracking-widest text-rec-text-subtle">Pulso de hoy</p>
+              <p className="text-2xl font-black text-rec-text-primary">{solicitudesPendientes}</p>
+              <p className="text-xs text-rec-text-muted">solicitudes pendientes</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section
+        id="resumen-periodo"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+        aria-label="Resumen del período"
+      >
         <MetricCard
           icon={<FiLayers className="h-5 w-5" />}
           label="Asignaciones"
@@ -284,21 +305,24 @@ export default function DocentePanel() {
           hint={`${eventosProximos.length} eventos próximos`}
           tone="rose"
         />
-      </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+        <div
+          id="tour-actividad-semanal"
+          className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm xl:col-span-3"
+        >
           <button
             type="button"
             onClick={() => setShowWeeklyTrend((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:bg-slate-100"
+            className="flex w-full items-center justify-between rounded-xl border border-rec-border-default bg-rec-bg-base px-4 py-3 text-left transition hover:bg-rec-bg-muted"
           >
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Actividad real últimas 6 semanas</h2>
-              <p className="text-sm text-slate-500">Conteo semanal de publicaciones y gestiones de recuperaciones.</p>
+              <h2 className="text-lg font-bold text-rec-text-primary">Actividad real últimas 6 semanas</h2>
+              <p className="text-sm text-rec-text-subtle">Conteo semanal de publicaciones y gestiones de recuperaciones.</p>
             </div>
             <FiChevronDown
-              className={`h-5 w-5 text-slate-500 transition-transform duration-300 ${showWeeklyTrend ? "rotate-180" : "rotate-0"}`}
+              className={`h-5 w-5 text-rec-text-subtle transition-transform duration-300 ${showWeeklyTrend ? "rotate-180" : "rotate-0"}`}
             />
           </button>
 
@@ -311,10 +335,10 @@ export default function DocentePanel() {
               {weeklyTrend.map((point) => {
                 const weeklyMax = Math.max(1, point.publicaciones, point.recuperaciones);
                 return (
-                  <div key={point.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div key={point.label} className="rounded-xl border border-rec-border-default bg-rec-bg-base p-4">
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Semana {point.label}</p>
-                      <p className="text-xs text-slate-500">Total {point.publicaciones + point.recuperaciones}</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-rec-text-subtle">Semana {point.label}</p>
+                      <p className="text-xs text-rec-text-subtle">Total {point.publicaciones + point.recuperaciones}</p>
                     </div>
                     <div className="space-y-2">
                       <TrendRow label="Publicaciones" value={point.publicaciones} color="cyan" maxValue={weeklyMax} />
@@ -327,56 +351,59 @@ export default function DocentePanel() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <div
+          id="tabla-grupos"
+          className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm xl:col-span-2"
+        >
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Cobertura por materia</h2>
-              <p className="text-sm text-slate-500">Materiales, temarios y preparación por asignación.</p>
+              <h2 className="text-lg font-bold text-rec-text-primary">Cobertura por materia</h2>
+              <p className="text-sm text-rec-text-subtle">Materiales, temarios y preparación por asignación.</p>
             </div>
             <Link
               href="/docente/materiales"
               prefetch={false}
-              className="rounded-full border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+              className="rounded-full border border-rec-success-border px-3 py-1 text-xs font-semibold text-rec-success-text transition hover:bg-rec-success-bg"
             >
               Ver materiales
             </Link>
           </div>
 
-          {loading && <p className="py-10 text-center text-sm text-slate-500">Cargando tablero docente...</p>}
+          {loading && <p className="py-10 text-center text-sm text-rec-text-subtle">Cargando tablero docente...</p>}
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-xl border border-rec-danger-border bg-rec-danger-bg px-4 py-3 text-sm text-rec-danger-text">{error}</div>
           )}
 
           {!loading && !error && insightByAssignment.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6 text-center">
-              <p className="font-medium text-slate-700">No hay asignaciones activas</p>
-              <p className="mt-1 text-sm text-slate-500">Cuando tengas grupos asignados, verás cobertura y ritmo.</p>
+            <div className="rounded-xl border border-dashed border-rec-border-strong bg-rec-bg-base p-4 sm:p-6 text-center">
+              <p className="font-medium text-rec-text-secondary">No hay asignaciones activas</p>
+              <p className="mt-1 text-sm text-rec-text-subtle">Cuando tengas grupos asignados, verás cobertura y ritmo.</p>
             </div>
           )}
 
           {!loading && !error && insightByAssignment.length > 0 && (
             <div className="space-y-4">
               {insightByAssignment.map((insight) => (
-                <div key={insight.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div key={insight.id} className="rounded-xl border border-rec-border-default bg-rec-bg-base/70 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="text-sm font-bold text-slate-900">{insight.subjectName}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-bold text-rec-text-primary">{insight.subjectName}</p>
+                      <p className="text-xs text-rec-text-subtle">
                         {insight.groupName} · {insight.gradeName}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="rounded-full bg-cyan-100 px-2 py-1 font-semibold text-cyan-700">
+                      <span className="rounded-full bg-rec-info-bg-strong px-2 py-1 font-semibold text-rec-info-text">
                         {insight.materials} materiales
                       </span>
-                      <span className="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-700">
+                      <span className="rounded-full bg-rec-warning-bg px-2 py-1 font-semibold text-rec-warning-text">
                         {insight.syllabi} temarios
                       </span>
                       <span
                         className={`rounded-full px-2 py-1 font-semibold ${
                           insight.temarioActivo
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-rose-100 text-rose-700"
+                            ? "bg-rec-success-bg-muted text-rec-success-text"
+                            : "bg-rec-danger-bg-strong text-rec-danger-text"
                         }`}
                       >
                         {insight.temarioActivo ? "Activo" : "Sin activar"}
@@ -392,9 +419,9 @@ export default function DocentePanel() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">Indicadores</h2>
-          <p className="text-sm text-slate-500">Progreso global del trabajo docente.</p>
+        <div id="tour-docente-indicadores" className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-rec-text-primary">Indicadores</h2>
+          <p className="text-sm text-rec-text-subtle">Progreso global del trabajo docente.</p>
           <div className="mt-5 grid grid-cols-2 gap-3">
             <RingMeter value={coveragePromedio} label="Cobertura" tone="emerald" />
             <RingMeter value={tasaRespuesta} label="Respuesta" tone="amber" />
@@ -409,55 +436,58 @@ export default function DocentePanel() {
               tone="cyan"
             />
           </div>
-          <p className="mt-3 text-[11px] text-slate-500">
+          <p className="mt-3 text-[11px] text-rec-text-subtle">
             Cobertura: 50% por materiales cargados y 50% por temario activo en cada asignación.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <div
+          id="tour-docente-agenda"
+          className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm xl:col-span-2"
+        >
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Agenda próxima</h2>
-              <p className="text-sm text-slate-500">Eventos y sesiones más cercanas de tus grupos.</p>
+              <h2 className="text-lg font-bold text-rec-text-primary">Agenda próxima</h2>
+              <p className="text-sm text-rec-text-subtle">Eventos y sesiones más cercanas de tus grupos.</p>
             </div>
             <Link
               href="/docente/horarios"
               prefetch={false}
-              className="rounded-full border border-cyan-300 px-3 py-1 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-50"
+              className="rounded-full border border-rec-info-border px-3 py-1 text-xs font-semibold text-rec-info-text transition hover:bg-rec-info-bg"
             >
               Ver horarios
             </Link>
           </div>
 
           {eventosProximos.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6 text-center text-sm text-slate-500">
+            <div className="rounded-xl border border-dashed border-rec-border-strong bg-rec-bg-base p-4 sm:p-6 text-center text-sm text-rec-text-subtle">
               No hay eventos próximos registrados.
             </div>
           ) : (
             <div className="space-y-3">
               {eventosProximos.map((event) => (
-                <div key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div key={event.id} className="rounded-xl border border-rec-border-default bg-rec-bg-base p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-slate-900">{event.title}</p>
-                    <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-600">
+                    <p className="font-semibold text-rec-text-primary">{event.title}</p>
+                    <span className="rounded-full bg-rec-bg-elevated px-2 py-1 text-xs font-medium text-rec-text-muted">
                       Grupo {event.groupId}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-rec-text-subtle">
                     {new Date(event.startAt).toLocaleString()} - {new Date(event.endAt).toLocaleTimeString()}
                   </p>
-                  {event.location && <p className="mt-1 text-xs text-slate-500">Lugar: {event.location}</p>}
+                  {event.location && <p className="mt-1 text-xs text-rec-text-subtle">Lugar: {event.location}</p>}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">Acciones rápidas</h2>
-          <p className="text-sm text-slate-500">Atajos para tus tareas más frecuentes.</p>
+        <div id="tour-docente-acciones" className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-rec-text-primary">Acciones rápidas</h2>
+          <p className="text-sm text-rec-text-subtle">Atajos para tus tareas más frecuentes.</p>
           <div className="mt-4 space-y-3">
             <QuickAction
               href="/docente/materiales/crear"
@@ -486,6 +516,8 @@ export default function DocentePanel() {
           </div>
         </div>
       </div>
+
+      <DocenteGuideBarPreferenceCard />
     </div>
   );
 }
@@ -500,10 +532,10 @@ interface MetricCardProps {
 
 function MetricCard({ icon, label, value, hint, tone }: MetricCardProps) {
   const colorClasses = {
-    emerald: "from-emerald-100 to-emerald-50 border-emerald-200 text-emerald-800",
-    cyan: "from-cyan-100 to-cyan-50 border-cyan-200 text-cyan-800",
-    amber: "from-amber-100 to-amber-50 border-amber-200 text-amber-800",
-    rose: "from-rose-100 to-rose-50 border-rose-200 text-rose-800",
+    emerald: "from-rec-success-bg-muted to-rec-success-bg border-rec-success-border text-rec-success-text",
+    cyan: "from-rec-info-bg-strong to-rec-info-bg border-rec-info-border text-rec-info-text",
+    amber: "from-rec-warning-bg to-rec-warning-bg border-rec-warning-border text-rec-warning-text",
+    rose: "from-rec-danger-bg-strong to-rec-danger-bg border-rec-danger-border text-rec-danger-text",
   };
 
   return (
@@ -514,7 +546,7 @@ function MetricCard({ icon, label, value, hint, tone }: MetricCardProps) {
           <p className="mt-2 text-3xl font-black leading-none">{value}</p>
           <p className="mt-2 text-xs opacity-80">{hint}</p>
         </div>
-        <div className="rounded-xl bg-white/70 p-2">{icon}</div>
+        <div className="rounded-xl bg-rec-bg-elevated/70 p-2">{icon}</div>
       </div>
     </div>
   );
@@ -522,19 +554,19 @@ function MetricCard({ icon, label, value, hint, tone }: MetricCardProps) {
 
 function ProgressBar({ value, color }: { value: number; color: "emerald" | "cyan" | "amber" | "rose" }) {
   const trackClass = {
-    emerald: "bg-emerald-500",
-    cyan: "bg-cyan-500",
-    amber: "bg-amber-500",
-    rose: "bg-rose-500",
+    emerald: "bg-rec-chart-emerald",
+    cyan: "bg-rec-chart-cyan",
+    amber: "bg-rec-chart-amber",
+    rose: "bg-rec-chart-rose",
   };
 
   return (
     <div>
-      <div className="mb-1 flex justify-between text-[11px] font-semibold text-slate-500">
+      <div className="mb-1 flex justify-between text-[11px] font-semibold text-rec-text-subtle">
         <span>Cobertura</span>
         <span>{value}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-rec-bg-subtle">
         <div className={`h-full rounded-full transition-all ${trackClass[color]}`} style={{ width: `${value}%` }} />
       </div>
     </div>
@@ -542,26 +574,26 @@ function ProgressBar({ value, color }: { value: number; color: "emerald" | "cyan
 }
 
 function RingMeter({ value, label, tone }: { value: number; label: string; tone: "emerald" | "cyan" | "amber" | "rose" }) {
-  const ringColor = {
-    emerald: "#10b981",
-    cyan: "#06b6d4",
-    amber: "#f59e0b",
-    rose: "#f43f5e",
+  const ringColor: Record<typeof tone, string> = {
+    emerald: "var(--rec-chart-emerald)",
+    cyan: "var(--rec-chart-cyan)",
+    amber: "var(--rec-chart-amber)",
+    rose: "var(--rec-chart-rose)",
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+    <div className="rounded-xl border border-rec-border-default bg-rec-bg-base p-3 text-center">
       <div
         className="mx-auto grid h-16 w-16 place-items-center rounded-full"
         style={{
-          background: `conic-gradient(${ringColor[tone]} ${Math.max(0, Math.min(value, 100))}%, #e2e8f0 0)`,
+          background: `conic-gradient(${ringColor[tone]} ${Math.max(0, Math.min(value, 100))}%, var(--rec-chart-track) 0)`,
         }}
       >
-        <div className="grid h-12 w-12 place-items-center rounded-full bg-white text-sm font-black text-slate-700">
+        <div className="grid h-12 w-12 place-items-center rounded-full bg-rec-bg-elevated text-sm font-black text-rec-text-secondary">
           {value}%
         </div>
       </div>
-      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-rec-text-subtle">{label}</p>
     </div>
   );
 }
@@ -576,14 +608,14 @@ interface QuickActionProps {
 function QuickAction({ href, icon, title, description }: QuickActionProps) {
   return (
     <Link href={href} prefetch={false}>
-      <div className="group rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/60">
+      <div className="group rounded-xl border border-rec-border-default bg-rec-bg-base p-4 transition hover:border-rec-success-border hover:bg-rec-success-bg/60">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-white p-2 text-emerald-700 shadow-sm">{icon}</div>
+          <div className="rounded-lg bg-rec-bg-elevated p-2 text-rec-success-text shadow-sm">{icon}</div>
           <div className="flex-1">
-            <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-            <p className="mt-1 text-xs text-slate-600">{description}</p>
+            <h3 className="text-sm font-bold text-rec-text-primary">{title}</h3>
+            <p className="mt-1 text-xs text-rec-text-muted">{description}</p>
           </div>
-          <div className="flex-shrink-0 text-slate-400 transition group-hover:text-emerald-700">→</div>
+          <div className="flex-shrink-0 text-rec-text-subtle transition group-hover:text-rec-success-text">→</div>
         </div>
       </div>
     </Link>
@@ -602,18 +634,18 @@ function TrendRow({
   maxValue: number;
 }) {
   const barColor = {
-    cyan: "bg-cyan-500",
-    amber: "bg-amber-500",
+    cyan: "bg-rec-chart-cyan",
+    amber: "bg-rec-chart-amber",
   };
   const width = Math.round((value / Math.max(1, maxValue)) * 100);
 
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
+      <div className="mb-1 flex items-center justify-between text-xs text-rec-text-muted">
         <span>{label}</span>
         <span className="font-semibold">{value}</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-rec-bg-subtle">
         <div className={`h-full rounded-full ${barColor[color]}`} style={{ width: `${width}%` }} />
       </div>
     </div>

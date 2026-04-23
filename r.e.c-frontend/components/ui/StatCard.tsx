@@ -19,7 +19,7 @@ export default function StatCard({ label, value, icon, trend }: Props) {
       {trend && (
         <p
           className={`mt-1 text-xs font-semibold ${
-            trend.direction === "up" ? "text-green-600" : "text-red-600"
+            trend.direction === "up" ? "text-rec-success-text" : "text-rec-danger-text"
           }`}
         >
           {trend.direction === "up" ? "↑" : "↓"} {trend.value}%

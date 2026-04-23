@@ -19,22 +19,22 @@ const TIPO_LABEL: Record<FeedbackTipo, string> = {
 };
 
 const TIPO_STYLE: Record<FeedbackTipo, string> = {
-  POSITIVA: "bg-emerald-100 text-emerald-800 border border-emerald-200",
-  NEGATIVA: "bg-red-100 text-red-800 border border-red-200",
-  INFORMATIVA: "bg-blue-100 text-blue-800 border border-blue-200",
-  SEGUIMIENTO: "bg-amber-100 text-amber-800 border border-amber-200",
+  POSITIVA: "bg-rec-success-bg-muted text-rec-success-text border border-rec-success-border",
+  NEGATIVA: "bg-rec-danger-bg-strong text-rec-danger-text border border-rec-danger-border",
+  INFORMATIVA: "bg-rec-info-bg-strong text-rec-info-text border border-rec-info-border",
+  SEGUIMIENTO: "bg-rec-warning-bg text-rec-warning-text border border-rec-warning-border",
 };
 
 const TIPO_BORDER: Record<FeedbackTipo, string> = {
-  POSITIVA: "border-l-emerald-400",
-  NEGATIVA: "border-l-red-400",
-  INFORMATIVA: "border-l-blue-400",
-  SEGUIMIENTO: "border-l-amber-400",
+  POSITIVA: "border-l-rec-success-border",
+  NEGATIVA: "border-l-rec-danger-border",
+  INFORMATIVA: "border-l-rec-info-border",
+  SEGUIMIENTO: "border-l-rec-warning-border",
 };
 
 const ESTADO_STYLE: Record<FeedbackEstado, string> = {
-  PENDIENTE: "bg-amber-100 text-amber-800 border border-amber-200",
-  ATENDIDA: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+  PENDIENTE: "bg-rec-warning-bg text-rec-warning-text border border-rec-warning-border",
+  ATENDIDA: "bg-rec-success-bg-muted text-rec-success-text border border-rec-success-border",
 };
 
 export default function FeedbackEstudiantePage() {
@@ -79,18 +79,19 @@ export default function FeedbackEstudiantePage() {
       {/* Header */}
       <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6">
         <div
-          className="rounded-2xl border p-4 sm:p-6 text-white"
+          id="tour-est-fb-header"
+          className="rounded-2xl border p-4 sm:p-6 text-rec-text-on-media"
           style={{
             borderColor: "var(--rec-soft)",
             background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
           }}
         >
           <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
-          <p className="text-white/90 mt-1 text-sm">
+          <p className="text-rec-text-on-media/90 mt-1 text-sm">
             Consulta la retroalimentación de tus docentes.
           </p>
           {!loading && pendientes > 0 && (
-            <p className="mt-3 text-sm bg-white/20 inline-block px-3 py-1 rounded-full">
+            <p className="mt-3 text-sm bg-rec-bg-elevated/20 inline-block px-3 py-1 rounded-full">
               {pendientes} observaci{pendientes !== 1 ? "ones" : "ón"} pendiente{pendientes !== 1 ? "s" : ""}
             </p>
           )}
@@ -98,75 +99,98 @@ export default function FeedbackEstudiantePage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
-        {/* Summary chips */}
-        {!loading && feedback.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {(["POSITIVA", "NEGATIVA", "INFORMATIVA", "SEGUIMIENTO"] as FeedbackTipo[]).map((tipo) => {
-              const count = feedback.filter((fb) => fb.tipo === tipo).length;
-              return (
-                <button
-                  key={tipo}
-                  onClick={() => setFilterTipo(filterTipo === tipo ? "" : tipo)}
-                  className={`rounded-xl p-3 border text-left transition-all ${
-                    filterTipo === tipo
-                      ? TIPO_STYLE[tipo] + " ring-2 ring-offset-1 ring-current"
-                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <p className="text-lg font-bold">{count}</p>
-                  <p className="text-xs">{TIPO_LABEL[tipo]}</p>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Filters */}
-        {!loading && feedback.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-wrap gap-3">
-            <select
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              value={filterTipo}
-              onChange={(e) => setFilterTipo(e.target.value)}
-            >
-              <option value="">Todos los tipos</option>
-              {(Object.keys(TIPO_LABEL) as FeedbackTipo[]).map((t) => (
-                <option key={t} value={t}>{TIPO_LABEL[t]}</option>
-              ))}
-            </select>
-            <select
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              value={filterEstado}
-              onChange={(e) => setFilterEstado(e.target.value)}
-            >
-              <option value="">Todos los estados</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="ATENDIDA">Atendida</option>
-            </select>
-          </div>
+        {!loading && (
+          <>
+            <div id="tour-est-fb-resumen">
+              {feedback.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {(["POSITIVA", "NEGATIVA", "INFORMATIVA", "SEGUIMIENTO"] as FeedbackTipo[]).map((tipo) => {
+                    const count = feedback.filter((fb) => fb.tipo === tipo).length;
+                    return (
+                      <button
+                        key={tipo}
+                        type="button"
+                        onClick={() => setFilterTipo(filterTipo === tipo ? "" : tipo)}
+                        className={`rounded-xl p-3 border text-left transition-all ${
+                          filterTipo === tipo
+                            ? TIPO_STYLE[tipo] + " ring-2 ring-offset-1 ring-current"
+                            : "bg-rec-bg-elevated border-rec-border-default text-rec-text-secondary hover:bg-rec-bg-base"
+                        }`}
+                      >
+                        <p className="text-lg font-bold">{count}</p>
+                        <p className="text-xs">{TIPO_LABEL[tipo]}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-rec-text-subtle rounded-xl border border-dashed border-rec-border-default bg-rec-bg-base px-4 py-3">
+                  Cuando haya observaciones de tus docentes, verás aquí un resumen por tipo (positiva, negativa, informativa, seguimiento).
+                </p>
+              )}
+            </div>
+            <div id="tour-est-fb-filtros">
+              {feedback.length > 0 ? (
+                <div className="bg-rec-bg-elevated border border-rec-border-default rounded-xl p-4 shadow-sm flex flex-wrap gap-3">
+                  <select
+                    className="border border-rec-border-default rounded-lg px-3 py-2 text-sm bg-rec-bg-base focus:outline-none focus:ring-2 focus:ring-rec-success-border"
+                    value={filterTipo}
+                    onChange={(e) => setFilterTipo(e.target.value)}
+                  >
+                    <option value="">Todos los tipos</option>
+                    {(Object.keys(TIPO_LABEL) as FeedbackTipo[]).map((t) => (
+                      <option key={t} value={t}>
+                        {TIPO_LABEL[t]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="border border-rec-border-default rounded-lg px-3 py-2 text-sm bg-rec-bg-base focus:outline-none focus:ring-2 focus:ring-rec-success-border"
+                    value={filterEstado}
+                    onChange={(e) => setFilterEstado(e.target.value)}
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="PENDIENTE">Pendiente</option>
+                    <option value="ATENDIDA">Atendida</option>
+                  </select>
+                </div>
+              ) : (
+                <p className="text-xs text-rec-text-subtle rounded-xl border border-dashed border-rec-border-default bg-rec-bg-base px-4 py-3">
+                  Los filtros por tipo y estado aparecerán cuando tengas al menos un mensaje en la lista.
+                </p>
+              )}
+            </div>
+          </>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
+          <div className="bg-rec-danger-bg border border-rec-danger-border rounded-xl p-4 text-sm text-rec-danger-text">{error}</div>
         )}
 
-        {loading ? (
-          <div className="text-center py-12 text-slate-500 text-sm">Cargando…</div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-12 bg-white border border-slate-200 rounded-xl text-slate-500 text-sm">
-            <FiMessageSquare className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-            <p className="font-medium">Sin feedback registrado</p>
-            <p className="mt-1">Aún no tienes observaciones de tus docentes.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-500 font-medium">
-              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
-            </p>
-            {filtered.map((fb) => (
+        <div id="tour-est-fb-lista">
+          {loading ? (
+            <div className="text-center py-12 text-rec-text-subtle text-sm">Cargando…</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 bg-rec-bg-elevated border border-rec-border-default rounded-xl text-rec-text-subtle text-sm">
+              <FiMessageSquare className="w-10 h-10 mx-auto mb-3 text-rec-text-subtle" />
+              <p className="font-medium">
+                {feedback.length === 0 ? "Sin feedback registrado" : "Sin resultados con este filtro"}
+              </p>
+              <p className="mt-1">
+                {feedback.length === 0
+                  ? "Aún no tienes observaciones de tus docentes."
+                  : "Prueba otro tipo o estado en los filtros."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-rec-text-subtle font-medium">
+                {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
+              </p>
+              {filtered.map((fb) => (
               <article
                 key={fb.id}
-                className={`bg-white border border-slate-200 rounded-xl shadow-sm p-4 border-l-4 ${TIPO_BORDER[fb.tipo]}`}
+                className={`bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4 border-l-4 ${TIPO_BORDER[fb.tipo]}`}
               >
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -177,29 +201,29 @@ export default function FeedbackEstudiantePage() {
                       {fb.estado === "PENDIENTE" ? "Pendiente" : "Atendida"}
                     </span>
                     {fb.createdAt && (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-rec-text-subtle">
                         {new Date(fb.createdAt).toLocaleDateString()}
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => setDetailFeedback(fb)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-medium transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rec-success-border text-rec-success-text hover:bg-rec-success-bg text-xs font-medium transition-colors"
                   >
                     <FiEye className="w-3.5 h-3.5" />
                     Ver detalle
                   </button>
                 </div>
-                <h3 className="font-semibold text-slate-900 mt-2">{fb.title}</h3>
-                <p className="text-sm text-slate-700 mt-1">{fb.content}</p>
+                <h3 className="font-semibold text-rec-text-primary mt-2">{fb.title}</h3>
+                <p className="text-sm text-rec-text-secondary mt-1">{fb.content}</p>
                 {((fb.strengths?.items?.length ?? 0) > 0 || (fb.improvements?.items?.length ?? 0) > 0) && (
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(fb.strengths?.items?.length ?? 0) > 0 && (
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
-                        <p className="text-xs font-semibold text-emerald-800 mb-1.5">Fortalezas</p>
+                      <div className="bg-rec-success-bg border border-rec-success-border rounded-lg p-3">
+                        <p className="text-xs font-semibold text-rec-success-text mb-1.5">Fortalezas</p>
                         <ul className="space-y-1">
                           {fb.strengths!.items.map((item, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-xs text-emerald-700">
+                            <li key={i} className="flex items-start gap-1.5 text-xs text-rec-success-text">
                               <FiCheck className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                               {item}
                             </li>
@@ -208,11 +232,11 @@ export default function FeedbackEstudiantePage() {
                       </div>
                     )}
                     {(fb.improvements?.items?.length ?? 0) > 0 && (
-                      <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                        <p className="text-xs font-semibold text-amber-800 mb-1.5">Áreas de mejora</p>
+                      <div className="bg-rec-warning-bg border border-rec-warning-border rounded-lg p-3">
+                        <p className="text-xs font-semibold text-rec-warning-text mb-1.5">Áreas de mejora</p>
                         <ul className="space-y-1">
                           {fb.improvements!.items.map((item, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-xs text-amber-700">
+                            <li key={i} className="flex items-start gap-1.5 text-xs text-rec-warning-text">
                               <FiArrowRight className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                               {item}
                             </li>
@@ -223,19 +247,20 @@ export default function FeedbackEstudiantePage() {
                   </div>
                 )}
               </article>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {detailFeedback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Detalle del feedback</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rec-text-primary/50 p-4">
+          <div className="bg-rec-bg-elevated rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-rec-border-subtle">
+              <h2 className="font-semibold text-rec-text-primary">Detalle del feedback</h2>
               <button
                 onClick={() => setDetailFeedback(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"
+                className="p-1.5 rounded-lg hover:bg-rec-bg-muted text-rec-text-subtle"
               >
                 <FiX className="w-5 h-5" />
               </button>
@@ -249,19 +274,19 @@ export default function FeedbackEstudiantePage() {
                   {detailFeedback.estado === "PENDIENTE" ? "Pendiente" : "Atendida"}
                 </span>
                 {detailFeedback.createdAt && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-rec-text-subtle">
                     {new Date(detailFeedback.createdAt).toLocaleDateString()}
                   </span>
                 )}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">{detailFeedback.title}</h3>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">{detailFeedback.content}</p>
+              <h3 className="text-lg font-semibold text-rec-text-primary">{detailFeedback.title}</h3>
+              <p className="text-sm text-rec-text-secondary whitespace-pre-wrap">{detailFeedback.content}</p>
               {(detailFeedback.strengths?.items?.length ?? 0) > 0 && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-emerald-800 mb-1.5">Fortalezas</p>
+                <div className="bg-rec-success-bg border border-rec-success-border rounded-lg p-3">
+                  <p className="text-xs font-semibold text-rec-success-text mb-1.5">Fortalezas</p>
                   <ul className="space-y-1">
                     {detailFeedback.strengths!.items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-sm text-emerald-700">
+                      <li key={i} className="flex items-start gap-1.5 text-sm text-rec-success-text">
                         <FiCheck className="w-4 h-4 mt-0.5 shrink-0" />
                         {item}
                       </li>
@@ -270,11 +295,11 @@ export default function FeedbackEstudiantePage() {
                 </div>
               )}
               {(detailFeedback.improvements?.items?.length ?? 0) > 0 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-amber-800 mb-1.5">Áreas de mejora</p>
+                <div className="bg-rec-warning-bg border border-rec-warning-border rounded-lg p-3">
+                  <p className="text-xs font-semibold text-rec-warning-text mb-1.5">Áreas de mejora</p>
                   <ul className="space-y-1">
                     {detailFeedback.improvements!.items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-sm text-amber-700">
+                      <li key={i} className="flex items-start gap-1.5 text-sm text-rec-warning-text">
                         <FiArrowRight className="w-4 h-4 mt-0.5 shrink-0" />
                         {item}
                       </li>
@@ -283,10 +308,10 @@ export default function FeedbackEstudiantePage() {
                 </div>
               )}
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end">
+            <div className="px-4 sm:px-6 py-4 border-t border-rec-border-subtle flex justify-end">
               <button
                 onClick={() => setDetailFeedback(null)}
-                className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                className="px-4 py-2 text-sm bg-rec-primary text-rec-text-on-media rounded-lg hover:bg-rec-primary-strong transition-colors"
               >
                 Cerrar
               </button>

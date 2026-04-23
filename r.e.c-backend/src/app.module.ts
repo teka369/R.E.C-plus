@@ -1,6 +1,7 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { UsersModule } from './users/users.module';
@@ -25,6 +26,32 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
 import { AuditContextMiddleware } from './common/audit-context.middleware';
 import { RestoreModule } from './admin/restore/restore.module';
 
+const throttlerRedisLog = new Logger('ThrottlerRedis');
+
+/** Si REDIS_URL está definido pero Redis no responde, evita 500 en login (throttler). */
+async function redisThrottlerStorageOrUndefined(
+  redisUrl: string,
+): Promise<ThrottlerStorageRedisService | undefined> {
+  const probe = new Redis(redisUrl, {
+    connectTimeout: 2500,
+    maxRetriesPerRequest: 1,
+    lazyConnect: true,
+  });
+  try {
+    await probe.connect();
+    await probe.ping();
+    await probe.quit();
+    return new ThrottlerStorageRedisService(redisUrl);
+  } catch {
+    try {
+      probe.disconnect();
+    } catch {
+      /* noop */
+    }
+    return undefined;
+  }
+}
+
 @Module({
   imports: [
     LoggerModule.forRoot({
@@ -42,18 +69,23 @@ import { RestoreModule } from './admin/restore/restore.module';
       },
     }),
     // ttl en milisegundos (v6+): 60_000ms = 60 segundos, 100 req/min global
-    // Si REDIS_URL está configurado, persiste contadores en Redis (survives restarts)
-    // Si no, usa in-memory (dev/test)
+    // Redis solo si REDIS_URL responde; si no, memoria (evita 500 con REDIS_URL mal o Redis caído)
     ThrottlerModule.forRootAsync({
-      useFactory: () => {
+      useFactory: async () => {
         const redisUrl = process.env.REDIS_URL;
         const isTest = process.env.NODE_ENV === 'test';
+        let storage: ThrottlerStorageRedisService | undefined;
+        if (redisUrl && !isTest) {
+          storage = await redisThrottlerStorageOrUndefined(redisUrl);
+          if (!storage) {
+            throttlerRedisLog.warn(
+              'Redis no alcanzable para rate limit; usando memoria del proceso',
+            );
+          }
+        }
         return {
           throttlers: [{ ttl: 60_000, limit: isTest ? 10_000 : 100 }],
-          storage:
-            redisUrl && !isTest
-              ? new ThrottlerStorageRedisService(redisUrl)
-              : undefined,
+          storage,
         };
       },
     }),

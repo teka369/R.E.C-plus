@@ -207,12 +207,12 @@ export default function SecretariaPromocionesPage() {
               <div className="sec-toolbar-group">
                 <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds(new Set(sourceGroups.map((g) => g.id)))} disabled={selectedGroupIds.size === sourceGroups.length}>Seleccionar todos</Button>
                 <Button variant="secondary" size="sm" onClick={() => setSelectedGroupIds(new Set())} disabled={selectedGroupIds.size === 0}>Limpiar selección</Button>
-                {selectedGroupIds.size > 0 && <span className="text-xs text-gray-600">Seleccionados: {selectedGroupIds.size}/{sourceGroups.length}</span>}
+                {selectedGroupIds.size > 0 && <span className="text-xs text-rec-text-muted">Seleccionados: {selectedGroupIds.size}/{sourceGroups.length}</span>}
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm sec-table">
-                <thead className="bg-gray-100">
+                <thead className="bg-rec-bg-muted">
                   <tr>
                     <th className="p-2 text-left" style={{ width: "32px" }}>Sel.</th>
                     <th className="p-2 text-left">Grupo origen</th>
@@ -225,7 +225,7 @@ export default function SecretariaPromocionesPage() {
                     const gm = groupMap[g.id];
                     const isSelected = selectedGroupIds.has(g.id);
                     return (
-                      <tr key={g.id} className={`border-t border-gray-200 align-top ${isSelected ? "bg-emerald-50" : ""}`}>
+                      <tr key={g.id} className={`border-t border-rec-border-default align-top ${isSelected ? "bg-rec-success-bg" : ""}`}>
                         <td className="p-2">
                           <input
                             type="checkbox"
@@ -277,7 +277,7 @@ export default function SecretariaPromocionesPage() {
                                 <span>{s.nombres} {s.apellidos} — {s.codigo}</span>
                               </label>
                             ))}
-                            {(gm?.students || []).length === 0 && <p className="text-xs text-gray-600">Sin estudiantes en el grupo</p>}
+                            {(gm?.students || []).length === 0 && <p className="text-xs text-rec-text-muted">Sin estudiantes en el grupo</p>}
                           </div>
                         </td>
                       </tr>
@@ -291,10 +291,10 @@ export default function SecretariaPromocionesPage() {
 
         <div className="sec-toolbar">
           {promotionProgress && (
-            <div className="flex-1 border rounded p-2 bg-emerald-50">
+            <div className="flex-1 border rounded p-2 bg-rec-success-bg">
               <div className="text-xs font-medium mb-1">Procesando: {promotionProgress.current}/{promotionProgress.total}</div>
               <div className="w-full border rounded overflow-hidden" style={{ height: "4px" }}>
-                <div className="bg-emerald-500" style={{ width: `${(promotionProgress.current / promotionProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
+                <div className="bg-rec-primary" style={{ width: `${(promotionProgress.current / promotionProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
               </div>
             </div>
           )}
@@ -317,15 +317,15 @@ export default function SecretariaPromocionesPage() {
               targetGroups.forEach((g) => (nameById[g.id] = g.nombre));
               return (
                 <>
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-rec-text-secondary">
                     <span className="mr-4">Total promovidos: {totalPromoted}</span>
                     <span className="mr-4">Total repiten: {totalRepeat}</span>
                     <span className="mr-4">Total estudiantes: {totalStudents}</span>
                     <span className="">% promoción: {pct}%</span>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200 text-sm">
-                      <thead className="bg-gray-100">
+                    <table className="min-w-full border border-rec-border-default text-sm">
+                      <thead className="bg-rec-bg-muted">
                         <tr>
                           <th className="p-2 text-left">Origen</th>
                           <th className="p-2 text-left">Destino</th>
@@ -341,7 +341,7 @@ export default function SecretariaPromocionesPage() {
                           const groupTotal = r.promotedCount + r.repeatCount;
                           const groupPct = groupTotal > 0 ? Math.round((r.promotedCount / groupTotal) * 100) : 0;
                           return (
-                            <tr key={idx} className="border-t border-gray-200">
+                            <tr key={idx} className="border-t border-rec-border-default">
                               <td className="p-2">{r.sourceGroupName || nameById[r.sourceGroupId] || `Grupo ${r.sourceGroupId}`}</td>
                               <td className="p-2">{r.targetGroupName || nameById[r.targetGroupId] || `Grupo ${r.targetGroupId}`}</td>
                               <td className="p-2">{r.promotedCount}</td>
@@ -355,26 +355,26 @@ export default function SecretariaPromocionesPage() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="text-sm text-gray-700 mt-2">
+                  <div className="text-sm text-rec-text-secondary mt-2">
                     {result.summary.map((r, idx) => {
                       const gm = groupMap[r.sourceGroupId];
                       const nameByStudentId = new Map<number, string>((gm?.students || []).map((s) => [s.id, `${s.nombres} ${s.apellidos}`]));
                       const promotedList = r.promotedStudentIds || [];
                       const repeatList = r.repeatStudentIds || [];
                       return (
-                        <div key={`detail-${idx}`} className="border-t border-gray-200 pt-2 mt-2">
+                        <div key={`detail-${idx}`} className="border-t border-rec-border-default pt-2 mt-2">
                           <div className="font-medium">Detalle {(r.sourceGroupName || nameById[r.sourceGroupId])} → {(r.targetGroupName || nameById[r.targetGroupId])}</div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             <div>
-                              <div className="text-gray-600">Promovidos ({promotedList.length})</div>
+                              <div className="text-rec-text-muted">Promovidos ({promotedList.length})</div>
                               <ul className="list-disc pl-5">
-                                {promotedList.length === 0 ? <li className="text-gray-500">Ninguno</li> : promotedList.map((id) => <li key={id}>{nameByStudentId.get(id) || `ID ${id}`}</li>)}
+                                {promotedList.length === 0 ? <li className="text-rec-text-subtle">Ninguno</li> : promotedList.map((id) => <li key={id}>{nameByStudentId.get(id) || `ID ${id}`}</li>)}
                               </ul>
                             </div>
                             <div>
-                              <div className="text-gray-600">Repiten ({repeatList.length})</div>
+                              <div className="text-rec-text-muted">Repiten ({repeatList.length})</div>
                               <ul className="list-disc pl-5">
-                                {repeatList.length === 0 ? <li className="text-gray-500">Ninguno</li> : repeatList.map((id) => <li key={id}>{nameByStudentId.get(id) || `ID ${id}`}</li>)}
+                                {repeatList.length === 0 ? <li className="text-rec-text-subtle">Ninguno</li> : repeatList.map((id) => <li key={id}>{nameByStudentId.get(id) || `ID ${id}`}</li>)}
                               </ul>
                             </div>
                           </div>

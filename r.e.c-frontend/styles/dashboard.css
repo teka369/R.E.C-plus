@@ -5,18 +5,41 @@
 	background:
 		radial-gradient(980px 500px at -10% -20%, color-mix(in srgb, var(--rec-primary) 14%, transparent) 0%, transparent 62%),
 		radial-gradient(860px 420px at 110% -30%, color-mix(in srgb, var(--rec-accent) 10%, transparent) 0%, transparent 60%),
-		linear-gradient(180deg, var(--rec-surface) 0%, color-mix(in srgb, var(--rec-soft) 60%, white 40%) 100%);
+		linear-gradient(180deg, var(--rec-surface) 0%, color-mix(in srgb, var(--rec-soft) 60%, var(--rec-bg-elevated) 40%) 100%);
 }
 
 .secretaria-theme {
-	--sec-primary: #238f50;
-	--sec-primary-strong: #1d7a44;
-	--sec-surface: #eef7f1;
-	--sec-border: color-mix(in srgb, var(--sec-primary) 18%, white 82%);
 	background:
 		radial-gradient(840px 420px at -8% -16%, color-mix(in srgb, var(--sec-primary) 14%, transparent) 0%, transparent 64%),
 		radial-gradient(740px 360px at 110% -22%, color-mix(in srgb, var(--rec-accent) 11%, transparent) 0%, transparent 66%),
-		linear-gradient(180deg, #edf7f0 0%, #e7f2ea 52%, #e3efe7 100%);
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--sec-surface) 94%, var(--rec-bg-base) 6%) 0%,
+			color-mix(in srgb, var(--sec-surface) 88%, var(--rec-bg-base) 12%) 52%,
+			color-mix(in srgb, var(--sec-surface) 82%, var(--rec-bg-base) 18%) 100%
+		);
+}
+
+.docente-theme {
+	background:
+		radial-gradient(840px 420px at -8% -16%, color-mix(in srgb, var(--role-primary) 14%, transparent) 0%, transparent 64%),
+		radial-gradient(740px 360px at 110% -22%, color-mix(in srgb, var(--rec-accent) 11%, transparent) 0%, transparent 66%),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--role-surface) 94%, var(--rec-bg-base) 6%) 0%,
+			color-mix(in srgb, var(--role-surface) 85%, var(--rec-bg-base) 15%) 100%
+		);
+}
+
+.estudiante-theme {
+	background:
+		radial-gradient(840px 420px at -8% -16%, color-mix(in srgb, var(--role-primary) 14%, transparent) 0%, transparent 64%),
+		radial-gradient(740px 360px at 110% -22%, color-mix(in srgb, var(--rec-accent) 11%, transparent) 0%, transparent 66%),
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--role-surface) 94%, var(--rec-bg-base) 6%) 0%,
+			color-mix(in srgb, var(--role-surface) 85%, var(--rec-bg-base) 15%) 100%
+		);
 }
 
 .dashboard-content {
@@ -34,10 +57,33 @@
 	position: absolute;
 	inset: 0;
 	pointer-events: none;
-	background-image:
-		radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--sec-primary) 15%, transparent) 1px, transparent 0);
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		color-mix(in srgb, var(--sec-primary) 15%, transparent) 1px,
+		transparent 0
+	);
 	background-size: 22px 22px;
 	opacity: 0.2;
+}
+
+.docente-theme .dashboard-content,
+.estudiante-theme .dashboard-content {
+	position: relative;
+}
+
+.docente-theme .dashboard-content::before,
+.estudiante-theme .dashboard-content::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		color-mix(in srgb, var(--role-primary) 15%, transparent) 1px,
+		transparent 0
+	);
+	background-size: 22px 22px;
+	opacity: 0.18;
 }
 
 .sec-page {
@@ -74,8 +120,14 @@
 	padding: 0.65rem 0.75rem;
 	border: 1px solid var(--sec-border);
 	border-radius: 12px;
-	background: color-mix(in srgb, var(--sec-surface) 62%, white 38%);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+	background: color-mix(in srgb, var(--sec-surface) 62%, var(--rec-bg-elevated) 38%);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 55%, transparent 45%);
+}
+
+.docente-theme .sec-toolbar,
+.estudiante-theme .sec-toolbar {
+	border-color: var(--role-border);
+	background: color-mix(in srgb, var(--role-surface) 55%, var(--rec-bg-elevated) 45%);
 }
 
 .sec-toolbar .sec-toolbar-group {
@@ -101,14 +153,25 @@
 	border-radius: 9999px;
 	font-size: 0.75rem;
 	font-weight: 600;
-	background: rgba(255, 255, 255, 0.72);
-	color: color-mix(in srgb, var(--sec-primary-strong) 88%, #10271c 12%);
+	background: color-mix(in srgb, var(--rec-bg-elevated) 72%, transparent 28%);
+	color: color-mix(in srgb, var(--sec-primary-strong) 88%, var(--rec-text-primary) 12%);
 	text-decoration: none;
 }
 
+.docente-theme .sec-flow-link,
+.estudiante-theme .sec-flow-link {
+	border-color: var(--role-border);
+	color: color-mix(in srgb, var(--role-primary-strong) 88%, var(--rec-text-primary) 12%);
+}
+
 .sec-flow-link:hover {
-	background: color-mix(in srgb, var(--sec-surface) 78%, white 22%);
+	background: color-mix(in srgb, var(--sec-surface) 78%, var(--rec-bg-elevated) 22%);
 	transform: translateY(-1px);
+}
+
+.docente-theme .sec-flow-link:hover,
+.estudiante-theme .sec-flow-link:hover {
+	background: color-mix(in srgb, var(--role-surface) 72%, var(--rec-bg-elevated) 28%);
 }
 
 .sec-action-cluster {
@@ -135,9 +198,13 @@
 	align-items: flex-start;
 	gap: 1rem;
 	padding: 1.1rem 1.1rem 1rem;
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 28%, white 72%);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 28%, var(--rec-bg-elevated) 72%);
 	border-radius: 14px;
-	background: linear-gradient(135deg, #ffffff 0%, color-mix(in srgb, var(--rec-soft) 55%, white 45%) 100%);
+	background: linear-gradient(
+		135deg,
+		var(--rec-bg-elevated) 0%,
+		color-mix(in srgb, var(--rec-soft) 55%, var(--rec-bg-elevated) 45%) 100%
+	);
 	box-shadow: 0 10px 28px color-mix(in srgb, var(--rec-primary) 12%, transparent);
 }
 
@@ -145,12 +212,31 @@
 	border-radius: 16px;
 	padding: 1.15rem 1.2rem 1.05rem;
 	border-color: var(--sec-border);
-	background:
-		linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, color-mix(in srgb, var(--sec-surface) 78%, white 22%) 100%);
+	background: linear-gradient(
+		145deg,
+		color-mix(in srgb, var(--rec-bg-elevated) 95%, transparent 5%) 0%,
+		color-mix(in srgb, var(--sec-surface) 78%, var(--rec-bg-elevated) 22%) 100%
+	);
 	box-shadow:
 		0 14px 32px color-mix(in srgb, var(--sec-primary) 12%, transparent),
-		inset 0 1px 0 rgba(255, 255, 255, 0.85);
-	backdrop-filter: blur(6px);
+		inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 50%, transparent 50%);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+}
+
+.docente-theme .sec-hero,
+.estudiante-theme .sec-hero {
+	border-color: var(--role-border);
+	background: linear-gradient(
+		145deg,
+		color-mix(in srgb, var(--rec-bg-elevated) 92%, transparent 8%) 0%,
+		color-mix(in srgb, var(--role-surface) 75%, var(--rec-bg-elevated) 25%) 100%
+	);
+	box-shadow:
+		0 14px 32px color-mix(in srgb, var(--role-primary) 12%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 45%, transparent 55%);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
 }
 
 .sec-title {
@@ -170,14 +256,14 @@
 	margin-top: 0.3rem;
 	font-size: 0.83rem;
 	line-height: 1.45;
-	color: color-mix(in srgb, var(--rec-ink) 74%, white 26%);
+	color: var(--rec-text-muted);
 	max-width: 75ch;
 }
 
 .sec-card {
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, white 80%);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, var(--rec-bg-elevated) 80%);
 	border-radius: 12px;
-	background: #ffffff;
+	background: var(--rec-bg-elevated);
 	box-shadow: 0 6px 18px color-mix(in srgb, var(--rec-primary) 8%, transparent);
 	transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
 }
@@ -185,21 +271,50 @@
 .secretaria-theme .sec-card {
 	border-color: var(--sec-border);
 	border-radius: 14px;
-	background: linear-gradient(170deg, rgba(255, 255, 255, 0.97) 0%, rgba(250, 255, 251, 0.96) 100%);
+	background: linear-gradient(
+		170deg,
+		color-mix(in srgb, var(--rec-bg-elevated) 97%, transparent 3%) 0%,
+		color-mix(in srgb, var(--sec-surface) 55%, var(--rec-bg-elevated) 45%) 100%
+	);
 	box-shadow:
 		0 8px 24px color-mix(in srgb, var(--sec-primary) 7%, transparent),
-		inset 0 1px 0 rgba(255, 255, 255, 0.9);
+		inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 55%, transparent 45%);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+
+.docente-theme .sec-card,
+.estudiante-theme .sec-card {
+	border-color: var(--role-border);
+	border-radius: 14px;
+	background: linear-gradient(
+		170deg,
+		color-mix(in srgb, var(--rec-bg-elevated) 96%, transparent 4%) 0%,
+		color-mix(in srgb, var(--role-surface) 50%, var(--rec-bg-elevated) 50%) 100%
+	);
+	box-shadow:
+		0 8px 24px color-mix(in srgb, var(--role-primary) 8%, transparent),
+		inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 50%, transparent 50%);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
 }
 
 .sec-card:hover {
-	border-color: color-mix(in srgb, var(--rec-primary) 34%, white 66%);
+	border-color: color-mix(in srgb, var(--rec-primary) 34%, var(--rec-bg-elevated) 66%);
 	box-shadow: 0 14px 34px color-mix(in srgb, var(--rec-primary) 14%, transparent);
 	transform: translateY(-1px);
 }
 
 .secretaria-theme .sec-card:hover {
-	border-color: color-mix(in srgb, var(--sec-primary) 30%, white 70%);
+	border-color: color-mix(in srgb, var(--sec-primary) 30%, var(--rec-bg-elevated) 70%);
 	box-shadow: 0 18px 36px color-mix(in srgb, var(--sec-primary) 13%, transparent);
+	transform: translateY(-2px);
+}
+
+.docente-theme .sec-card:hover,
+.estudiante-theme .sec-card:hover {
+	border-color: color-mix(in srgb, var(--role-primary) 32%, var(--rec-bg-elevated) 68%);
+	box-shadow: 0 18px 36px color-mix(in srgb, var(--role-primary) 14%, transparent);
 	transform: translateY(-2px);
 }
 
@@ -211,34 +326,47 @@
 	border-radius: 9999px;
 	font-size: 0.72rem;
 	font-weight: 600;
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 40%, white 60%);
-	background: color-mix(in srgb, var(--rec-soft) 75%, white 25%);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 40%, var(--rec-bg-elevated) 60%);
+	background: color-mix(in srgb, var(--rec-soft) 75%, var(--rec-bg-elevated) 25%);
 	color: color-mix(in srgb, var(--rec-primary-strong) 82%, var(--rec-ink) 18%);
 }
 
 .secretaria-theme .sec-chip {
-	border-color: color-mix(in srgb, var(--sec-primary) 34%, white 66%);
-	background: linear-gradient(180deg, color-mix(in srgb, var(--sec-surface) 82%, white 18%) 0%, color-mix(in srgb, var(--sec-surface) 65%, white 35%) 100%);
+	border-color: color-mix(in srgb, var(--sec-primary) 34%, var(--rec-bg-elevated) 66%);
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--sec-surface) 82%, var(--rec-bg-elevated) 18%) 0%,
+		color-mix(in srgb, var(--sec-surface) 65%, var(--rec-bg-elevated) 35%) 100%
+	);
 	color: color-mix(in srgb, var(--sec-primary-strong) 88%, var(--rec-ink) 12%);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 45%, transparent 55%);
 }
 
 .sec-table {
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, white 80%);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, var(--rec-bg-elevated) 80%);
 	border-radius: 12px;
 	overflow-x: auto;
 	overflow-y: hidden;
 	-webkit-overflow-scrolling: touch;
-	background: #fff;
-	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rec-soft) 65%, white 35%);
+	background: var(--rec-bg-elevated);
+	box-shadow: inset 0 1px 0 color-mix(in srgb, var(--rec-soft) 65%, var(--rec-bg-elevated) 35%);
 }
 
 .secretaria-theme .sec-table {
 	border-color: var(--sec-border);
 	border-radius: 14px;
 	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.85),
+		inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 48%, transparent 52%),
 		0 6px 18px color-mix(in srgb, var(--sec-primary) 7%, transparent);
+}
+
+.docente-theme .sec-table,
+.estudiante-theme .sec-table {
+	border-color: var(--role-border);
+	border-radius: 14px;
+	box-shadow:
+		inset 0 1px 0 color-mix(in srgb, var(--rec-bg-elevated) 45%, transparent 55%),
+		0 6px 18px color-mix(in srgb, var(--role-primary) 8%, transparent);
 }
 
 .sec-table table {
@@ -246,11 +374,31 @@
 }
 
 .sec-table thead {
-	background: linear-gradient(180deg, color-mix(in srgb, var(--rec-soft) 35%, white 65%) 0%, color-mix(in srgb, var(--rec-soft) 68%, white 32%) 100%);
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--rec-soft) 35%, var(--rec-bg-elevated) 65%) 0%,
+		color-mix(in srgb, var(--rec-soft) 68%, var(--rec-bg-elevated) 32%) 100%
+	);
 }
 
 .secretaria-theme .sec-table thead {
-	background: linear-gradient(180deg, color-mix(in srgb, var(--sec-surface) 35%, white 65%) 0%, color-mix(in srgb, var(--sec-surface) 72%, white 28%) 100%);
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--sec-surface) 35%, var(--rec-bg-elevated) 65%) 0%,
+		color-mix(in srgb, var(--sec-surface) 72%, var(--rec-bg-elevated) 28%) 100%
+	);
+	position: sticky;
+	top: 0;
+	z-index: 3;
+}
+
+.docente-theme .sec-table thead,
+.estudiante-theme .sec-table thead {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--role-surface) 38%, var(--rec-bg-elevated) 62%) 0%,
+		color-mix(in srgb, var(--role-surface) 70%, var(--rec-bg-elevated) 30%) 100%
+	);
 	position: sticky;
 	top: 0;
 	z-index: 3;
@@ -261,8 +409,8 @@
 	font-weight: 700;
 	letter-spacing: 0.01em;
 	text-transform: uppercase;
-	color: color-mix(in srgb, var(--rec-earth) 85%, black 15%);
-	border-bottom: 1px solid color-mix(in srgb, var(--rec-primary) 18%, white 82%);
+	color: color-mix(in srgb, var(--rec-earth) 85%, var(--rec-text-primary) 15%);
+	border-bottom: 1px solid color-mix(in srgb, var(--rec-primary) 18%, var(--rec-bg-elevated) 82%);
 }
 
 .secretaria-theme .sec-table tbody tr {
@@ -270,11 +418,21 @@
 }
 
 .secretaria-theme .sec-table tbody tr:hover {
-	background: color-mix(in srgb, var(--sec-surface) 35%, white 65%);
+	background: color-mix(in srgb, var(--sec-surface) 35%, var(--rec-bg-elevated) 65%);
+}
+
+.docente-theme .sec-table tbody tr,
+.estudiante-theme .sec-table tbody tr {
+	transition: background-color 160ms ease;
+}
+
+.docente-theme .sec-table tbody tr:hover,
+.estudiante-theme .sec-table tbody tr:hover {
+	background: color-mix(in srgb, var(--role-surface) 38%, var(--rec-bg-elevated) 62%);
 }
 
 .sec-table td {
-	border-top: 1px solid color-mix(in srgb, var(--rec-soft) 55%, white 45%);
+	border-top: 1px solid var(--rec-border-subtle);
 	color: var(--rec-ink);
 	vertical-align: top;
 }
@@ -284,48 +442,70 @@
 }
 
 .secretaria-theme .sec-table::-webkit-scrollbar-track {
-	background: rgba(255, 255, 255, 0.35);
+	background: color-mix(in srgb, var(--rec-bg-elevated) 40%, transparent 60%);
 	border-radius: 9999px;
 }
 
 .secretaria-theme .sec-table::-webkit-scrollbar-thumb {
-	background: color-mix(in srgb, var(--sec-primary) 35%, #9cb8a7 65%);
+	background: color-mix(in srgb, var(--sec-primary) 40%, var(--rec-border-default) 60%);
 	border-radius: 9999px;
 }
 
 .sec-muted {
 	font-size: 0.76rem;
-	color: color-mix(in srgb, var(--rec-ink) 58%, white 42%);
+	color: var(--rec-text-muted);
 }
 
 .secretaria-theme .sec-page :where(input, select, textarea) {
 	border-radius: 10px;
-	border-color: color-mix(in srgb, var(--sec-primary) 24%, #cfd8d3 76%) !important;
-	background: #fff;
+	border-color: color-mix(in srgb, var(--sec-primary) 24%, var(--rec-border-default) 76%) !important;
+	background: var(--rec-bg-elevated) !important;
+	color: var(--rec-text-primary) !important;
 	transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
+.docente-theme .sec-page :where(input, select, textarea),
+.estudiante-theme .sec-page :where(input, select, textarea) {
+	border-radius: 10px;
+	border-color: color-mix(in srgb, var(--role-primary) 26%, var(--rec-border-default) 74%) !important;
+	background: var(--rec-bg-elevated) !important;
+	color: var(--rec-text-primary) !important;
+}
+
 .secretaria-theme .sec-page :where(input, select, textarea):focus {
-	border-color: color-mix(in srgb, var(--sec-primary) 56%, white 44%) !important;
+	border-color: color-mix(in srgb, var(--sec-primary) 56%, var(--rec-bg-elevated) 44%) !important;
 	box-shadow: 0 0 0 3px color-mix(in srgb, var(--sec-primary) 22%, transparent) !important;
+	outline: none;
+}
+
+.docente-theme .sec-page :where(input, select, textarea):focus,
+.estudiante-theme .sec-page :where(input, select, textarea):focus {
+	border-color: color-mix(in srgb, var(--role-primary) 55%, var(--rec-bg-elevated) 45%) !important;
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-primary) 24%, transparent) !important;
 	outline: none;
 }
 
 .secretaria-theme .sec-page :where(label) {
 	font-weight: 600;
-	color: color-mix(in srgb, var(--rec-ink) 78%, white 22%);
+	color: var(--rec-text-secondary);
+}
+
+.docente-theme .sec-page :where(label),
+.estudiante-theme .sec-page :where(label) {
+	font-weight: 600;
+	color: var(--rec-text-secondary);
 }
 
 .secretaria-theme .sec-page button {
 	border-radius: 10px;
 	font-weight: 600;
 	transition: transform 140ms ease, box-shadow 160ms ease, background-color 160ms ease, opacity 140ms ease;
-	box-shadow: 0 2px 8px rgba(20, 40, 30, 0.12);
+	box-shadow: 0 2px 8px color-mix(in srgb, var(--rec-ink) 14%, transparent);
 }
 
 .secretaria-theme .sec-page button:hover {
 	transform: translateY(-1px);
-	box-shadow: 0 8px 16px rgba(20, 40, 30, 0.18);
+	box-shadow: 0 8px 16px color-mix(in srgb, var(--rec-ink) 18%, transparent);
 }
 
 .secretaria-theme .sec-page button:disabled {
@@ -334,19 +514,31 @@
 	opacity: 0.72;
 }
 
-.secretaria-theme .sec-page button.bg-black {
-	background: linear-gradient(180deg, color-mix(in srgb, var(--sec-primary) 92%, white 8%) 0%, var(--sec-primary-strong) 100%);
-	color: #fff;
+.secretaria-theme .sec-page button.rec-btn-primary {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--sec-primary) 92%, var(--rec-bg-elevated) 8%) 0%,
+		var(--sec-primary-strong) 100%
+	);
+	color: var(--rec-text-on-primary);
 }
 
-.secretaria-theme .sec-page button.bg-gray-200 {
-	background: linear-gradient(180deg, #eef2f0 0%, #dde5e1 100%);
-	color: #173425;
+.secretaria-theme .sec-page button.rec-btn-secondary {
+	background: linear-gradient(
+		180deg,
+		var(--rec-btn-secondary-bg) 0%,
+		color-mix(in srgb, var(--rec-btn-secondary-bg) 88%, var(--rec-bg-subtle) 12%) 100%
+	);
+	color: var(--rec-btn-secondary-fg);
 }
 
-.secretaria-theme .sec-page button.bg-red-600 {
-	background: linear-gradient(180deg, #d93e49 0%, #b91f2b 100%);
-	color: #fff;
+.secretaria-theme .sec-page button.rec-btn-danger {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--rec-danger-solid) 95%, black 5%) 0%,
+		color-mix(in srgb, var(--rec-danger-solid) 82%, black 18%) 100%
+	);
+	color: var(--rec-text-on-primary);
 }
 
 .secretaria-theme .sec-page a.inline-block {
@@ -360,16 +552,20 @@
 }
 
 .sec-stat {
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, white 80%);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 20%, var(--rec-bg-elevated) 80%);
 	border-radius: 12px;
 	padding: 0.8rem 0.9rem;
-	background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--rec-soft) 55%, white 45%) 100%);
+	background: linear-gradient(
+		180deg,
+		var(--rec-bg-elevated) 0%,
+		color-mix(in srgb, var(--rec-soft) 55%, var(--rec-bg-elevated) 45%) 100%
+	);
 }
 
 .sec-stat .label {
 	font-size: 0.72rem;
 	font-weight: 600;
-	color: color-mix(in srgb, var(--rec-ink) 58%, white 42%);
+	color: var(--rec-text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.02em;
 }
@@ -387,15 +583,22 @@
 	box-shadow: 0 4px 14px color-mix(in srgb, var(--sec-primary) 8%, transparent);
 }
 
+.docente-theme .sec-stat,
+.estudiante-theme .sec-stat {
+	border-color: var(--role-border);
+	box-shadow: 0 4px 14px color-mix(in srgb, var(--role-primary) 9%, transparent);
+}
+
 .sec-sticky-actions {
 	position: sticky;
 	bottom: 0;
 	z-index: 15;
 	padding: 0.65rem;
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 25%, white 75%);
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 25%, var(--rec-bg-elevated) 75%);
 	border-radius: 12px;
-	background: rgba(255, 255, 255, 0.92);
-	backdrop-filter: blur(8px);
+	background: color-mix(in srgb, var(--rec-bg-elevated) 92%, transparent 8%);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
 	box-shadow: 0 -4px 18px color-mix(in srgb, var(--rec-primary) 12%, transparent);
 }
 

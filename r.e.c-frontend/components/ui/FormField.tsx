@@ -14,14 +14,14 @@ export default function FormField({ label, error, hint, required, children }: Pr
     <div className="flex flex-col gap-1">
       <label className="text-sm font-semibold">
         {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
+        {required && <span className="ml-0.5 text-rec-danger-text">*</span>}
       </label>
       {children}
       {hint && !error && (
-        <p className="text-xs text-gray-500">{hint}</p>
+        <p className="text-xs text-rec-text-subtle">{hint}</p>
       )}
       {error && (
-        <p className="text-xs text-red-600">{error}</p>
+        <p className="text-xs text-rec-danger-text">{error}</p>
       )}
     </div>
   );

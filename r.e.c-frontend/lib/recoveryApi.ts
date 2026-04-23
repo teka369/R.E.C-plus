@@ -20,7 +20,6 @@ export type RecoveryRequest = {
   finalScore?: number | null;
   requestedAt: string;
   respondedAt?: string | null;
-  completedAt?: string | null;
   student?: { id: number; nombres: string; apellidos: string; email?: string };
   teacher?: { id: number; nombres: string; apellidos: string; email?: string };
   subject?: { id: number; nombre: string };
@@ -169,6 +168,10 @@ export const recoveryApi = {
   },
   async statsByStudent(studentId: number): Promise<RecoveryStudentStats> {
     const res = await api.get<RecoveryStudentStats>(`/recovery/stats/students/${studentId}`);
+    return res.data;
+  },
+  async getPendingCount(): Promise<{ pending: number }> {
+    const res = await api.get<{ pending: number }>("/recovery/pending-count");
     return res.data;
   },
 };

@@ -2,12 +2,16 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
-import { EvaluacionTipo, SyllabusStatus } from '@prisma/client';
+import { EvaluacionTipo, GradingMode, SyllabusStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 import { UpsertGradePerformanceDto } from './dto/performance.dto';
-import { UpsertStudentAcademicDto } from './dto/student-academic.dto';
+import {
+  UpsertStudentAcademicDto,
+  UpsertStudentAcademicEvaluationDto,
+} from './dto/student-academic.dto';
 
 type GradePerformanceRow = {
   id: number;
@@ -686,6 +690,106 @@ export class PerformanceService extends TenantScopedService {
     return this.average(grades);
   }
 
+  private computeWeightedPromedio(input: Array<{ nota: number; porcentaje: number | null }>) {
+    const valid = input.filter((i) => typeof i.nota === 'number');
+    if (valid.length === 0) return null;
+    const hasWeights = valid.some((i) => typeof i.porcentaje === 'number');
+    if (!hasWeights) return this.computePromedioFromEvalGrades(valid.map((i) => i.nota));
+
+    const weighted = valid
+      .filter((i) => typeof i.porcentaje === 'number' && (i.porcentaje as number) > 0)
+      .map((i) => ({ nota: i.nota, w: i.porcentaje as number }));
+    if (weighted.length === 0) {
+      return this.computePromedioFromEvalGrades(valid.map((i) => i.nota));
+    }
+    const totalW = weighted.reduce((acc, x) => acc + x.w, 0);
+    if (totalW <= 0) return this.computePromedioFromEvalGrades(valid.map((i) => i.nota));
+    const value = weighted.reduce((acc, x) => acc + x.nota * x.w, 0) / totalW;
+    return Number(value.toFixed(2));
+  }
+
+  private computeCompetencyFinal(
+    grades: Array<{ nota: number; competencyCategory: string | null }>,
+    weights: Record<string, number>,
+  ): number | null {
+    const categories = [
+      'COGNITIVE',
+      'PROCEDURAL',
+      'ATTITUDINAL',
+      'SELF_EVAL',
+      'CO_EVAL',
+    ];
+
+    const categoryAverages: Record<string, number | null> = {};
+    for (const cat of categories) {
+      const catGrades = grades.filter((g) => g.competencyCategory === cat);
+      if (catGrades.length === 0) {
+        categoryAverages[cat] = null;
+        continue;
+      }
+      const avg =
+        catGrades.reduce((sum, g) => sum + g.nota, 0) / catGrades.length;
+      categoryAverages[cat] = Number(avg.toFixed(2));
+    }
+
+    const filledCategories = categories.filter(
+      (c) => categoryAverages[c] !== null,
+    );
+    if (filledCategories.length === 0) return null;
+
+    const totalWeight = filledCategories.reduce(
+      (sum, c) => sum + (weights[c] ?? 0),
+      0,
+    );
+    if (totalWeight === 0) return null;
+
+    const weighted = filledCategories.reduce(
+      (sum, c) =>
+        sum +
+        (categoryAverages[c]! * (weights[c] ?? 0)) / totalWeight,
+      0,
+    );
+
+    return Number(weighted.toFixed(2));
+  }
+
+  /** Misma lógica de fallback que en upsertStudentAcademic (findUnique + defaults). */
+  private async getInstitutionGradingPolicyWithWeights(institutionId: number) {
+    const policy =
+      (await this.prisma.institutionGradingPolicy.findUnique({
+        where: { institutionId },
+      })) ?? {
+        allowClosedPeriodEdits: false,
+        allowFinalOverride: true,
+        gradeScaleMax: 5,
+        passingThreshold: 3.0,
+        gradingMode: GradingMode.SIMPLE,
+        competencyWeights: {
+          COGNITIVE: 30,
+          PROCEDURAL: 30,
+          ATTITUDINAL: 30,
+          SELF_EVAL: 5,
+          CO_EVAL: 5,
+        },
+      };
+
+    const rawCompetencyWeights = policy.competencyWeights;
+    const competencyWeightsRecord: Record<string, number> =
+      rawCompetencyWeights &&
+      typeof rawCompetencyWeights === 'object' &&
+      !Array.isArray(rawCompetencyWeights)
+        ? (rawCompetencyWeights as Record<string, number>)
+        : {
+            COGNITIVE: 30,
+            PROCEDURAL: 30,
+            ATTITUDINAL: 30,
+            SELF_EVAL: 5,
+            CO_EVAL: 5,
+          };
+
+    return { policy, competencyWeightsRecord };
+  }
+
   private async ensureCanViewStudentAcademic(actor: Actor, studentId: number) {
     if (
       actor.role === UserRole.SECRETARIA ||
@@ -864,7 +968,7 @@ export class PerformanceService extends TenantScopedService {
     return rows;
   }
 
-  async getStudentAcademic(actor: Actor, studentId: number) {
+  async getStudentAcademic(actor: Actor, studentId: number, version = 1) {
     await this.ensureCanViewStudentAcademic(actor, studentId);
 
     const student = await this.prisma.user.findUnique({
@@ -893,6 +997,53 @@ export class PerformanceService extends TenantScopedService {
 
     if (!studentGroup)
       throw new NotFoundException('Estudiante sin grupo asignado');
+
+    const institutionIdStudent =
+      actor.role === UserRole.SUPER_ADMIN
+        ? (student.institutionId ?? 0)
+        : this.getActorInstitutionId(actor);
+
+    const activeAcademicPeriodV2 =
+      version === 2
+        ? (await this.prisma.academicPeriod.findFirst({
+            where: {
+              estado: 'ACTIVE',
+              institutionId: institutionIdStudent,
+            },
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+              tipo: true,
+              estado: true,
+              fechaInicio: true,
+              fechaFin: true,
+              fechaCierre: true,
+            },
+          })) ??
+          (await this.prisma.academicPeriod.findFirst({
+            where: {
+              estado: 'CLOSED',
+              institutionId: institutionIdStudent,
+            },
+            orderBy: { fechaCierre: 'desc' },
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+              tipo: true,
+              estado: true,
+              fechaInicio: true,
+              fechaFin: true,
+              fechaCierre: true,
+            },
+          }))
+        : null;
+
+    const gradingPolicyV2 =
+      version === 2
+        ? await this.getInstitutionGradingPolicyWithWeights(institutionIdStudent)
+        : null;
 
     const records = await this.prisma.studentAcademicRecord.findMany({
       where: {
@@ -926,37 +1077,46 @@ export class PerformanceService extends TenantScopedService {
             include: {
               academicEvaluation: {
                 select: {
+                  id: true,
                   titulo: true,
                   tipo: true,
                   orden: true,
+                  termSlot: true,
                   porcentaje: true,
                   academicOfferingId: true,
+                  competencyCategory: true,
                 },
               },
             },
             orderBy: { academicEvaluation: { orden: 'asc' } },
           })
         : [];
-    const evalByOfferingForStudent = new Map<
-      number,
-      Array<{
-        titulo: string;
-        tipo: string;
-        orden: number;
-        porcentaje: number | null;
-        nota: number;
-      }>
-    >();
+    const evalByOfferingForStudent = new Map<number, Array<any>>();
     studentEvalGrades.forEach((g) => {
       const oid = g.academicEvaluation.academicOfferingId;
       const list = evalByOfferingForStudent.get(oid) ?? [];
-      list.push({
-        titulo: g.academicEvaluation.titulo,
-        tipo: g.academicEvaluation.tipo,
-        orden: g.academicEvaluation.orden,
-        porcentaje: g.academicEvaluation.porcentaje,
-        nota: g.nota,
-      });
+      list.push(
+        version === 2
+          ? {
+              evaluationId: g.academicEvaluation.id,
+              title: g.academicEvaluation.titulo,
+              type: g.academicEvaluation.tipo,
+              orden: g.academicEvaluation.orden,
+              termSlot: g.academicEvaluation.termSlot,
+              weight: g.academicEvaluation.porcentaje,
+              grade: g.nota,
+              competencyCategory: g.academicEvaluation.competencyCategory ?? null,
+              updatedAt: g.updatedAt,
+              updatedByTeacherId: g.updatedByTeacherId,
+            }
+          : {
+              titulo: g.academicEvaluation.titulo,
+              tipo: g.academicEvaluation.tipo,
+              orden: g.academicEvaluation.orden,
+              porcentaje: g.academicEvaluation.porcentaje,
+              nota: g.nota,
+            },
+      );
       evalByOfferingForStudent.set(oid, list);
     });
 
@@ -966,7 +1126,9 @@ export class PerformanceService extends TenantScopedService {
           ? (evalByOfferingForStudent.get(record.academicOfferingId) ?? [])
           : [];
       const promedioMateria = this.computePromedioFromEvalGrades(
-        evaluaciones.map((e) => e.nota),
+        evaluaciones
+          .map((e: any) => (version === 2 ? e.grade : e.nota))
+          .filter((x: any): x is number => typeof x === 'number'),
       );
       return {
         id: record.publicId,
@@ -982,6 +1144,8 @@ export class PerformanceService extends TenantScopedService {
           record.inasistenciasJustificadas + record.inasistenciasInjustificadas,
         observaciones: record.observaciones,
         updatedAt: record.updatedAt,
+        finalSource: record.finalSource,
+        finalOverride: record.finalOverride,
       };
     });
 
@@ -999,6 +1163,30 @@ export class PerformanceService extends TenantScopedService {
       (acc, item) => acc + item.inasistenciasInjustificadas,
       0,
     );
+
+    let termSlotsAvailableV2: number[] | undefined;
+    if (version === 2) {
+      const offeringIdsInActivePeriod =
+        activeAcademicPeriodV2 != null
+          ? await this.prisma.academicOffering.findMany({
+              where: {
+                id: { in: recordOfferingIds },
+                academicPeriodId: activeAcademicPeriodV2.id,
+              },
+              select: { id: true },
+            })
+          : [];
+      const allowedOfferingIds = new Set(offeringIdsInActivePeriod.map((o) => o.id));
+      const slots = new Set<number>();
+      studentEvalGrades.forEach((g) => {
+        const oid = g.academicEvaluation.academicOfferingId;
+        if (!allowedOfferingIds.has(oid)) return;
+        const slot = g.academicEvaluation.termSlot;
+        if (typeof slot === 'number') slots.add(slot);
+      });
+      const derived = Array.from(slots).sort((a, b) => a - b);
+      termSlotsAvailableV2 = derived.length > 0 ? derived : [1, 2, 3, 4];
+    }
 
     return {
       student,
@@ -1018,10 +1206,23 @@ export class PerformanceService extends TenantScopedService {
         totalInasistencias: totalJustificadas + totalInjustificadas,
       },
       records: normalized,
+      ...(version === 2 && gradingPolicyV2
+        ? {
+            academicPeriod: activeAcademicPeriodV2,
+            termSlotsAvailable: termSlotsAvailableV2,
+            gradingMode: gradingPolicyV2.policy.gradingMode,
+            competencyWeights: gradingPolicyV2.competencyWeightsRecord,
+            simulatorInputs: {
+              termSlotsAvailable: termSlotsAvailableV2,
+              gradeScaleMax: gradingPolicyV2.policy.gradeScaleMax,
+              passingThreshold: gradingPolicyV2.policy.passingThreshold,
+            },
+          }
+        : {}),
     };
   }
 
-  async getGroupAcademicOverview(actor: Actor, groupId: number) {
+  async getGroupAcademicOverview(actor: Actor, groupId: number, version = 1) {
     await this.ensureCanManageGroupAcademic(actor, groupId);
 
     const group = await this.prisma.group.findUnique({
@@ -1082,9 +1283,11 @@ export class PerformanceService extends TenantScopedService {
             include: {
               academicEvaluation: {
                 select: {
+                  id: true,
                   titulo: true,
                   tipo: true,
                   orden: true,
+                  termSlot: true,
                   porcentaje: true,
                   academicOfferingId: true,
                 },
@@ -1095,9 +1298,11 @@ export class PerformanceService extends TenantScopedService {
     const groupEvalIndex = new Map<
       string,
       Array<{
+        evaluationId: number;
         titulo: string;
         tipo: string;
         orden: number;
+        termSlot: number | null;
         porcentaje: number | null;
         nota: number;
       }>
@@ -1106,9 +1311,11 @@ export class PerformanceService extends TenantScopedService {
       const key = `${g.studentGroupId}_${g.academicEvaluation.academicOfferingId}`;
       const list = groupEvalIndex.get(key) ?? [];
       list.push({
+        evaluationId: g.academicEvaluation.id,
         titulo: g.academicEvaluation.titulo,
         tipo: g.academicEvaluation.tipo,
         orden: g.academicEvaluation.orden,
+        termSlot: g.academicEvaluation.termSlot,
         porcentaje: g.academicEvaluation.porcentaje,
         nota: g.nota,
       });
@@ -1139,6 +1346,8 @@ export class PerformanceService extends TenantScopedService {
           inasistenciasInjustificadas: record.inasistenciasInjustificadas,
           observaciones: record.observaciones,
           updatedAt: record.updatedAt,
+          finalSource: record.finalSource,
+          finalOverride: record.finalOverride,
         };
       });
 
@@ -1155,6 +1364,78 @@ export class PerformanceService extends TenantScopedService {
       };
     });
 
+    // Métricas canónicas de cabecera para UI (Fase A).
+    // TODO(Fase B): mover umbrales/escala a InstitutionGradingPolicy.
+    const passingThreshold = 3.0;
+    const studentsWithGrade = normalizedStudents.filter(
+      (s) => typeof s.promedioGeneral === 'number',
+    );
+    const groupAvg = this.average(studentsWithGrade.map((s) => s.promedioGeneral));
+    const approvedCount = studentsWithGrade.filter(
+      (s) => (s.promedioGeneral ?? 0) >= passingThreshold,
+    ).length;
+    const totalStudents = normalizedStudents.length;
+    const coverageCount = studentsWithGrade.length;
+    const approvalRate =
+      totalStudents > 0 ? Number(((approvedCount / totalStudents) * 100).toFixed(2)) : 0;
+
+    const institutionIdForPeriod =
+      actor.role === UserRole.SUPER_ADMIN
+        ? group.institutionId
+        : this.getActorInstitutionId(actor);
+
+    const academicPeriodV2 =
+      version === 2
+        ? (await this.prisma.academicPeriod.findFirst({
+            where: {
+              estado: 'ACTIVE',
+              institutionId: institutionIdForPeriod,
+            },
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+              tipo: true,
+              estado: true,
+              fechaInicio: true,
+              fechaFin: true,
+              fechaCierre: true,
+            },
+          })) ??
+          (await this.prisma.academicPeriod.findFirst({
+            where: {
+              estado: 'CLOSED',
+              institutionId: institutionIdForPeriod,
+            },
+            orderBy: { fechaCierre: 'desc' },
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+              tipo: true,
+              estado: true,
+              fechaInicio: true,
+              fechaFin: true,
+              fechaCierre: true,
+            },
+          }))
+        : null;
+
+    const termSlotsDerived = new Set<number>();
+    groupEvalGrades.forEach((g) => {
+      const ts = g.academicEvaluation.termSlot;
+      if (typeof ts === 'number' && ts >= 1 && ts <= 4) termSlotsDerived.add(ts);
+    });
+    const termSlotsAvailableV2 =
+      termSlotsDerived.size > 0
+        ? Array.from(termSlotsDerived).sort((a, b) => a - b)
+        : [1, 2, 3, 4];
+
+    const gradingPolicyGroupV2 =
+      version === 2
+        ? await this.getInstitutionGradingPolicyWithWeights(institutionIdForPeriod)
+        : null;
+
     return {
       group: {
         id: group.id,
@@ -1166,6 +1447,22 @@ export class PerformanceService extends TenantScopedService {
         nombre: item.subject.nombre,
       })),
       students: normalizedStudents,
+      ...(version === 2 && gradingPolicyGroupV2
+        ? {
+            academicPeriod: academicPeriodV2,
+            termSlotsAvailable: termSlotsAvailableV2,
+            gradingMode: gradingPolicyGroupV2.policy.gradingMode,
+            competencyWeights: gradingPolicyGroupV2.competencyWeightsRecord,
+          }
+        : {}),
+      stats: {
+        passingThreshold,
+        totalStudents,
+        coverageCount,
+        groupAverage: groupAvg,
+        approvedCount,
+        approvalRate,
+      },
     };
   }
 
@@ -1189,11 +1486,19 @@ export class PerformanceService extends TenantScopedService {
 
     const groupSubject = await this.prisma.groupSubject.findFirst({
       where: { groupId, subjectId },
-      select: { id: true },
+      select: { id: true, group: { select: { institutionId: true } } },
     });
     if (!groupSubject) {
       throw new NotFoundException('La materia no está asignada a ese grupo');
     }
+
+    // Resolver policy institucional (defaults si falta por alguna razón)
+    const institutionId =
+      actor.role === UserRole.SUPER_ADMIN
+        ? groupSubject.group.institutionId
+        : this.getActorInstitutionId(actor);
+    const { policy, competencyWeightsRecord } =
+      await this.getInstitutionGradingPolicyWithWeights(institutionId);
 
     // Lookup del período activo y offering para vincular EvaluationGrade
     const activePeriod = await this.prisma.academicPeriod.findFirst({
@@ -1214,9 +1519,113 @@ export class PerformanceService extends TenantScopedService {
               academicPeriodId: activePeriod.id,
             },
           },
-          select: { id: true },
+          select: {
+            id: true,
+            academicPeriod: { select: { id: true, estado: true } },
+          },
         })
       : null;
+
+    if (offering?.academicPeriod?.estado === 'CLOSED' && !policy.allowClosedPeriodEdits) {
+      throw new ForbiddenException(
+        'El período académico está cerrado. Contacta a Secretaría.',
+      );
+    }
+
+    const isV2 =
+      Array.isArray((dto as { evaluations?: unknown }).evaluations) &&
+      (dto as { evaluations?: unknown[] }).evaluations!.length >= 0;
+
+    // Helpers: upsert template + grade
+    const ensureParcialTemplate = async (orden: number) => {
+      if (!offering) {
+        throw new BadRequestException('No hay offering activo para esta materia');
+      }
+      return this.prisma.academicEvaluation.upsert({
+        where: {
+          academicOfferingId_orden: { academicOfferingId: offering.id, orden },
+        },
+        update: {
+          titulo: `Parcial ${orden}`,
+          tipo: EvaluacionTipo.PARCIAL,
+          termSlot: orden,
+        },
+        create: {
+          academicOfferingId: offering.id,
+          titulo: `Parcial ${orden}`,
+          tipo: EvaluacionTipo.PARCIAL,
+          orden,
+          termSlot: orden,
+        },
+        select: { id: true, porcentaje: true },
+      });
+    };
+
+    const ensureV2Template = async (input: UpsertStudentAcademicEvaluationDto) => {
+      if (!offering) {
+        throw new BadRequestException('No hay offering activo para esta materia');
+      }
+      if (input.evaluationId) {
+        const existing = await this.prisma.academicEvaluation.findUnique({
+          where: { id: input.evaluationId },
+          select: { id: true, academicOfferingId: true, porcentaje: true },
+        });
+        if (!existing || existing.academicOfferingId !== offering.id) {
+          throw new NotFoundException('Evaluación no encontrada para esta oferta');
+        }
+        const updated = await this.prisma.academicEvaluation.update({
+          where: { id: existing.id },
+          data: {
+            titulo: input.title,
+            tipo: (input.type as any) ?? undefined,
+            porcentaje: input.weight ?? undefined,
+            termSlot: input.termSlot ?? undefined,
+          },
+          select: { id: true, porcentaje: true },
+        });
+        return updated;
+      }
+
+      // Evitar duplicados: intentar encontrar por (titulo exacto + termSlot) dentro del offering.
+      const found = await this.prisma.academicEvaluation.findFirst({
+        where: {
+          academicOfferingId: offering.id,
+          titulo: input.title,
+          ...(input.termSlot === undefined ? {} : { termSlot: input.termSlot }),
+        },
+        select: { id: true, porcentaje: true },
+      });
+      if (found) {
+        // Actualizar metadatos (tipo/peso) si se suministran
+        const updated = await this.prisma.academicEvaluation.update({
+          where: { id: found.id },
+          data: {
+            ...(input.type !== undefined ? { tipo: input.type as any } : {}),
+            ...(input.weight !== undefined ? { porcentaje: input.weight } : {}),
+          },
+          select: { id: true, porcentaje: true },
+        });
+        return updated;
+      }
+
+      const last = await this.prisma.academicEvaluation.findFirst({
+        where: { academicOfferingId: offering.id },
+        orderBy: { orden: 'desc' },
+        select: { orden: true },
+      });
+      const nextOrden = (last?.orden ?? 0) + 1;
+      return this.prisma.academicEvaluation.create({
+        data: {
+          academicOfferingId: offering.id,
+          titulo: input.title,
+          tipo: ((input.type as any) ?? EvaluacionTipo.PARCIAL) as any,
+          porcentaje: input.weight ?? null,
+          orden: nextOrden,
+          termSlot: input.termSlot ?? null,
+        },
+        select: { id: true, porcentaje: true },
+      });
+    };
 
     const result = await this.prisma.studentAcademicRecord.upsert({
       where: {
@@ -1228,6 +1637,9 @@ export class PerformanceService extends TenantScopedService {
       },
       update: {
         notaFinal: dto.notaFinal,
+        finalOverride: null,
+        finalSource: 'NONE',
+        finalUpdatedAt: null,
         progresoMateria: dto.progresoMateria,
         inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
         inasistenciasInjustificadas: dto.inasistenciasInjustificadas ?? 0,
@@ -1240,6 +1652,9 @@ export class PerformanceService extends TenantScopedService {
         groupId,
         subjectId,
         notaFinal: dto.notaFinal,
+        finalOverride: null,
+        finalSource: 'NONE',
+        finalUpdatedAt: null,
         progresoMateria: dto.progresoMateria,
         inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
         inasistenciasInjustificadas: dto.inasistenciasInjustificadas ?? 0,
@@ -1249,43 +1664,64 @@ export class PerformanceService extends TenantScopedService {
       },
     });
 
-    // Sincronizar EvaluationGrade para parciales provistos (backward compat con DTO)
-    if (offering && studentGroup) {
-      const parciales = [
-        { titulo: 'Parcial 1', orden: 1, nota: dto.parcial1 },
-        { titulo: 'Parcial 2', orden: 2, nota: dto.parcial2 },
-        { titulo: 'Parcial 3', orden: 3, nota: dto.parcial3 },
-        { titulo: 'Parcial 4', orden: 4, nota: dto.parcial4 },
-      ];
-      for (const p of parciales) {
-        if (p.nota == null) continue;
-        let evalTemplate = await this.prisma.academicEvaluation.findFirst({
-          where: { academicOfferingId: offering.id, orden: p.orden },
-          select: { id: true },
-        });
-        if (!evalTemplate) {
-          evalTemplate = await this.prisma.academicEvaluation.create({
-            data: {
-              academicOfferingId: offering.id,
-              titulo: p.titulo,
-              tipo: EvaluacionTipo.PARCIAL,
-              orden: p.orden,
+    // ── Guardado de evaluaciones ───────────────────────────────────────────────
+    if (!offering) {
+      throw new BadRequestException('No hay período académico activo u offering asociado');
+    }
+
+    if (isV2 && Array.isArray(dto.evaluations)) {
+      // v2 tiene prioridad
+      for (const evInput of dto.evaluations) {
+        const template = await ensureV2Template(evInput);
+        if (evInput.grade == null) {
+          await this.prisma.evaluationGrade.deleteMany({
+            where: {
+              academicEvaluationId: template.id,
+              studentGroupId: studentGroup.id,
             },
-            select: { id: true },
           });
+          continue;
         }
         await this.prisma.evaluationGrade.upsert({
           where: {
             academicEvaluationId_studentGroupId: {
-              academicEvaluationId: evalTemplate.id,
+              academicEvaluationId: template.id,
               studentGroupId: studentGroup.id,
             },
           },
-          update: { nota: p.nota },
+          update: { nota: evInput.grade, updatedByTeacherId: actor.userId },
           create: {
-            academicEvaluationId: evalTemplate.id,
+            academicEvaluationId: template.id,
+            studentGroupId: studentGroup.id,
+            nota: evInput.grade,
+            updatedByTeacherId: actor.userId,
+          },
+        });
+      }
+    } else {
+      // v1 compat: parciales 1..4 → evaluaciones canónicas
+      const parciales = [
+        { orden: 1, nota: dto.parcial1 },
+        { orden: 2, nota: dto.parcial2 },
+        { orden: 3, nota: dto.parcial3 },
+        { orden: 4, nota: dto.parcial4 },
+      ];
+      for (const p of parciales) {
+        if (p.nota == null) continue;
+        const template = await ensureParcialTemplate(p.orden);
+        await this.prisma.evaluationGrade.upsert({
+          where: {
+            academicEvaluationId_studentGroupId: {
+              academicEvaluationId: template.id,
+              studentGroupId: studentGroup.id,
+            },
+          },
+          update: { nota: p.nota, updatedByTeacherId: actor.userId },
+          create: {
+            academicEvaluationId: template.id,
             studentGroupId: studentGroup.id,
             nota: p.nota,
+            updatedByTeacherId: actor.userId,
           },
         });
       }
@@ -1299,53 +1735,143 @@ export class PerformanceService extends TenantScopedService {
       throw new NotFoundException('Materia no encontrada');
     }
 
-    // Calcular promedio desde EvaluationGrade
-    const evalGradesResult =
-      offering && studentGroup
-        ? await this.prisma.evaluationGrade.findMany({
-            where: {
-              studentGroupId: studentGroup.id,
-              academicEvaluation: { academicOfferingId: offering.id },
-            },
-            include: {
-              academicEvaluation: {
-                select: {
-                  titulo: true,
-                  tipo: true,
-                  orden: true,
-                  porcentaje: true,
-                },
-              },
-            },
-            orderBy: { academicEvaluation: { orden: 'asc' } },
-          })
-        : [];
+    const evalGradesResult = await this.prisma.evaluationGrade.findMany({
+      where: {
+        studentGroupId: studentGroup.id,
+        academicEvaluation: { academicOfferingId: offering.id },
+      },
+      include: {
+        academicEvaluation: {
+          select: {
+            id: true,
+            titulo: true,
+            tipo: true,
+            orden: true,
+            termSlot: true,
+            porcentaje: true,
+            competencyCategory: true,
+          },
+        },
+      },
+      orderBy: { academicEvaluation: { orden: 'asc' } },
+    });
+
     const evaluaciones = evalGradesResult.map((g) => ({
-      titulo: g.academicEvaluation.titulo,
-      tipo: g.academicEvaluation.tipo,
+      id: g.academicEvaluation.id,
+      title: g.academicEvaluation.titulo,
+      type: g.academicEvaluation.tipo,
       orden: g.academicEvaluation.orden,
-      porcentaje: g.academicEvaluation.porcentaje,
-      nota: g.nota,
+      termSlot: g.academicEvaluation.termSlot,
+      weight: g.academicEvaluation.porcentaje,
+      grade: g.nota,
+      updatedAt: g.updatedAt,
+      updatedByTeacherId: g.updatedByTeacherId,
     }));
 
-    const promedioMateria = this.computePromedioFromEvalGrades(
-      evaluaciones.map((e) => e.nota),
-    );
+    let computedFinal: number | null;
+    if (policy.gradingMode === GradingMode.COMPETENCY) {
+      computedFinal = this.computeCompetencyFinal(
+        evalGradesResult.map((g) => ({
+          nota: g.nota,
+          competencyCategory: g.academicEvaluation.competencyCategory ?? null,
+        })),
+        competencyWeightsRecord,
+      );
+    } else {
+      computedFinal = this.computeWeightedPromedio(
+        evalGradesResult.map((g) => ({
+          nota: g.nota,
+          porcentaje: g.academicEvaluation.porcentaje,
+        })),
+      );
+    }
+
+    const wantsOverride = dto.finalOverride != null;
+    const canOverride = Boolean(policy.allowFinalOverride);
+    const finalValue =
+      wantsOverride && canOverride ? dto.finalOverride : computedFinal;
+    const finalSource =
+      wantsOverride && canOverride
+        ? 'OVERRIDE'
+        : finalValue != null
+          ? 'COMPUTED'
+          : 'NONE';
+
+    const updatedRecord = await this.prisma.studentAcademicRecord.upsert({
+      where: {
+        studentId_groupId_subjectId: { studentId, groupId, subjectId },
+      },
+      update: {
+        notaFinal: finalValue,
+        finalSource,
+        finalOverride: wantsOverride && canOverride ? dto.finalOverride : null,
+        finalUpdatedAt: new Date(),
+      },
+      create: {
+        studentId,
+        groupId,
+        subjectId,
+        notaFinal: finalValue,
+        finalSource,
+        finalOverride: wantsOverride && canOverride ? dto.finalOverride : null,
+        finalUpdatedAt: new Date(),
+        progresoMateria: dto.progresoMateria,
+        inasistenciasJustificadas: dto.inasistenciasJustificadas ?? 0,
+        inasistenciasInjustificadas: dto.inasistenciasInjustificadas ?? 0,
+        observaciones: dto.observaciones,
+        updatedByTeacherId: actor.userId,
+        ...(offering ? { academicOfferingId: offering.id } : {}),
+      },
+      select: {
+        id: true,
+        publicId: true,
+        studentId: true,
+        groupId: true,
+        subjectId: true,
+        notaFinal: true,
+        finalSource: true,
+        finalOverride: true,
+        finalUpdatedAt: true,
+        progresoMateria: true,
+        inasistenciasJustificadas: true,
+        inasistenciasInjustificadas: true,
+        observaciones: true,
+        updatedAt: true,
+        academicOfferingId: true,
+      },
+    });
 
     return {
-      id: result.publicId,
-      studentId: result.studentId,
-      groupId: result.groupId,
-      subjectId: result.subjectId,
-      subject,
+      record: {
+        id: updatedRecord.publicId,
+        studentId: updatedRecord.studentId,
+        groupId: updatedRecord.groupId,
+        subjectId: updatedRecord.subjectId,
+        subject,
+        evaluaciones: evalGradesResult.map((g) => ({
+          titulo: g.academicEvaluation.titulo,
+          tipo: g.academicEvaluation.tipo,
+          orden: g.academicEvaluation.orden,
+          porcentaje: g.academicEvaluation.porcentaje,
+          nota: g.nota,
+        })),
+        notaFinal: updatedRecord.notaFinal,
+        promedioMateria: computedFinal,
+        progresoMateria: updatedRecord.progresoMateria,
+        inasistenciasJustificadas: updatedRecord.inasistenciasJustificadas,
+        inasistenciasInjustificadas: updatedRecord.inasistenciasInjustificadas,
+        observaciones: updatedRecord.observaciones,
+        updatedAt: updatedRecord.updatedAt,
+        finalSource: updatedRecord.finalSource,
+        finalOverride: updatedRecord.finalOverride,
+        finalUpdatedAt: updatedRecord.finalUpdatedAt,
+      },
       evaluaciones,
-      notaFinal: result.notaFinal,
-      promedioMateria,
-      progresoMateria: result.progresoMateria,
-      inasistenciasJustificadas: result.inasistenciasJustificadas,
-      inasistenciasInjustificadas: result.inasistenciasInjustificadas,
-      observaciones: result.observaciones,
-      updatedAt: result.updatedAt,
+      final: {
+        value: finalValue,
+        source: finalSource,
+        override: wantsOverride && canOverride ? dto.finalOverride : null,
+      },
     };
   }
 }

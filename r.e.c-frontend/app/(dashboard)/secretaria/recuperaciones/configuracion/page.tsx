@@ -17,8 +17,10 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function toLocalDateTime(iso: string): string {
+function toLocalDateTime(iso: string | null | undefined): string {
+  if (iso == null || iso === "") return "";
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
@@ -42,7 +44,7 @@ function fmtDateTime(iso: string | null | undefined): string {
 }
 
 function fmtDuration(ms: number): string {
-  if (ms <= 0) return "0 dias";
+  if (!Number.isFinite(ms) || ms <= 0) return "N/D";
   const days = Math.floor(ms / 86400000);
   const hours = Math.floor((ms % 86400000) / 3600000);
   if (days > 0) return `${days}d ${hours}h`;
@@ -132,39 +134,56 @@ export default function RecoveryConfigPage() {
   const [editEndAt, setEditEndAt] = useState("");
   const [extendEndAt, setExtendEndAt] = useState("");
 
+  const hasDateWindow =
+    config != null && config.startAt != null && config.endAt != null;
+
   const countdownTarget = useMemo(() => {
-    if (!config) return null;
+    if (!config || !hasDateWindow) return null;
     const now = Date.now();
-    const start = new Date(config.startAt).getTime();
+    const start = new Date(config.startAt!).getTime();
     if (config.active) return config.endAt;
     if (start > now) return config.startAt;
     return null;
-  }, [config]);
+  }, [config, hasDateWindow]);
 
   const { remaining, days, hours, minutes, seconds, now } = useCountdown(countdownTarget);
 
   const progress = useMemo(() => {
-    if (!config) return 0;
-    const start = new Date(config.startAt).getTime();
-    const end = new Date(config.endAt).getTime();
+    if (!config || !hasDateWindow) return 0;
+    const start = new Date(config.startAt!).getTime();
+    const end = new Date(config.endAt!).getTime();
     const total = end - start;
     if (total <= 0) return 0;
     return Math.min(100, Math.max(0, ((now - start) / total) * 100));
-  }, [config, now]);
+  }, [config, hasDateWindow, now]);
 
-  const totalDuration = config
-    ? new Date(config.endAt).getTime() - new Date(config.startAt).getTime()
-    : 0;
+  const totalDuration =
+    config && hasDateWindow
+      ? new Date(config.endAt!).getTime() - new Date(config.startAt!).getTime()
+      : NaN;
 
-  const isFuture = config ? new Date(config.startAt).getTime() > now : false;
-  const isPast = config ? new Date(config.endAt).getTime() < now : false;
+  const isFuture =
+    !!config && hasDateWindow && new Date(config.startAt!).getTime() > now;
+  const isPast =
+    !!config && hasDateWindow && new Date(config.endAt!).getTime() < now;
 
-  const statusLabel = config?.active ? "Activo" : isFuture ? "Proximo" : "Finalizado";
+  const statusLabel = !config
+    ? ""
+    : config.active
+      ? "Activo"
+      : !hasDateWindow
+        ? "Sin configurar"
+        : isFuture
+          ? "Proximo"
+          : "Finalizado";
+
   const statusColor = config?.active
-    ? "border-green-300 bg-green-50 text-green-800"
-    : isFuture
-      ? "border-blue-300 bg-blue-50 text-blue-800"
-      : "border-slate-300 bg-slate-50 text-slate-600";
+    ? "border-rec-success-border bg-rec-success-bg text-rec-success-text"
+    : !hasDateWindow
+      ? "border-rec-border-strong bg-rec-bg-base text-rec-text-muted"
+      : isFuture
+        ? "border-rec-info-border bg-rec-info-bg text-rec-info-text"
+        : "border-rec-border-strong bg-rec-bg-base text-rec-text-muted";
 
   const loadConfig = useCallback(async () => {
     try {
@@ -172,8 +191,8 @@ export default function RecoveryConfigPage() {
       setError(null);
       const data = await recoverySettingsApi.getConfig();
       setConfig(data);
-      setEditStartAt(toLocalDateTime(data.startAt));
-      setEditEndAt(toLocalDateTime(data.endAt));
+      setEditStartAt(data.startAt != null ? toLocalDateTime(data.startAt) : "");
+      setEditEndAt(data.endAt != null ? toLocalDateTime(data.endAt) : "");
     } catch {
       setError("No se pudo cargar la configuracion");
     } finally {
@@ -205,8 +224,8 @@ export default function RecoveryConfigPage() {
         endAt: toIso(editEndAt),
       });
       setConfig(saved);
-      setEditStartAt(toLocalDateTime(saved.startAt));
-      setEditEndAt(toLocalDateTime(saved.endAt));
+      setEditStartAt(saved.startAt != null ? toLocalDateTime(saved.startAt) : "");
+      setEditEndAt(saved.endAt != null ? toLocalDateTime(saved.endAt) : "");
       setShowEditForm(false);
       showMsg("Configuracion guardada. El periodo se activara automaticamente en la fecha de inicio.");
     } catch (err: unknown) {
@@ -218,6 +237,10 @@ export default function RecoveryConfigPage() {
 
   const onDeactivate = async () => {
     if (!config) return;
+    if (config.startAt == null || config.endAt == null) {
+      setError("No hay fechas de periodo para desactivar. Define fechas primero.");
+      return;
+    }
     const endNow = new Date(Date.now() - 5000).toISOString();
     try {
       setSaving(true);
@@ -227,8 +250,8 @@ export default function RecoveryConfigPage() {
         endAt: endNow,
       });
       setConfig(saved);
-      setEditStartAt(toLocalDateTime(saved.startAt));
-      setEditEndAt(toLocalDateTime(saved.endAt));
+      setEditStartAt(saved.startAt != null ? toLocalDateTime(saved.startAt) : "");
+      setEditEndAt(saved.endAt != null ? toLocalDateTime(saved.endAt) : "");
       setConfirmDeactivate(false);
       showMsg("Periodo desactivado. Docentes y estudiantes ya no pueden crear ni modificar solicitudes.");
     } catch (err: unknown) {
@@ -241,9 +264,8 @@ export default function RecoveryConfigPage() {
   const onActivateNow = async () => {
     if (!config) return;
     const nowIso = new Date().toISOString();
-    const currentEnd = new Date(config.endAt);
-    const newEnd =
-      currentEnd.getTime() < Date.now()
+    const newEndStr: string =
+      config.endAt == null || new Date(config.endAt).getTime() < Date.now()
         ? new Date(Date.now() + 7 * 86400000).toISOString()
         : config.endAt;
     try {
@@ -251,11 +273,11 @@ export default function RecoveryConfigPage() {
       setError(null);
       const saved = await recoverySettingsApi.setConfig({
         startAt: nowIso,
-        endAt: newEnd,
+        endAt: newEndStr,
       });
       setConfig(saved);
-      setEditStartAt(toLocalDateTime(saved.startAt));
-      setEditEndAt(toLocalDateTime(saved.endAt));
+      setEditStartAt(saved.startAt != null ? toLocalDateTime(saved.startAt) : "");
+      setEditEndAt(saved.endAt != null ? toLocalDateTime(saved.endAt) : "");
       showMsg("Periodo activado. Docentes y estudiantes ya pueden operar.");
     } catch (err: unknown) {
       setError(getErrorMessage(err, "No se pudo activar el periodo"));
@@ -267,6 +289,10 @@ export default function RecoveryConfigPage() {
   const onExtend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!extendEndAt || !config) return;
+    if (config.startAt == null) {
+      setError("No hay fecha de inicio. Usa Editar fechas para definir el periodo.");
+      return;
+    }
     if (new Date(extendEndAt) <= new Date()) {
       setError("La nueva fecha de fin debe ser en el futuro.");
       return;
@@ -279,7 +305,7 @@ export default function RecoveryConfigPage() {
         endAt: toIso(extendEndAt),
       });
       setConfig(saved);
-      setEditEndAt(toLocalDateTime(saved.endAt));
+      setEditEndAt(saved.endAt != null ? toLocalDateTime(saved.endAt) : "");
       setExtendEndAt("");
       setShowExtendForm(false);
       showMsg("Periodo extendido correctamente.");
@@ -289,6 +315,14 @@ export default function RecoveryConfigPage() {
       setSaving(false);
     }
   };
+
+  const titleTone = config?.active
+    ? "text-rec-success-text"
+    : !hasDateWindow
+      ? "text-rec-text-muted"
+      : isFuture
+        ? "text-rec-info-text"
+        : "text-rec-text-muted";
 
   return (
     <section className="sec-page space-y-6">
@@ -301,28 +335,45 @@ export default function RecoveryConfigPage() {
         </div>
         {!loading && config && (
           <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${statusColor}`}>
-            {statusLabel === "Activo" ? "● " : statusLabel === "Proximo" ? "◷ " : "○ "}
-            {statusLabel === "Activo" ? "Activo" : statusLabel === "Proximo" ? "Próximo" : "Finalizado"}
+            {statusLabel === "Activo"
+              ? "● Activo"
+              : statusLabel === "Sin configurar"
+                ? "○ Sin configurar"
+                : statusLabel === "Proximo"
+                  ? "◷ Próximo"
+                  : "○ Finalizado"}
           </span>
         )}
       </div>
 
+      {!loading && config && !config.active && (
+        <div
+          role="status"
+          className="rounded-xl border border-rec-warning-border bg-rec-warning-bg px-4 py-3 text-sm text-rec-warning-text"
+        >
+          <p className="font-semibold">No hay período de recuperaciones activo</p>
+          <p className="mt-1 text-xs opacity-90">
+            Define fechas con <strong>Editar fechas</strong> o <strong>Activar ahora</strong> para habilitar docentes y estudiantes.
+          </p>
+        </div>
+      )}
+
       {error && (
-        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-center justify-between rounded-lg border border-rec-danger-border bg-rec-danger-bg px-4 py-3 text-sm text-rec-danger-text">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} className="ml-3 font-bold hover:text-red-900">
+          <button type="button" onClick={() => setError(null)} className="ml-3 font-bold hover:text-rec-danger-text">
             x
           </button>
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <div className="rounded-lg border border-rec-success-border bg-rec-success-bg px-4 py-3 text-sm text-rec-success-text">
           {success}
         </div>
       )}
 
       {loading && (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-8 text-center text-sm text-rec-text-subtle">
           Cargando configuracion...
         </div>
       )}
@@ -332,29 +383,33 @@ export default function RecoveryConfigPage() {
           <div
             className={`rounded-xl border-2 p-5 ${
               config.active
-                ? "border-green-300 bg-green-50"
-                : isFuture
-                  ? "border-blue-300 bg-blue-50"
-                  : "border-slate-300 bg-slate-50"
+                ? "border-rec-success-border bg-rec-success-bg"
+                : !hasDateWindow
+                  ? "border-rec-border-strong bg-rec-bg-base"
+                  : isFuture
+                    ? "border-rec-info-border bg-rec-info-bg"
+                    : "border-rec-border-strong bg-rec-bg-base"
             }`}
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p
-                  className={`text-lg font-bold ${config.active ? "text-green-800" : isFuture ? "text-blue-800" : "text-slate-600"}`}
-                >
+                <p className={`text-lg font-bold ${titleTone}`}>
                   {config.active
                     ? "Periodo activo — operaciones habilitadas"
-                    : isFuture
-                      ? "Periodo proximo — aun no ha comenzado"
-                      : "Periodo finalizado — acceso de solo lectura"}
+                    : !hasDateWindow
+                      ? "Sin periodo configurado — define fechas para continuar"
+                      : isFuture
+                        ? "Periodo proximo — aun no ha comenzado"
+                        : "Periodo finalizado — acceso de solo lectura"}
                 </p>
                 <p className="mt-0.5 text-sm opacity-70">
                   {config.active
                     ? "Docentes y estudiantes pueden crear y gestionar solicitudes de recuperacion."
-                    : isFuture
-                      ? "El sistema se activara automaticamente en la fecha de inicio."
-                      : "No se pueden crear nuevas solicitudes. Considera abrir un nuevo periodo."}
+                    : !hasDateWindow
+                      ? "Aun no hay ventana de recuperaciones para este periodo academico activo."
+                      : isFuture
+                        ? "El sistema se activara automaticamente en la fecha de inicio."
+                        : "No se pueden crear nuevas solicitudes. Considera abrir un nuevo periodo."}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -368,8 +423,8 @@ export default function RecoveryConfigPage() {
                         setShowEditForm(false);
                         setConfirmDeactivate(false);
                       }}
-                      disabled={saving}
-                      className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 transition"
+                      disabled={saving || !hasDateWindow}
+                      className="rounded-lg border border-rec-info-border bg-rec-bg-elevated px-3 py-1.5 text-sm font-medium text-rec-info-text hover:bg-rec-info-bg disabled:opacity-50 transition"
                     >
                       Extender periodo
                     </button>
@@ -380,8 +435,8 @@ export default function RecoveryConfigPage() {
                         setShowEditForm(false);
                         setShowExtendForm(false);
                       }}
-                      disabled={saving}
-                      className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 transition"
+                      disabled={saving || !hasDateWindow}
+                      className="rounded-lg border border-rec-danger-border bg-rec-bg-elevated px-3 py-1.5 text-sm font-medium text-rec-danger-text hover:bg-rec-danger-bg disabled:opacity-50 transition"
                     >
                       Desactivar
                     </button>
@@ -392,7 +447,7 @@ export default function RecoveryConfigPage() {
                     type="button"
                     onClick={onActivateNow}
                     disabled={saving}
-                    className="rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition"
+                    className="rec-gradient-primary-action rounded-lg px-3 py-1.5 text-sm font-semibold shadow-sm disabled:opacity-50 transition"
                   >
                     {saving ? "Activando..." : "Activar ahora"}
                   </button>
@@ -405,7 +460,7 @@ export default function RecoveryConfigPage() {
                     setConfirmDeactivate(false);
                   }}
                   disabled={saving}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition"
+                  className="rounded-lg border border-rec-border-strong bg-rec-bg-elevated px-3 py-1.5 text-sm font-medium text-rec-text-secondary hover:bg-rec-bg-base disabled:opacity-50 transition"
                 >
                   Editar fechas
                 </button>
@@ -423,81 +478,85 @@ export default function RecoveryConfigPage() {
                   color={
                     config.active
                       ? remaining < 86400000
-                        ? "border-red-200 bg-red-50 text-red-800"
+                        ? "border-rec-danger-border bg-rec-danger-bg text-rec-danger-text"
                         : remaining < 3 * 86400000
-                          ? "border-amber-200 bg-amber-50 text-amber-800"
-                          : "border-green-200 bg-white text-green-800"
-                      : "border-blue-200 bg-white text-blue-800"
+                          ? "border-rec-warning-border bg-rec-warning-bg text-rec-warning-text"
+                          : "border-rec-success-border bg-rec-bg-elevated text-rec-success-text"
+                      : "border-rec-info-border bg-rec-bg-elevated text-rec-info-text"
                   }
                 />
               </div>
             )}
             {isPast && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+              <div className="mt-4 rounded-lg border border-rec-border-default bg-rec-bg-elevated px-4 py-3 text-sm text-rec-text-subtle">
                 Este periodo finalizo el {fmtDateTime(config.endAt)}. Usa Activar ahora o Editar fechas para abrir un nuevo periodo.
               </div>
             )}
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h2 className="mb-4 text-sm font-semibold text-slate-700">Progreso del periodo</h2>
+          <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-5">
+            <h2 className="mb-4 text-sm font-semibold text-rec-text-secondary">Progreso del periodo</h2>
 
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-lg bg-slate-50 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-slate-800">{Math.round(progress)}%</p>
-                <p className="text-xs text-slate-500">Completado</p>
+              <div className="rounded-lg bg-rec-bg-base px-3 py-2 text-center">
+                <p className="text-lg font-bold text-rec-text-primary">{Math.round(progress)}%</p>
+                <p className="text-xs text-rec-text-subtle">Completado</p>
               </div>
-              <div className="rounded-lg bg-slate-50 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-slate-800">{fmtDuration(totalDuration)}</p>
-                <p className="text-xs text-slate-500">Duracion total</p>
+              <div className="rounded-lg bg-rec-bg-base px-3 py-2 text-center">
+                <p className="text-lg font-bold text-rec-text-primary">{fmtDuration(totalDuration)}</p>
+                <p className="text-xs text-rec-text-subtle">Duracion total</p>
               </div>
-              <div className="rounded-lg bg-slate-50 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-slate-800">
-                  {fmtDuration(Math.max(0, now - new Date(config.startAt).getTime()))}
+              <div className="rounded-lg bg-rec-bg-base px-3 py-2 text-center">
+                <p className="text-lg font-bold text-rec-text-primary">
+                  {hasDateWindow
+                    ? fmtDuration(Math.max(0, now - new Date(config.startAt!).getTime()))
+                    : "—"}
                 </p>
-                <p className="text-xs text-slate-500">Transcurrido</p>
+                <p className="text-xs text-rec-text-subtle">Transcurrido</p>
               </div>
-              <div className="rounded-lg bg-slate-50 px-3 py-2 text-center">
-                <p className={`text-lg font-bold ${remaining > 0 ? "text-emerald-700" : "text-slate-400"}`}>
+              <div className="rounded-lg bg-rec-bg-base px-3 py-2 text-center">
+                <p className={`text-lg font-bold ${remaining > 0 ? "text-rec-success-text" : "text-rec-text-subtle"}`}>
                   {remaining > 0 ? fmtDuration(remaining) : "--"}
                 </p>
-                <p className="text-xs text-slate-500">Restante</p>
+                <p className="text-xs text-rec-text-subtle">Restante</p>
               </div>
             </div>
 
-            <div className="relative h-4 overflow-hidden rounded-full bg-slate-100">
+            <div className="relative h-4 overflow-hidden rounded-full bg-rec-bg-muted">
               <div
                 className={`h-full rounded-full transition-all duration-1000 ${
                   config.active
                     ? remaining < 86400000
-                      ? "bg-red-500"
+                      ? "bg-rec-danger-solid"
                       : remaining < 3 * 86400000
-                        ? "bg-amber-400"
-                        : "bg-emerald-500"
-                    : isPast
-                      ? "bg-slate-400"
-                      : "bg-blue-400"
+                        ? "bg-rec-chart-amber"
+                        : "bg-rec-primary"
+                    : !hasDateWindow
+                      ? "bg-rec-text-muted"
+                      : isPast
+                        ? "bg-rec-text-subtle"
+                        : "bg-[var(--rec-info-text)]"
                 }`}
                 style={{ width: `${progress}%` }}
               />
               {progress > 2 && progress < 98 && (
                 <div
-                  className="absolute top-0 h-full w-0.5 bg-white/80"
+                  className="absolute top-0 h-full w-0.5 bg-rec-bg-elevated/80"
                   style={{ left: `${progress}%` }}
                 />
               )}
             </div>
 
-            <div className="mt-2 flex justify-between text-xs text-slate-400">
-              <span>Inicio: {fmtDateTime(config.startAt)}</span>
-              <span>Fin: {fmtDateTime(config.endAt)}</span>
+            <div className="mt-2 flex justify-between text-xs text-rec-text-subtle">
+              <span>Inicio: {hasDateWindow ? fmtDateTime(config.startAt) : "—"}</span>
+              <span>Fin: {hasDateWindow ? fmtDateTime(config.endAt) : "—"}</span>
             </div>
           </div>
 
           {confirmDeactivate && (
-            <div className="rounded-xl border-2 border-red-300 bg-red-50 p-5">
-              <h3 className="mb-1 font-semibold text-red-800">Confirmar desactivacion</h3>
-              <p className="mb-4 text-sm text-red-700">
+            <div className="rounded-xl border-2 border-rec-danger-border bg-rec-danger-bg p-5">
+              <h3 className="mb-1 font-semibold text-rec-danger-text">Confirmar desactivacion</h3>
+              <p className="mb-4 text-sm text-rec-danger-text">
                 Al desactivar el periodo, los docentes y estudiantes no podran crear solicitudes,
                 asignar actividades ni enviar mensajes. Solo podran consultar el historial.
               </p>
@@ -506,14 +565,14 @@ export default function RecoveryConfigPage() {
                   type="button"
                   onClick={onDeactivate}
                   disabled={saving}
-                  className="rounded-lg bg-gradient-to-r from-red-600 to-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-red-700 hover:to-rose-700 disabled:opacity-50"
+                  className="rec-gradient-danger-action rounded-lg px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-50"
                 >
                   {saving ? "Desactivando..." : "Si, desactivar"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmDeactivate(false)}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-rec-border-strong bg-rec-bg-elevated px-4 py-2 text-sm font-medium text-rec-text-secondary hover:bg-rec-bg-base"
                 >
                   Cancelar
                 </button>
@@ -522,14 +581,14 @@ export default function RecoveryConfigPage() {
           )}
 
           {showExtendForm && (
-            <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-5">
-              <h3 className="mb-1 font-semibold text-blue-800">Extender periodo</h3>
-              <p className="mb-3 text-sm text-blue-700">
+            <div className="rounded-xl border-2 border-rec-info-border bg-rec-info-bg p-5">
+              <h3 className="mb-1 font-semibold text-rec-info-text">Extender periodo</h3>
+              <p className="mb-3 text-sm text-rec-info-text">
                 Define una nueva fecha de fin. El inicio no cambiara ({fmtDateTime(config.startAt)}).
               </p>
               <form onSubmit={onExtend} className="flex flex-wrap items-end gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-blue-800">
+                  <label className="mb-1 block text-xs font-medium text-rec-info-text">
                     Nueva fecha y hora de fin
                   </label>
                   <input
@@ -537,21 +596,21 @@ export default function RecoveryConfigPage() {
                     value={extendEndAt}
                     onChange={(e) => setExtendEndAt(e.target.value)}
                     required
-                    className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="rounded-lg border border-rec-info-border bg-rec-bg-elevated px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--rec-info-text)]"
                   />
                 </div>
                 <div className="flex gap-2">
                   <button
                     type="submit"
                     disabled={saving || !extendEndAt}
-                    className="rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50"
+                    className="rec-gradient-info-action rounded-lg px-4 py-2 text-sm font-semibold shadow-sm disabled:opacity-50"
                   >
                     {saving ? "Guardando..." : "Confirmar extension"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowExtendForm(false)}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    className="rounded-lg border border-rec-border-strong bg-rec-bg-elevated px-4 py-2 text-sm font-medium text-rec-text-secondary hover:bg-rec-bg-base"
                   >
                     Cancelar
                   </button>
@@ -561,39 +620,39 @@ export default function RecoveryConfigPage() {
           )}
 
           {showEditForm && (
-            <div className="rounded-xl border-2 border-slate-300 bg-white p-5">
-              <h3 className="mb-1 font-semibold text-slate-800">Editar fechas del periodo</h3>
-              <p className="mb-4 text-sm text-slate-500">
+            <div className="rounded-xl border-2 border-rec-border-strong bg-rec-bg-elevated p-5">
+              <h3 className="mb-1 font-semibold text-rec-text-primary">Editar fechas del periodo</h3>
+              <p className="mb-4 text-sm text-rec-text-subtle">
                 Modifica el inicio y el fin. El sistema activara o desactivara el acceso automaticamente.
               </p>
               <form onSubmit={onSaveEdit} className="space-y-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">Fecha y hora de inicio</label>
+                    <label className="mb-1 block text-xs font-medium text-rec-text-muted">Fecha y hora de inicio</label>
                     <input
                       type="datetime-local"
                       value={editStartAt}
                       onChange={(e) => setEditStartAt(e.target.value)}
                       required
                       disabled={saving}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
+                      className="w-full rounded-lg border border-rec-border-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rec-primary disabled:opacity-50"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">Fecha y hora de fin</label>
+                    <label className="mb-1 block text-xs font-medium text-rec-text-muted">Fecha y hora de fin</label>
                     <input
                       type="datetime-local"
                       value={editEndAt}
                       onChange={(e) => setEditEndAt(e.target.value)}
                       required
                       disabled={saving}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-50"
+                      className="w-full rounded-lg border border-rec-border-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rec-primary disabled:opacity-50"
                     />
                   </div>
                 </div>
 
                 {editStartAt && editEndAt && new Date(editEndAt) > new Date(editStartAt) && (
-                  <div className="rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-600">
+                  <div className="rounded-lg bg-rec-bg-base px-4 py-2 text-sm text-rec-text-muted">
                     Duracion del nuevo periodo:{" "}
                     <strong>
                       {fmtDuration(new Date(editEndAt).getTime() - new Date(editStartAt).getTime())}
@@ -605,14 +664,14 @@ export default function RecoveryConfigPage() {
                   <button
                     type="submit"
                     disabled={saving || !editStartAt || !editEndAt}
-                    className="rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
+                    className="rec-gradient-primary-action rounded-lg px-5 py-2 text-sm font-semibold shadow-sm disabled:opacity-50"
                   >
                     {saving ? "Guardando..." : "Guardar configuracion"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowEditForm(false)}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    className="rounded-lg border border-rec-border-strong bg-rec-bg-elevated px-4 py-2 text-sm font-medium text-rec-text-secondary hover:bg-rec-bg-base"
                   >
                     Cancelar
                   </button>
@@ -621,21 +680,21 @@ export default function RecoveryConfigPage() {
             </div>
           )}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-semibold text-slate-700">Impacto del estado del periodo</h2>
+          <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-5">
+            <h2 className="mb-3 text-sm font-semibold text-rec-text-secondary">Impacto del estado del periodo</h2>
             <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                <p className="mb-1 font-semibold text-green-800">Cuando esta ACTIVO</p>
-                <ul className="list-inside list-disc space-y-0.5 text-xs text-green-700">
+              <div className="rounded-lg border border-rec-success-border bg-rec-success-bg px-4 py-3">
+                <p className="mb-1 font-semibold text-rec-success-text">Cuando esta ACTIVO</p>
+                <ul className="list-inside list-disc space-y-0.5 text-xs text-rec-success-text">
                   <li>Estudiantes pueden crear nuevas solicitudes</li>
                   <li>Docentes pueden aprobar, rechazar y gestionar</li>
                   <li>Se pueden asignar actividades y enviar mensajes</li>
                   <li>El horario de recuperaciones es accesible</li>
                 </ul>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="mb-1 font-semibold text-slate-700">Cuando esta INACTIVO</p>
-                <ul className="list-inside list-disc space-y-0.5 text-xs text-slate-600">
+              <div className="rounded-lg border border-rec-border-default bg-rec-bg-base px-4 py-3">
+                <p className="mb-1 font-semibold text-rec-text-secondary">Cuando esta INACTIVO</p>
+                <ul className="list-inside list-disc space-y-0.5 text-xs text-rec-text-muted">
                   <li>No se pueden crear nuevas solicitudes</li>
                   <li>No se pueden modificar solicitudes existentes</li>
                   <li>Solo se permite consultar el historial</li>

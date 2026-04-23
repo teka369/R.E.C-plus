@@ -8,9 +8,9 @@ type Props = {
 
 const variantClasses: Record<NonNullable<Props["variant"]>, string> = {
   default: "",
-  success: "text-green-700 border-green-300 bg-green-50",
-  warning: "text-amber-700 border-amber-300 bg-amber-50",
-  danger: "text-red-700 border-red-300 bg-red-50",
+  success: "text-rec-success-text border-rec-success-border bg-rec-success-bg",
+  warning: "text-rec-warning-text border-rec-warning-border bg-rec-warning-bg",
+  danger: "text-rec-danger-text border-rec-danger-border bg-rec-danger-bg",
 };
 
 export default function Chip({ children, variant = "default" }: Props) {

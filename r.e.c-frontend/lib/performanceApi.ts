@@ -10,6 +10,32 @@ export type GradeEntry = {
   inasistenciasInjustificadas?: number;
 };
 
+export type AcademicEvaluationGrade = {
+  /** id de AcademicEvaluation en backend (overview v2 / estudiante v2) */
+  evaluationId?: number;
+  titulo: string;
+  tipo: string;
+  orden: number;
+  termSlot?: number | null;
+  porcentaje: number | null;
+  nota: number;
+  competencyCategory?: string | null;
+};
+
+/** Ítems de `evaluaciones` en GET estudiante `?v=2` */
+export type StudentEvaluationV2 = {
+  evaluationId?: number;
+  title: string;
+  type?: string;
+  orden: number;
+  termSlot?: number | null;
+  weight?: number | null;
+  grade: number;
+  competencyCategory?: string | null;
+  updatedAt?: string;
+  updatedByTeacherId?: number | null;
+};
+
 // ── Grade Performance (group-level stats) ────────────────────────────────────
 
 export type GradePerformance = {
@@ -80,14 +106,25 @@ export type UpsertGradePerformanceInput = {
 // ── Student Academic Record ───────────────────────────────────────────────────
 
 export type StudentAcademicRecord = {
-  id: number;
+  /**
+   * Identificador público del registro académico (UUID en backend).
+   * Nota: no es incremental numérico.
+   */
+  id: string;
   subjectId: number;
   subject: { id: number; nombre: string };
-  parcial1: number | null;
-  parcial2: number | null;
-  parcial3: number | null;
-  parcial4: number | null;
-  gradesJson: string | null;
+  /**
+   * Fuente canónica: v1 = AcademicEvaluationGrade; v2 estudiante = StudentEvaluationV2.
+   */
+  evaluaciones?: Array<AcademicEvaluationGrade | StudentEvaluationV2>;
+
+  /** Respuestas antiguas / compat; la UI docente v2 no los usa como fuente de lectura */
+  parcial1?: number | null;
+  parcial2?: number | null;
+  parcial3?: number | null;
+  parcial4?: number | null;
+  gradesJson?: string | null;
+
   notaFinal: number | null;
   promedioMateria: number | null;
   progresoMateria: number | null;
@@ -96,9 +133,23 @@ export type StudentAcademicRecord = {
   totalInasistencias?: number;
   observaciones: string | null;
   updatedAt: string;
+  finalSource?: string | null;
+  finalOverride?: number | null;
+};
+
+export type UpsertStudentAcademicEvaluationPayload = {
+  evaluationId?: number;
+  title: string;
+  type?: string;
+  termSlot?: number;
+  weight?: number | null;
+  grade?: number | null;
 };
 
 export type UpsertStudentAcademicInput = {
+  /** Payload canónico v2 (recomendado en docente) */
+  evaluations?: UpsertStudentAcademicEvaluationPayload[];
+  finalOverride?: number | null;
   parcial1?: number;
   parcial2?: number;
   parcial3?: number;
@@ -112,6 +163,14 @@ export type UpsertStudentAcademicInput = {
 
 // ── Student Academic Response (single student) ───────────────────────────────
 
+export type StudentAcademicSimulatorInputs = {
+  termSlotsAvailable?: number[];
+  gradeScaleMax: number;
+  passingThreshold: number;
+  pendingEvaluations?: number;
+  currentAverage?: number;
+};
+
 export type StudentAcademicResponse = {
   student: { id: number; nombres: string; apellidos: string; email: string };
   group: { id: number; nombre: string; grade: { id: number; nombre: string } };
@@ -123,9 +182,27 @@ export type StudentAcademicResponse = {
     totalInasistencias: number;
   };
   records: StudentAcademicRecord[];
+  /** GET ?v=2 */
+  academicPeriod?: AcademicPeriodSummary | null;
+  termSlotsAvailable?: number[];
+  simulatorInputs?: StudentAcademicSimulatorInputs;
+  /** GET ?v=2 — política institucional de calificación */
+  gradingMode?: string;
+  competencyWeights?: Record<string, number>;
 };
 
 // ── Group Academic Overview ───────────────────────────────────────────────────
+
+export type AcademicPeriodSummary = {
+  id: number;
+  codigo: string | null;
+  nombre: string;
+  estado: string;
+  tipo?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  fechaCierre?: string | null;
+};
 
 export type GroupStudentEntry = {
   student: { id: number; nombres: string; apellidos: string; email: string };
@@ -137,6 +214,21 @@ export type GroupAcademicOverview = {
   group: { id: number; nombre: string; grade: { id: number; nombre: string } };
   subjects: Array<{ id: number; nombre: string }>;
   students: GroupStudentEntry[];
+  /** Presente con GET ?v=2 */
+  academicPeriod?: AcademicPeriodSummary | null;
+  /** Cortes con al menos una evaluación en el grupo (v2); si no hay, [1–4] */
+  termSlotsAvailable?: number[];
+  /** GET ?v=2 — política institucional de calificación */
+  gradingMode?: string;
+  competencyWeights?: Record<string, number>;
+  stats?: {
+    passingThreshold: number;
+    totalStudents: number;
+    coverageCount: number;
+    groupAverage: number | null;
+    approvedCount: number;
+    approvalRate: number;
+  };
 };
 
 // ── API ───────────────────────────────────────────────────────────────────────
@@ -180,14 +272,14 @@ export const performanceApi = {
 
   async getStudentAcademic(studentId: number): Promise<StudentAcademicResponse> {
     const res = await api.get<StudentAcademicResponse>(
-      `/performance/students/${studentId}/academic`,
+      `/performance/students/${studentId}/academic?v=2`,
     );
     return res.data;
   },
 
   async getGroupAcademicOverview(groupId: number): Promise<GroupAcademicOverview> {
     const res = await api.get<GroupAcademicOverview>(
-      `/performance/groups/${groupId}/students-academic`,
+      `/performance/groups/${groupId}/students-academic?v=2`,
     );
     return res.data;
   },

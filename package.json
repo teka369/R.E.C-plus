@@ -1,4 +1,15 @@
 {
+  "name": "r-e-c-plus",
+  "private": true,
+  "description": "Monorepo R.E.C — scripts de despliegue en la raíz",
+  "scripts": {
+    "deploy:backend": "bash scripts/deploy.sh backend",
+    "deploy:frontend": "bash scripts/deploy.sh frontend",
+    "deploy:all": "bash scripts/deploy.sh all",
+    "deploy:backend:pull": "bash scripts/deploy.sh backend --pull",
+    "deploy:frontend:pull": "bash scripts/deploy.sh frontend --pull",
+    "deploy:all:pull": "bash scripts/deploy.sh all --pull"
+  },
   "dependencies": {
     "@sentry/node": "^10.47.0",
     "@sentry/profiling-node": "^10.47.0",

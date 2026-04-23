@@ -16,7 +16,7 @@ export default function LogoutPage() {
       <Navbar />
       <section className="mx-auto max-w-6xl px-4 py-10">
         <h1 className="text-xl font-semibold mb-2">Cerrando sesión…</h1>
-        <p className="text-sm text-gray-600">Limpiando sesión y redirigiendo.</p>
+        <p className="text-sm text-rec-text-muted">Limpiando sesión y redirigiendo.</p>
       </section>
     </main>
   );

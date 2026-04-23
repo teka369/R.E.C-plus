@@ -126,7 +126,7 @@ export default function UsuariosPage() {
           >
             Anterior
           </Button>
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-rec-text-muted">
             Página {meta.page} de {meta.totalPages}
           </span>
           <Button

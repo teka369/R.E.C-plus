@@ -1,12 +1,14 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RecoverByCodeDto } from './dto/recover-by-code.dto';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
+import { resolveLoginTrackerFromRequest } from './login-tracker.util';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -14,15 +16,10 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('login')
-  @Throttle({
-    default: {
-      ttl: 900_000,
-      limit: process.env.NODE_ENV === 'test' ? 10_000 : 5,
-    },
-  })
-  async login(@Body() dto: LoginDto) {
-    const result = await this.auth.login(dto.email, dto.password);
-    return result;
+  @SkipThrottle()
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    const tracker = resolveLoginTrackerFromRequest(req);
+    return this.auth.login(dto.email, dto.password, tracker);
   }
 
   @Post('refresh')

@@ -1,5 +1,6 @@
 "use client";
 
+import HelpHubLauncher from "@/components/onboarding/HelpHubLauncher";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { useEffect, useState, type SVGProps } from "react";
@@ -29,25 +30,25 @@ export default function HeroActions() {
         (heroReady ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0")
       }
     >
-      <p className="inline-flex rounded-full border border-white/30 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+      <p className="inline-flex rounded-full border border-rec-text-on-media/30 bg-rec-bg-elevated/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rec-text-on-media">
         Plataforma academica institucional
       </p>
-      <h1 className="mt-5 text-4xl font-black leading-tight text-white md:text-6xl">
+      <h1 className="mt-5 text-4xl font-black leading-tight text-rec-text-on-media md:text-6xl">
         R.E.C Education
       </h1>
-      <p className="mt-5 max-w-2xl text-base text-white/90 md:text-lg">
+      <p className="mt-5 max-w-2xl text-base text-rec-text-on-media/90 md:text-lg">
         Refuerzo Educativo Complementario para instituciones que necesitan claridad,
         seguimiento academico y una experiencia digital confiable para estudiantes,
         docentes y secretaria.
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         {!token ? (
           <>
             <Link
               href="/login"
               prefetch={false}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[color:var(--rec-primary)] shadow-md hover:scale-[1.02]"
+              className="inline-flex items-center gap-2 rounded-full bg-rec-bg-elevated px-6 py-3 text-sm font-semibold text-[color:var(--rec-primary)] shadow-md hover:scale-[1.02]"
             >
               <IconBolt className="h-4 w-4" />
               Iniciar sesion
@@ -55,44 +56,48 @@ export default function HeroActions() {
             <Link
               href="/acceso-secretaria"
               prefetch={false}
-              className="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/20"
+              className="inline-flex items-center gap-2 rounded-full border border-rec-text-on-media/50 bg-rec-bg-elevated/10 px-6 py-3 text-sm font-semibold text-rec-text-on-media hover:bg-rec-bg-elevated/20"
             >
               <IconUser className="h-4 w-4" />
               Acceso secretaria
             </Link>
+            <HelpHubLauncher />
           </>
         ) : (
-          <Link
-            href={dashboardBase}
-            prefetch={false}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[color:var(--rec-primary)] shadow-md hover:scale-[1.02]"
-          >
-            <IconSpark className="h-4 w-4" />
-            Ir al panel
-          </Link>
+          <>
+            <Link
+              href={dashboardBase}
+              prefetch={false}
+              className="inline-flex items-center gap-2 rounded-full bg-rec-bg-elevated px-6 py-3 text-sm font-semibold text-[color:var(--rec-primary)] shadow-md hover:scale-[1.02]"
+            >
+              <IconSpark className="h-4 w-4" />
+              Ir al panel
+            </Link>
+            <HelpHubLauncher />
+          </>
         )}
       </div>
 
-      <p className="mt-6 text-sm font-semibold text-white/95">Diseñado para toda la comunidad educativa</p>
-      <div className="mt-3 flex flex-wrap gap-6 text-sm text-white/90">
+      <p className="mt-6 text-sm font-semibold text-rec-text-on-media/95">Diseñado para toda la comunidad educativa</p>
+      <div className="mt-3 flex flex-wrap gap-6 text-sm text-rec-text-on-media/90">
         <div className="flex items-start gap-2">
           <IconBook className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <p className="font-semibold text-white">Docentes</p>
+            <p className="font-semibold text-rec-text-on-media">Docentes</p>
             <p>Trazabilidad de cada grupo y seguimiento académico centralizado.</p>
           </div>
         </div>
         <div className="flex items-start gap-2">
           <IconUser className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <p className="font-semibold text-white">Estudiantes</p>
+            <p className="font-semibold text-rec-text-on-media">Estudiantes</p>
             <p>Acceso directo a horarios, materiales y retroalimentación.</p>
           </div>
         </div>
         <div className="flex items-start gap-2">
           <IconFolder className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <p className="font-semibold text-white">Secretaría</p>
+            <p className="font-semibold text-rec-text-on-media">Secretaría</p>
             <p>Gestión operativa ordenada con control de periodos y reportes.</p>
           </div>
         </div>

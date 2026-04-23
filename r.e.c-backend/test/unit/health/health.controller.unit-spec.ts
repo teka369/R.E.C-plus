@@ -30,16 +30,18 @@ describe('HealthController', () => {
   });
 
   describe('metrics', () => {
-    it('returns memory and process info', () => {
+    it('returns memory and rounded cpu percent without process fingerprint fields', () => {
       const result = controller.metrics();
       expect(result.memory).toBeDefined();
       expect(result.memory.rss).toContain('MB');
       expect(result.memory.heapTotal).toContain('MB');
       expect(result.uptime).toBeGreaterThan(0);
-      expect(result.nodeVersion).toBeDefined();
-      expect(result.platform).toBeDefined();
-      expect(result.pid).toBeDefined();
       expect(result.cpu).toBeDefined();
+      expect(result.cpu.percent).toBeGreaterThanOrEqual(0);
+      expect(result.cpu.percent).toBeLessThanOrEqual(100);
+      expect(result).not.toHaveProperty('pid');
+      expect(result).not.toHaveProperty('nodeVersion');
+      expect(result).not.toHaveProperty('platform');
     });
   });
 });

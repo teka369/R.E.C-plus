@@ -2,8 +2,8 @@ import api from "@/lib/axios";
 
 export type RecoveryConfig = {
   active: boolean;
-  startAt: string;
-  endAt: string;
+  startAt: string | null;
+  endAt: string | null;
 };
 
 export type RecoveryScheduleMeta = {

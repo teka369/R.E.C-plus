@@ -82,13 +82,13 @@ function CrearUsuarioContent() {
           <span className="sec-chip sec-chip--success">✓ Creado</span>
         </div>
         <div className="sec-card p-6 max-w-xl space-y-4">
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-rec-text-secondary">
             <strong>{createdUser.nombres} {createdUser.apellidos}</strong> ya puede acceder a la plataforma con las siguientes credenciales:
           </p>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
-            <p className="text-sm"><strong>Código:</strong> <code className="rounded bg-white px-2 py-0.5 text-sm font-mono border">{createdUser.codigo}</code></p>
-            <p className="text-sm"><strong>Contraseña inicial:</strong> <code className="rounded bg-white px-2 py-0.5 text-sm font-mono border">{usedPassword}</code></p>
-            <p className="mt-2 text-xs text-amber-700">
+          <div className="rounded-xl border border-rec-warning-border bg-rec-warning-bg p-4 space-y-2">
+            <p className="text-sm"><strong>Código:</strong> <code className="rounded bg-rec-bg-elevated px-2 py-0.5 text-sm font-mono border">{createdUser.codigo}</code></p>
+            <p className="text-sm"><strong>Contraseña inicial:</strong> <code className="rounded bg-rec-bg-elevated px-2 py-0.5 text-sm font-mono border">{usedPassword}</code></p>
+            <p className="mt-2 text-xs text-rec-warning-text">
               {password.trim()
                 ? "Se usó la contraseña proporcionada."
                 : "La contraseña inicial es el mismo código. El usuario debe cambiarla en su primer acceso desde \"¿Olvidaste tu contraseña?\"."}
@@ -115,8 +115,8 @@ function CrearUsuarioContent() {
         <EmailWithDomain label="Correo" email={email} onEmailChange={setEmail} institutionDomain={instDomain} />
         {roleLocked ? (
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-700">Rol</label>
-            <div className="rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm">
+            <label className="text-sm text-rec-text-secondary">Rol</label>
+            <div className="rounded border border-rec-border-strong bg-rec-bg-muted px-3 py-2 text-sm">
               {role === "ESTUDIANTE" ? "Estudiante" : role === "PROFESOR" ? "Profesor" : "Secretaría"}
             </div>
           </div>
@@ -135,7 +135,7 @@ function CrearUsuarioContent() {
         {role === "SECRETARIA" && (
           <Input label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         )}
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="text-sm text-rec-danger-text">{error}</p> : null}
         <div className="flex gap-2">
           <Button type="submit">Guardar</Button>
           <Button

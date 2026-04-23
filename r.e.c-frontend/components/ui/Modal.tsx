@@ -44,8 +44,7 @@ export default function Modal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0, 0, 0, 0.45)", backdropFilter: "blur(4px)" }}
+      className="rec-modal-scrim fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
@@ -57,13 +56,14 @@ export default function Modal({
         className={`sec-card w-full ${sizeClasses[size]} p-0 animate-in`}
         style={{ borderRadius: 14 }}
       >
-        <div className="flex items-center justify-between border-b px-5 py-4"
-          style={{ borderColor: "var(--role-border, color-mix(in srgb, var(--rec-primary) 18%, white 82%))" }}
+        <div
+          className="flex items-center justify-between border-b px-5 py-4"
+          style={{ borderColor: "var(--role-border, var(--rec-border-default))" }}
         >
           <h2 className="sec-title text-base">{title}</h2>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-rec-modal-close-fg hover:bg-rec-modal-close-hover"
             aria-label="Cerrar"
           >
             ✕
@@ -75,7 +75,7 @@ export default function Modal({
         {footer && (
           <div
             className="flex items-center justify-end gap-2 border-t px-5 py-3"
-            style={{ borderColor: "var(--role-border, color-mix(in srgb, var(--rec-primary) 18%, white 82%))" }}
+            style={{ borderColor: "var(--role-border, var(--rec-border-default))" }}
           >
             {footer}
           </div>

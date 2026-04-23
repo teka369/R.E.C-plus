@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import api from "@/lib/axios";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -487,45 +488,48 @@ export default function SuperAdminDashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 md:p-8">
+    <main className="min-h-screen bg-rec-bg-base p-6 md:p-8">
       <section className="mx-auto max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <header className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">SaaS Platform</p>
-              <h1 className="mt-2 text-3xl font-black text-slate-900">Panel Super Admin</h1>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rec-info-text">SaaS Platform</p>
+              <h1 className="mt-2 text-3xl font-black text-rec-text-primary">Panel Super Admin</h1>
+              <p className="mt-2 text-sm text-rec-text-muted">
                 Crea, provisiona y controla el ciclo de vida de instituciones multi-tenant.
               </p>
             </div>
-            <a
-              href="/profile"
-              className="rounded-lg bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-200"
-            >
-              📋 Mi Perfil
-            </a>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <ThemeToggle />
+              <a
+                href="/profile"
+                className="rounded-lg bg-rec-info-bg-strong px-4 py-2 text-sm font-semibold text-rec-info-text hover:bg-rec-info-hover"
+              >
+                📋 Mi Perfil
+              </a>
+            </div>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Instituciones</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{institutions.length}</p>
+            <article className="rounded-xl border border-rec-border-default bg-rec-bg-base p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-rec-text-subtle">Instituciones</p>
+              <p className="mt-2 text-2xl font-bold text-rec-text-primary">{institutions.length}</p>
             </article>
-            <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-700">Activas</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{activeCount}</p>
+            <article className="rounded-xl border border-rec-success-border bg-rec-success-bg p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-rec-success-text">Activas</p>
+              <p className="mt-2 text-2xl font-bold text-rec-success-text">{activeCount}</p>
             </article>
-            <article className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-amber-700">Inactivas</p>
-              <p className="mt-2 text-2xl font-bold text-amber-700">{institutions.length - activeCount}</p>
+            <article className="rounded-xl border border-rec-warning-border bg-rec-warning-bg p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-rec-warning-text">Inactivas</p>
+              <p className="mt-2 text-2xl font-bold text-rec-warning-text">{institutions.length - activeCount}</p>
             </article>
           </div>
         </header>
 
         <section className="grid gap-6">
-          <form onSubmit={handleProvision} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900">Provisionar institución</h2>
-            <p className="mt-1 text-sm text-slate-500">Crea tenant + secretarias</p>
+          <form onSubmit={handleProvision} className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-rec-text-primary">Provisionar institución</h2>
+            <p className="mt-1 text-sm text-rec-text-subtle">Crea tenant + secretarias</p>
 
             <div className="mt-4 grid gap-3">
               <input
@@ -541,7 +545,7 @@ export default function SuperAdminDashboardPage() {
                   }));
                 }}
                 placeholder="Nombre institucion"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                 required
               />
               <input
@@ -552,7 +556,7 @@ export default function SuperAdminDashboardPage() {
                   setProvisionSlugTouched(institutionSlug.length > 0);
                 }}
                 placeholder="Slug (colegio-norte)"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                 required
               />
               <input
@@ -561,20 +565,20 @@ export default function SuperAdminDashboardPage() {
                   setProvisionForm((p) => ({ ...p, institutionDominio: e.target.value.trim().toLowerCase().replace(/^@+/, "") }))
                 }
                 placeholder="Dominio de correo (ej: colegio.edu.co)"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
               />
-              <div className="h-px bg-slate-200" />
-              <h3 className="font-semibold text-slate-700">Secretarias</h3>
+              <div className="h-px bg-rec-bg-subtle" />
+              <h3 className="font-semibold text-rec-text-secondary">Secretarias</h3>
 
               {provisionForm.secretarias.map((secretaria, idx) => (
-                <div key={secretaria.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div key={secretaria.id} className="space-y-2 rounded-lg border border-rec-border-default bg-rec-bg-base p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-500">Secretaria {idx + 1}</span>
+                    <span className="text-xs font-semibold text-rec-text-subtle">Secretaria {idx + 1}</span>
                     {provisionForm.secretarias.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveSecretaria(secretaria.id)}
-                        className="text-xs font-semibold text-red-600 hover:text-red-700"
+                        className="text-xs font-semibold text-rec-danger-text hover:text-rec-danger-text"
                       >
                         ✕ Remover
                       </button>
@@ -584,14 +588,14 @@ export default function SuperAdminDashboardPage() {
                     value={secretaria.nombres}
                     onChange={(e) => handleUpdateSecretaria(secretaria.id, "nombres", e.target.value)}
                     placeholder="Nombres"
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                     required
                   />
                   <input
                     value={secretaria.apellidos}
                     onChange={(e) => handleUpdateSecretaria(secretaria.id, "apellidos", e.target.value)}
                     placeholder="Apellidos"
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                     required
                   />
                   <input
@@ -599,7 +603,7 @@ export default function SuperAdminDashboardPage() {
                     value={secretaria.email}
                     onChange={(e) => handleUpdateSecretaria(secretaria.id, "email", e.target.value)}
                     placeholder="Correo"
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                     required
                   />
                   <input
@@ -607,7 +611,7 @@ export default function SuperAdminDashboardPage() {
                     value={secretaria.password}
                     onChange={(e) => handleUpdateSecretaria(secretaria.id, "password", e.target.value)}
                     placeholder="Contraseña"
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                     required
                   />
                 </div>
@@ -616,7 +620,7 @@ export default function SuperAdminDashboardPage() {
               <button
                 type="button"
                 onClick={handleAddSecretaria}
-                className="mt-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                className="mt-2 rounded-lg border border-rec-border-strong px-3 py-2 text-sm font-semibold text-rec-text-secondary hover:bg-rec-bg-muted"
               >
                 + Agregar secretaria
               </button>
@@ -625,28 +629,28 @@ export default function SuperAdminDashboardPage() {
             <button
               type="submit"
               disabled={provisioning}
-              className="mt-4 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="mt-4 rounded-lg bg-rec-primary-strong px-4 py-2 text-sm font-semibold text-rec-text-on-media disabled:opacity-60"
             >
               {provisioning ? "Provisionando..." : "Provisionar"}
             </button>
           </form>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-          <h2 className="text-lg font-bold text-slate-900">Instituciones registradas</h2>
-          <p className="mt-1 text-sm text-slate-500">Gestion operativa con activacion e inactivacion.</p>
+        <section className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-4 shadow-sm md:p-6">
+          <h2 className="text-lg font-bold text-rec-text-primary">Instituciones registradas</h2>
+          <p className="mt-1 text-sm text-rec-text-subtle">Gestion operativa con activacion e inactivacion.</p>
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por nombre, slug o codigo"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as "ALL" | "ACTIVE" | "INACTIVE")}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
             >
               <option value="ALL">Todos los estados</option>
               <option value="ACTIVE">Solo activas</option>
@@ -654,11 +658,11 @@ export default function SuperAdminDashboardPage() {
             </select>
           </div>
 
-          {loading ? <p className="mt-4 text-sm text-slate-500">Cargando...</p> : null}
-          {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
-          {success ? <p className="mt-4 text-sm text-emerald-700">{success}</p> : null}
+          {loading ? <p className="mt-4 text-sm text-rec-text-subtle">Cargando...</p> : null}
+          {error ? <p className="mt-4 text-sm text-rec-danger-text">{error}</p> : null}
+          {success ? <p className="mt-4 text-sm text-rec-success-text">{success}</p> : null}
           {!loading && !error ? (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-rec-text-subtle">
               Mostrando {sortedInstitutions.length} de {institutions.length} instituciones.
             </p>
           ) : null}
@@ -667,7 +671,7 @@ export default function SuperAdminDashboardPage() {
             <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500">
+                  <tr className="border-b border-rec-border-default text-rec-text-subtle">
                     <th className="py-2 pr-4">
                       <button onClick={() => handleSort("nombre")} className="font-semibold">
                         Institucion{sortIndicator("nombre")}
@@ -700,13 +704,13 @@ export default function SuperAdminDashboardPage() {
                 </thead>
                 <tbody>
                   {pagedInstitutions.map((inst, idx) => (
-                    <tr key={inst.publicId ?? `inst-${idx}`} className="border-b border-slate-100 text-slate-700">
+                    <tr key={inst.publicId ?? `inst-${idx}`} className="border-b border-rec-border-subtle text-rec-text-secondary">
                       <td className="py-3 pr-4">
                         {editingInstitutionId === inst.publicId ? (
                           <input
                             value={editingInstitutionNombre}
                             onChange={(e) => setEditingInstitutionNombre(e.target.value)}
-                            className="w-52 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                            className="w-52 rounded-md border border-rec-border-strong px-2 py-1 text-xs"
                             autoFocus
                           />
                         ) : (
@@ -718,7 +722,7 @@ export default function SuperAdminDashboardPage() {
                           <input
                             value={editingInstitutionSlug}
                             onChange={(e) => setEditingInstitutionSlug(normalizeSlug(e.target.value))}
-                            className="w-52 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                            className="w-52 rounded-md border border-rec-border-strong px-2 py-1 text-xs"
                           />
                         ) : (
                           inst.slug
@@ -730,10 +734,10 @@ export default function SuperAdminDashboardPage() {
                             value={editingInstitutionDominio}
                             onChange={(e) => setEditingInstitutionDominio(e.target.value.trim().toLowerCase().replace(/^@+/, ""))}
                             placeholder="dominio.edu.co"
-                            className="w-44 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                            className="w-44 rounded-md border border-rec-border-strong px-2 py-1 text-xs"
                           />
                         ) : (
-                          <span className="text-xs text-slate-500">{inst.dominio || "—"}</span>
+                          <span className="text-xs text-rec-text-subtle">{inst.dominio || "—"}</span>
                         )}
                       </td>
                       <td className="py-3 pr-4">{inst.usersCount}</td>
@@ -745,18 +749,18 @@ export default function SuperAdminDashboardPage() {
                               min="1"
                               value={editingMaxUsersValue}
                               onChange={(e) => setEditingMaxUsersValue(e.target.value)}
-                              className="w-16 rounded-md border border-slate-300 px-2 py-1 text-xs"
+                              className="w-16 rounded-md border border-rec-border-strong px-2 py-1 text-xs"
                               autoFocus
                             />
                             <button
                               onClick={() => void handleSaveMaxUsers(inst)}
-                              className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
+                              className="rounded-md bg-rec-primary px-2 py-1 text-xs font-semibold text-rec-text-on-media hover:bg-rec-primary-strong"
                             >
                               ✓
                             </button>
                             <button
                               onClick={() => setEditingMaxUsersId(null)}
-                              className="rounded-md border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100"
+                              className="rounded-md border border-rec-border-strong px-2 py-1 text-xs hover:bg-rec-bg-muted"
                             >
                               ✕
                             </button>
@@ -764,7 +768,7 @@ export default function SuperAdminDashboardPage() {
                         ) : (
                           <button
                             onClick={() => handleEditMaxUsers(inst)}
-                            className="text-xs font-semibold text-sky-700 hover:underline"
+                            className="text-xs font-semibold text-rec-info-text hover:underline"
                           >
                             {inst.maxUsers} ↻
                           </button>
@@ -774,7 +778,7 @@ export default function SuperAdminDashboardPage() {
                       <td className="py-3 pr-4">
                         <button
                           onClick={() => togglePeriods(inst.publicId)}
-                          className="text-xs font-semibold text-sky-700 hover:underline"
+                          className="text-xs font-semibold text-rec-info-text hover:underline"
                         >
                           {expandedPeriods[inst.publicId] ? "Ocultar" : "Periodos"} ▾
                         </button>
@@ -785,14 +789,14 @@ export default function SuperAdminDashboardPage() {
                             <button
                               onClick={() => void handleSaveInstitution(inst)}
                               disabled={savingInstitutionId === inst.publicId}
-                              className="rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                              className="rounded-md bg-rec-primary px-3 py-1 text-xs font-semibold text-rec-text-on-media hover:bg-rec-primary-strong disabled:opacity-60"
                             >
                               {savingInstitutionId === inst.publicId ? "Guardando..." : "Guardar"}
                             </button>
                             <button
                               onClick={handleCancelEditInstitution}
                               disabled={savingInstitutionId === inst.publicId}
-                              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                              className="rounded-md border border-rec-border-strong px-3 py-1 text-xs font-semibold hover:bg-rec-bg-base disabled:opacity-60"
                             >
                               Cancelar
                             </button>
@@ -806,7 +810,7 @@ export default function SuperAdminDashboardPage() {
                                 editingMaxUsersId === inst.publicId ||
                                 savingInstitutionId === inst.publicId
                               }
-                              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                              className="rounded-md border border-rec-border-strong px-3 py-1 text-xs font-semibold hover:bg-rec-bg-base disabled:opacity-60"
                             >
                               Editar
                             </button>
@@ -818,7 +822,7 @@ export default function SuperAdminDashboardPage() {
                                 editingInstitutionId === inst.publicId ||
                                 savingInstitutionId === inst.publicId
                               }
-                              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold hover:bg-slate-50 disabled:opacity-60"
+                              className="rounded-md border border-rec-border-strong px-3 py-1 text-xs font-semibold hover:bg-rec-bg-base disabled:opacity-60"
                             >
                               {togglingId === inst.publicId
                                 ? "Actualizando..."
@@ -832,7 +836,7 @@ export default function SuperAdminDashboardPage() {
                                 editingInstitutionId === inst.publicId ||
                                 savingInstitutionId === inst.publicId
                               }
-                              className="rounded-md border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                              className="rounded-md border border-rec-danger-border px-3 py-1 text-xs font-semibold text-rec-danger-text hover:bg-rec-danger-bg disabled:opacity-60"
                             >
                               Eliminar
                             </button>
@@ -846,18 +850,18 @@ export default function SuperAdminDashboardPage() {
 
               {pagedInstitutions.map((inst) =>
                 expandedPeriods[inst.publicId] ? (
-                  <div key={`periods-${inst.publicId}`} className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <h4 className="text-sm font-semibold text-slate-700">Periodos academicos — {inst.nombre}</h4>
+                  <div key={`periods-${inst.publicId}`} className="mt-3 rounded-xl border border-rec-border-default bg-rec-bg-base p-4">
+                    <h4 className="text-sm font-semibold text-rec-text-secondary">Periodos academicos — {inst.nombre}</h4>
 
                     {loadingPeriods[inst.publicId] ? (
-                      <p className="mt-2 text-xs text-slate-500">Cargando periodos...</p>
+                      <p className="mt-2 text-xs text-rec-text-subtle">Cargando periodos...</p>
                     ) : (periods[inst.publicId] ?? []).length === 0 ? (
-                      <p className="mt-2 text-xs text-amber-700">No hay periodos creados. Crea uno para poder asignar estudiantes a grupos.</p>
+                      <p className="mt-2 text-xs text-rec-warning-text">No hay periodos creados. Crea uno para poder asignar estudiantes a grupos.</p>
                     ) : (
                       <div className="mt-2 overflow-x-auto">
                         <table className="min-w-full text-xs">
                           <thead>
-                            <tr className="border-b border-slate-200 text-slate-500">
+                            <tr className="border-b border-rec-border-default text-rec-text-subtle">
                               <th className="py-1 pr-3 text-left">Codigo</th>
                               <th className="py-1 pr-3 text-left">Nombre</th>
                               <th className="py-1 pr-3 text-left">Estado</th>
@@ -869,39 +873,39 @@ export default function SuperAdminDashboardPage() {
                           <tbody>
                             {(periods[inst.publicId] ?? []).map((p) =>
                               editingPeriod?.period.id === p.id ? (
-                              <tr key={p.id} className="border-b border-slate-100 bg-blue-50">
+                              <tr key={p.id} className="border-b border-rec-border-subtle bg-rec-info-bg">
                                 <td className="py-1.5 pr-3">
-                                  <input value={editPeriodForm.codigo} onChange={(e) => setEditPeriodForm((f) => ({ ...f, codigo: e.target.value }))} className="w-full rounded border border-slate-300 px-1 py-0.5 text-xs font-mono" />
+                                  <input value={editPeriodForm.codigo} onChange={(e) => setEditPeriodForm((f) => ({ ...f, codigo: e.target.value }))} className="w-full rounded border border-rec-border-strong px-1 py-0.5 text-xs font-mono" />
                                 </td>
                                 <td className="py-1.5 pr-3">
-                                  <input value={editPeriodForm.nombre} onChange={(e) => setEditPeriodForm((f) => ({ ...f, nombre: e.target.value }))} className="w-full rounded border border-slate-300 px-1 py-0.5 text-xs" />
+                                  <input value={editPeriodForm.nombre} onChange={(e) => setEditPeriodForm((f) => ({ ...f, nombre: e.target.value }))} className="w-full rounded border border-rec-border-strong px-1 py-0.5 text-xs" />
                                 </td>
                                 <td className="py-1.5 pr-3">
                                   <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                    p.estado === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
-                                    p.estado === "CLOSED" ? "bg-slate-200 text-slate-600" :
-                                    "bg-amber-100 text-amber-700"
+                                    p.estado === "ACTIVE" ? "bg-rec-success-bg-muted text-rec-success-text" :
+                                    p.estado === "CLOSED" ? "bg-rec-bg-subtle text-rec-text-muted" :
+                                    "bg-rec-warning-bg text-rec-warning-text"
                                   }`}>
                                     {p.estado === "ACTIVE" ? "Activo" : p.estado === "CLOSED" ? "Cerrado" : p.estado}
                                   </span>
                                 </td>
                                 <td className="py-1.5 pr-3">
-                                  <input type="date" value={editPeriodForm.fechaInicio} onChange={(e) => setEditPeriodForm((f) => ({ ...f, fechaInicio: e.target.value }))} className="rounded border border-slate-300 px-1 py-0.5 text-xs" />
+                                  <input type="date" value={editPeriodForm.fechaInicio} onChange={(e) => setEditPeriodForm((f) => ({ ...f, fechaInicio: e.target.value }))} className="rounded border border-rec-border-strong px-1 py-0.5 text-xs" />
                                 </td>
                                 <td className="py-1.5 pr-3">
-                                  <input type="date" value={editPeriodForm.fechaFin} onChange={(e) => setEditPeriodForm((f) => ({ ...f, fechaFin: e.target.value }))} className="rounded border border-slate-300 px-1 py-0.5 text-xs" />
+                                  <input type="date" value={editPeriodForm.fechaFin} onChange={(e) => setEditPeriodForm((f) => ({ ...f, fechaFin: e.target.value }))} className="rounded border border-rec-border-strong px-1 py-0.5 text-xs" />
                                 </td>
                                 <td className="py-1.5 pr-3">
                                   <div className="flex gap-1">
                                     <button
                                       onClick={() => void handleSaveEditPeriod()}
-                                      className="rounded bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-blue-700"
+                                      className="rounded bg-[color:var(--rec-primary-strong)] px-2 py-0.5 text-[10px] font-semibold text-rec-text-on-media hover:opacity-90"
                                     >
                                       Guardar
                                     </button>
                                     <button
                                       onClick={() => setEditingPeriod(null)}
-                                      className="rounded border border-slate-300 px-2 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
+                                      className="rounded border border-rec-border-strong px-2 py-0.5 text-[10px] font-semibold text-rec-text-secondary hover:bg-rec-bg-muted"
                                     >
                                       Cancelar
                                     </button>
@@ -909,14 +913,14 @@ export default function SuperAdminDashboardPage() {
                                 </td>
                               </tr>
                               ) : (
-                              <tr key={p.id} className="border-b border-slate-100">
+                              <tr key={p.id} className="border-b border-rec-border-subtle">
                                 <td className="py-1.5 pr-3 font-mono">{p.codigo}</td>
                                 <td className="py-1.5 pr-3">{p.nombre}</td>
                                 <td className="py-1.5 pr-3">
                                   <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                    p.estado === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
-                                    p.estado === "CLOSED" ? "bg-slate-200 text-slate-600" :
-                                    "bg-amber-100 text-amber-700"
+                                    p.estado === "ACTIVE" ? "bg-rec-success-bg-muted text-rec-success-text" :
+                                    p.estado === "CLOSED" ? "bg-rec-bg-subtle text-rec-text-muted" :
+                                    "bg-rec-warning-bg text-rec-warning-text"
                                   }`}>
                                     {p.estado === "ACTIVE" ? "Activo" : p.estado === "CLOSED" ? "Cerrado" : p.estado}
                                   </span>
@@ -928,27 +932,27 @@ export default function SuperAdminDashboardPage() {
                                     {p.estado !== "ACTIVE" ? (
                                       <button
                                         onClick={() => void handleActivatePeriod(inst.publicId, p.id)}
-                                        className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
+                                        className="rounded bg-rec-primary px-2 py-0.5 text-[10px] font-semibold text-rec-text-on-media hover:bg-rec-primary-strong"
                                       >
                                         Activar
                                       </button>
                                     ) : (
                                       <button
                                         onClick={() => void handleClosePeriod(inst.publicId, p.id)}
-                                        className="rounded bg-slate-500 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-slate-600"
+                                        className="rounded bg-rec-ink px-2 py-0.5 text-[10px] font-semibold text-rec-text-on-media hover:opacity-90"
                                       >
                                         Cerrar
                                       </button>
                                     )}
                                     <button
                                       onClick={() => handleStartEditPeriod(inst.publicId, p)}
-                                      className="rounded border border-slate-300 px-2 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
+                                      className="rounded border border-rec-border-strong px-2 py-0.5 text-[10px] font-semibold text-rec-text-secondary hover:bg-rec-bg-muted"
                                     >
                                       Editar
                                     </button>
                                     <button
                                       onClick={() => void handleDeletePeriod(inst.publicId, p.id)}
-                                      className="rounded border border-red-300 px-2 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                                      className="rounded border border-rec-danger-border px-2 py-0.5 text-[10px] font-semibold text-rec-danger-text hover:bg-rec-danger-bg"
                                     >
                                       Eliminar
                                     </button>
@@ -967,31 +971,31 @@ export default function SuperAdminDashboardPage() {
                         value={periodForm[inst.publicId]?.nombre ?? ""}
                         onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.publicId]: { ...(p[inst.publicId] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), nombre: e.target.value } }))}
                         placeholder="Nombre (ej: 2026 - I)"
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded border border-rec-border-strong px-2 py-1 text-xs"
                       />
                       <input
                         value={periodForm[inst.publicId]?.codigo ?? ""}
                         onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.publicId]: { ...(p[inst.publicId] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), codigo: e.target.value } }))}
                         placeholder="Codigo (ej: 2026-1)"
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded border border-rec-border-strong px-2 py-1 text-xs"
                       />
                       <input
                         type="date"
                         value={periodForm[inst.publicId]?.fechaInicio ?? ""}
                         onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.publicId]: { ...(p[inst.publicId] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), fechaInicio: e.target.value } }))}
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded border border-rec-border-strong px-2 py-1 text-xs"
                       />
                       <input
                         type="date"
                         value={periodForm[inst.publicId]?.fechaFin ?? ""}
                         onChange={(e) => setPeriodForm((p) => ({ ...p, [inst.publicId]: { ...(p[inst.publicId] ?? { nombre: "", codigo: "", fechaInicio: "", fechaFin: "" }), fechaFin: e.target.value } }))}
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded border border-rec-border-strong px-2 py-1 text-xs"
                       />
                     </div>
                     <button
                       onClick={() => void handleCreatePeriod(inst.publicId)}
                       disabled={creatingPeriod[inst.publicId]}
-                      className="mt-2 rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-60"
+                      className="mt-2 rounded bg-rec-primary-strong px-3 py-1 text-xs font-semibold text-rec-text-on-media disabled:opacity-60"
                     >
                       {creatingPeriod[inst.publicId] ? "Creando..." : "Crear periodo activo"}
                     </button>
@@ -1002,17 +1006,17 @@ export default function SuperAdminDashboardPage() {
           ) : null}
 
           {!loading && !error && sortedInstitutions.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">No hay instituciones para los filtros aplicados.</p>
+            <p className="mt-4 text-sm text-rec-text-subtle">No hay instituciones para los filtros aplicados.</p>
           ) : null}
 
           {!loading && !error && sortedInstitutions.length > 0 ? (
-            <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
+            <div className="mt-4 flex flex-col gap-3 border-t border-rec-border-default pt-3 text-sm text-rec-text-muted md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
                 <span>Filas por pagina</span>
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="rounded-md border border-slate-300 px-2 py-1"
+                  className="rounded-md border border-rec-border-strong px-2 py-1"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
@@ -1024,7 +1028,7 @@ export default function SuperAdminDashboardPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="rounded-md border border-slate-300 px-3 py-1 disabled:opacity-50"
+                  className="rounded-md border border-rec-border-strong px-3 py-1 disabled:opacity-50"
                 >
                   Anterior
                 </button>
@@ -1034,7 +1038,7 @@ export default function SuperAdminDashboardPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="rounded-md border border-slate-300 px-3 py-1 disabled:opacity-50"
+                  className="rounded-md border border-rec-border-strong px-3 py-1 disabled:opacity-50"
                 >
                   Siguiente
                 </button>
@@ -1045,26 +1049,26 @@ export default function SuperAdminDashboardPage() {
       </section>
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rec-text-primary/50 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-rec-danger-border bg-rec-bg-elevated p-6 shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <svg className="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rec-danger-bg-strong">
+                <svg className="h-5 w-5 text-rec-danger-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Eliminar institucion</h3>
-                <p className="text-sm text-slate-600">{deleteTarget.nombre}</p>
+                <h3 className="text-lg font-bold text-rec-text-primary">Eliminar institucion</h3>
+                <p className="text-sm text-rec-text-muted">{deleteTarget.nombre}</p>
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="text-sm font-semibold text-red-800">Esta accion es IRREVERSIBLE.</p>
-              <p className="mt-1 text-xs text-red-700">
+            <div className="mt-4 rounded-xl border border-rec-danger-border bg-rec-danger-bg p-4">
+              <p className="text-sm font-semibold text-rec-danger-text">Esta accion es IRREVERSIBLE.</p>
+              <p className="mt-1 text-xs text-rec-danger-text">
                 Se eliminara permanentemente:
               </p>
-              <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-red-700">
+              <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-rec-danger-text">
                 <li>Todos los usuarios ({deleteTarget.usersCount})</li>
                 <li>Grados, grupos y materias</li>
                 <li>Periodos academicos y notas</li>
@@ -1075,14 +1079,14 @@ export default function SuperAdminDashboardPage() {
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-slate-700">
-                Escribe <span className="font-bold text-red-700">{deleteTarget.nombre}</span> para confirmar:
+              <label className="block text-sm font-medium text-rec-text-secondary">
+                Escribe <span className="font-bold text-rec-danger-text">{deleteTarget.nombre}</span> para confirmar:
               </label>
               <input
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder={deleteTarget.nombre}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-rec-border-strong px-3 py-2 text-sm"
                 autoFocus
               />
             </div>
@@ -1091,14 +1095,14 @@ export default function SuperAdminDashboardPage() {
               <button
                 onClick={() => { setDeleteTarget(null); setDeleteConfirmText(""); }}
                 disabled={deleting}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                className="rounded-lg border border-rec-border-strong px-4 py-2 text-sm font-semibold text-rec-text-secondary hover:bg-rec-bg-base disabled:opacity-60"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => void handleDeleteInstitution()}
                 disabled={deleteConfirmText !== deleteTarget.nombre || deleting}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-lg bg-rec-danger-solid px-4 py-2 text-sm font-semibold text-rec-text-on-media hover:bg-rec-danger-solid-hover disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {deleting ? "Eliminando..." : "Eliminar permanentemente"}
               </button>

@@ -1,4 +1,6 @@
 import {
+  HttpException,
+  HttpStatus,
   Injectable,
   UnauthorizedException,
   BadRequestException,
@@ -9,6 +11,7 @@ import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID, randomBytes } from 'crypto';
 import type { StringValue } from 'ms';
+import { LoginAttemptsService } from './login-attempts.service';
 
 type AuthInstitution = {
   id: number;
@@ -76,7 +79,23 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly mail: MailService,
+    private readonly loginAttempts: LoginAttemptsService,
   ) {}
+
+  private throwLoginTooManyAttempts(ttlSeconds: number): never {
+    const x = Math.max(1, Math.floor(ttlSeconds));
+    throw new HttpException(
+      `Has superado el número de intentos permitidos. Por favor, espera ${x} segundos antes de realizar una nueva solicitud.`,
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+
+  private isInvalidCredentialsError(err: unknown): boolean {
+    return (
+      err instanceof UnauthorizedException &&
+      err.message === 'Credenciales inválidas'
+    );
+  }
 
   private getRefreshSecret(): string {
     return process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? '';
@@ -198,26 +217,46 @@ export class AuthService {
     return user;
   }
 
-  async login(email: string, password: string): Promise<AuthTokensResponse> {
-    const user = await this.validateUser(email, password);
-    const issued = await this.issueTokensForUser({
-      id: user.id,
-      publicId: user.publicId,
-      nombres: user.nombres,
-      apellidos: user.apellidos,
-      email: user.email,
-      role: user.role,
-      institutionId: user.institutionId ?? null,
-      institution: user.institution
-        ? {
-            id: user.institution.id,
-            nombre: user.institution.nombre,
-            slug: user.institution.slug,
-            activa: user.institution.activa,
-          }
-        : null,
-    });
-    return issued.response;
+  async login(
+    email: string,
+    password: string,
+    tracker: string,
+  ): Promise<AuthTokensResponse> {
+    const initial = await this.loginAttempts.getCount(tracker);
+    if (initial.count >= 5) {
+      this.throwLoginTooManyAttempts(initial.ttl);
+    }
+
+    try {
+      const user = await this.validateUser(email, password);
+      await this.loginAttempts.reset(tracker);
+      const issued = await this.issueTokensForUser({
+        id: user.id,
+        publicId: user.publicId,
+        nombres: user.nombres,
+        apellidos: user.apellidos,
+        email: user.email,
+        role: user.role,
+        institutionId: user.institutionId ?? null,
+        institution: user.institution
+          ? {
+              id: user.institution.id,
+              nombre: user.institution.nombre,
+              slug: user.institution.slug,
+              activa: user.institution.activa,
+            }
+          : null,
+      });
+      return issued.response;
+    } catch (err) {
+      if (this.isInvalidCredentialsError(err)) {
+        const inc = await this.loginAttempts.increment(tracker);
+        if (inc.count >= 5) {
+          this.throwLoginTooManyAttempts(inc.ttl);
+        }
+      }
+      throw err;
+    }
   }
 
   async refresh(refreshToken: string): Promise<AuthTokensResponse> {

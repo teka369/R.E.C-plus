@@ -36,7 +36,7 @@ describe('PerformanceService (unit)', () => {
       deleteMany: jest.fn(),
       createMany: jest.fn(),
     },
-    academicOffering: { findUnique: jest.fn() },
+    academicOffering: { findUnique: jest.fn(), findMany: jest.fn() },
     academicEvaluation: {
       findFirst: jest.fn(),
       create: jest.fn(),
@@ -434,6 +434,78 @@ describe('PerformanceService (unit)', () => {
       expect(result.records).toHaveLength(1);
     });
 
+    it('incluye academicPeriod, termSlotsAvailable derivado y simulatorInputs cuando v=2', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 20,
+        nombres: 'Juan',
+        apellidos: 'Lopez',
+        email: 'juan@t.co',
+        institutionId: 100,
+      });
+      prisma.studentGroup.findFirst.mockResolvedValue({
+        id: 100,
+        studentId: 20,
+        groupId: 10,
+        group: { id: 10, nombre: '1A', grade: { id: 1, nombre: 'Primero' } },
+      });
+      prisma.studentAcademicRecord.findMany.mockResolvedValue([
+        {
+          id: 1,
+          publicId: 'rec-1',
+          studentId: 20,
+          groupId: 10,
+          subjectId: 1,
+          notaFinal: null,
+          progresoMateria: 85,
+          inasistenciasJustificadas: 1,
+          inasistenciasInjustificadas: 2,
+          observaciones: null,
+          updatedAt: new Date(),
+          academicOfferingId: 200,
+          subject: { id: 1, nombre: 'Matemáticas' },
+        },
+      ]);
+      prisma.academicPeriod.findFirst.mockResolvedValue({
+        id: 5,
+        nombre: '2026',
+        codigo: '2026-T1',
+        tipo: 'TERM',
+        estado: 'ACTIVE',
+        fechaInicio: new Date(),
+        fechaFin: new Date(),
+        fechaCierre: null,
+      });
+      (prisma as any).institutionGradingPolicy = {
+        findUnique: jest.fn().mockResolvedValue({ gradeScaleMax: 5, passingThreshold: 3.0 }),
+      };
+      prisma.academicOffering.findMany.mockResolvedValue([{ id: 200 }]);
+      prisma.evaluationGrade.findMany.mockResolvedValue([
+        {
+          nota: 4.0,
+          updatedAt: new Date(),
+          updatedByTeacherId: 1,
+          academicEvaluation: {
+            id: 300,
+            titulo: 'Parcial 1',
+            tipo: 'PARCIAL',
+            orden: 1,
+            termSlot: 1,
+            porcentaje: null,
+            academicOfferingId: 200,
+          },
+        },
+      ]);
+
+      const result = await service.getStudentAcademic(estudianteActor, 20, 2);
+
+      expect(result.academicPeriod?.id).toBe(5);
+      expect(result.termSlotsAvailable).toEqual([1]);
+      expect(result.simulatorInputs.termSlotsAvailable).toEqual([1]);
+      expect(result.simulatorInputs.gradeScaleMax).toBe(5);
+      expect(result.simulatorInputs.passingThreshold).toBe(3.0);
+      expect(result.records[0].evaluaciones).toHaveLength(1);
+    });
+
     it('rechaza ESTUDIANTE viendo otro estudiante', async () => {
       await expect(
         service.getStudentAcademic(estudianteActor, 999),
@@ -518,6 +590,35 @@ describe('PerformanceService (unit)', () => {
       expect(result.subjects).toHaveLength(1);
     });
 
+    it('incluye academicPeriod y termSlotsAvailable cuando v=2', async () => {
+      prisma.group.findFirst.mockResolvedValue({ id: 10 });
+      prisma.group.findUnique.mockResolvedValue({
+        id: 10,
+        nombre: '1A',
+        institutionId: 100,
+        grade: { id: 1, nombre: 'Primero' },
+        subjects: [{ subject: { id: 1, nombre: 'Mat' } }],
+      });
+      prisma.studentGroup.findMany.mockResolvedValue([]);
+      prisma.studentAcademicRecord.findMany.mockResolvedValue([]);
+      prisma.evaluationGrade.findMany.mockResolvedValue([]);
+      prisma.academicPeriod.findFirst.mockResolvedValue({
+        id: 5,
+        nombre: '2026',
+        codigo: '2026-T1',
+        tipo: 'TERM',
+        estado: 'ACTIVE',
+        fechaInicio: new Date(),
+        fechaFin: new Date(),
+        fechaCierre: null,
+      });
+
+      const result = await service.getGroupAcademicOverview(secretariaActor, 10, 2);
+
+      expect(result.academicPeriod?.id).toBe(5);
+      expect(result.termSlotsAvailable).toEqual([1, 2, 3, 4]);
+    });
+
     it('lanza NotFoundException si el grupo no existe', async () => {
       prisma.group.findFirst.mockResolvedValue({ id: 10 });
       prisma.group.findUnique.mockResolvedValue(null);
@@ -550,38 +651,88 @@ describe('PerformanceService (unit)', () => {
         groupId: 10,
       });
       (prisma as any).groupSubject = {
-        findFirst: jest.fn().mockResolvedValue({ id: 50 }),
+        findFirst: jest.fn().mockResolvedValue({ id: 50, group: { institutionId: 1 } }),
       };
       prisma.academicPeriod.findFirst.mockResolvedValue({ id: 5 });
-      prisma.academicOffering.findUnique.mockResolvedValue({ id: 200 });
-      prisma.studentAcademicRecord.upsert.mockResolvedValue({
-        id: 1,
-        studentId: 20,
-        groupId: 10,
-        subjectId: 1,
-        notaFinal: 4.0,
-        progresoMateria: 85,
-        inasistenciasJustificadas: 0,
-        inasistenciasInjustificadas: 1,
-        observaciones: null,
-        updatedAt: new Date(),
+      prisma.academicOffering.findUnique.mockResolvedValue({
+        id: 200,
+        academicPeriod: { id: 5, estado: 'ACTIVE' },
       });
+      (prisma as any).institutionGradingPolicy = {
+        findUnique: jest.fn().mockResolvedValue(null),
+      };
+      prisma.studentAcademicRecord.upsert
+        .mockResolvedValueOnce({
+          id: 1,
+          publicId: 'rec-uuid',
+          studentId: 20,
+          groupId: 10,
+          subjectId: 1,
+          notaFinal: null,
+          finalSource: 'NONE',
+          finalOverride: null,
+          finalUpdatedAt: null,
+          progresoMateria: 85,
+          inasistenciasJustificadas: 0,
+          inasistenciasInjustificadas: 1,
+          observaciones: null,
+          updatedAt: new Date(),
+          academicOfferingId: 200,
+        })
+        .mockResolvedValueOnce({
+          id: 1,
+          publicId: 'rec-uuid',
+          studentId: 20,
+          groupId: 10,
+          subjectId: 1,
+          notaFinal: 4.0,
+          finalSource: 'COMPUTED',
+          finalOverride: null,
+          finalUpdatedAt: new Date(),
+          progresoMateria: 85,
+          inasistenciasJustificadas: 0,
+          inasistenciasInjustificadas: 1,
+          observaciones: null,
+          updatedAt: new Date(),
+          academicOfferingId: 200,
+        });
       prisma.subject.findUnique.mockResolvedValue({
         id: 1,
         nombre: 'Matemáticas',
       });
-      prisma.evaluationGrade.findMany.mockResolvedValue([]);
+      (prisma as any).academicEvaluation = {
+        upsert: jest.fn().mockResolvedValue({ id: 300, porcentaje: null }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 300, porcentaje: null }),
+      };
+      prisma.evaluationGrade.upsert.mockResolvedValue({ id: 400 });
+      prisma.evaluationGrade.findMany.mockResolvedValue([
+        {
+          nota: 4.0,
+          updatedAt: new Date(),
+          updatedByTeacherId: 1,
+          academicEvaluation: {
+            id: 300,
+            titulo: 'Parcial 1',
+            tipo: 'PARCIAL',
+            orden: 1,
+            termSlot: 1,
+            porcentaje: null,
+          },
+        },
+      ]);
 
       const result = await service.upsertStudentAcademic(
         secretariaActor,
         10,
         20,
         1,
-        { notaFinal: 4.0, progresoMateria: 85, inasistenciasInjustificadas: 1 },
+        { parcial1: 4.0, progresoMateria: 85, inasistenciasInjustificadas: 1 },
       );
 
-      expect(result.notaFinal).toBe(4.0);
-      expect(result.subject.nombre).toBe('Matemáticas');
+      expect(result.final.value).toBe(4.0);
+      expect(result.record.notaFinal).toBe(4.0);
+      expect(result.record.subject.nombre).toBe('Matemáticas');
     });
 
     it('rechaza si el estudiante no pertenece al grupo', async () => {

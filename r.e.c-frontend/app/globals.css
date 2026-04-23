@@ -1,23 +1,96 @@
+@import "../styles/tokens.css";
 @import "tailwindcss";
 
-:root {
-	--rec-ink: #18241b;
-	--rec-primary: #32a656;
-	--rec-primary-strong: #289a4e;
-	--rec-accent: #de4d3f;
-	--rec-earth: #5b3a31;
-	--rec-title: #5b3a31;
-	--rec-cta: #de4d3f;
-	--rec-leaf: #38ad44;
-	--rec-surface: #f5fcf6;
-	--rec-soft: #e6f4e8;
-	--rec-footer-gif-url: none;
+/* Alinea el variant `dark:` con la clase `.dark` de next-themes (no solo prefers-color-scheme) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Tailwind v4: utilidades de color ligadas a tokens ── */
+@theme inline {
+	--color-rec-bg-base: var(--rec-bg-base);
+	--color-rec-bg-elevated: var(--rec-bg-elevated);
+	--color-rec-bg-muted: var(--rec-bg-muted);
+	--color-rec-bg-subtle: var(--rec-bg-subtle);
+	--color-rec-surface: var(--rec-surface);
+	--color-rec-soft: var(--rec-soft);
+
+	--color-rec-text-primary: var(--rec-text-primary);
+	--color-rec-text-secondary: var(--rec-text-secondary);
+	--color-rec-text-muted: var(--rec-text-muted);
+	--color-rec-text-subtle: var(--rec-text-subtle);
+	--color-rec-text-on-primary: var(--rec-text-on-primary);
+	--color-rec-text-on-media: var(--rec-text-on-media);
+	--color-rec-text-on-inverse: var(--rec-text-on-inverse);
+
+	--color-rec-border-default: var(--rec-border-default);
+	--color-rec-border-strong: var(--rec-border-strong);
+	--color-rec-border-subtle: var(--rec-border-subtle);
+
+	--color-rec-primary: var(--rec-primary);
+	--color-rec-primary-strong: var(--rec-primary-strong);
+	--color-rec-accent: var(--rec-accent);
+	--color-rec-cta: var(--rec-cta);
+	--color-rec-earth: var(--rec-earth);
+	--color-rec-title: var(--rec-title);
+	--color-rec-leaf: var(--rec-leaf);
+	--color-rec-ink: var(--rec-ink);
+
+	--color-rec-success-bg: var(--rec-success-bg);
+	--color-rec-success-bg-muted: var(--rec-success-bg-muted);
+	--color-rec-success-text: var(--rec-success-text);
+	--color-rec-success-border: var(--rec-success-border);
+
+	--color-rec-danger-bg: var(--rec-danger-bg);
+	--color-rec-danger-bg-strong: var(--rec-danger-bg-strong);
+	--color-rec-danger-text: var(--rec-danger-text);
+	--color-rec-danger-border: var(--rec-danger-border);
+	--color-rec-danger-solid: var(--rec-danger-solid);
+	--color-rec-danger-solid-hover: var(--rec-danger-solid-hover);
+
+	--color-rec-warning-bg: var(--rec-warning-bg);
+	--color-rec-warning-text: var(--rec-warning-text);
+	--color-rec-warning-border: var(--rec-warning-border);
+
+	--color-rec-info-bg: var(--rec-info-bg);
+	--color-rec-info-bg-strong: var(--rec-info-bg-strong);
+	--color-rec-info-text: var(--rec-info-text);
+	--color-rec-info-border: var(--rec-info-border);
+	--color-rec-info-hover: var(--rec-info-hover);
+
+	--color-rec-nav-bg: var(--rec-nav-bg);
+	--color-rec-dropdown-bg: var(--rec-dropdown-bg);
+
+	--color-rec-modal-close-fg: var(--rec-modal-close-fg);
+	--color-rec-modal-close-hover: var(--rec-modal-close-hover);
+
+	--color-rec-footer-from: var(--rec-footer-from);
+	--color-rec-footer-to: var(--rec-footer-to);
+	--color-rec-footer-fg: var(--rec-footer-fg);
+	--color-rec-footer-fg-muted: var(--rec-footer-fg-muted);
+	--color-rec-footer-fg-subtle: var(--rec-footer-fg-subtle);
+	--color-rec-footer-link: var(--rec-footer-link);
+	--color-rec-footer-icon-border: var(--rec-footer-icon-border);
+	--color-rec-footer-icon-bg: var(--rec-footer-icon-bg);
+	--color-rec-footer-divider: var(--rec-footer-divider);
+
+	--color-rec-role-primary: var(--role-primary);
+	--color-rec-role-surface: var(--role-surface);
+	--color-rec-role-border: var(--role-border);
+
+	--color-rec-chart-emerald: var(--rec-chart-emerald);
+	--color-rec-chart-cyan: var(--rec-chart-cyan);
+	--color-rec-chart-amber: var(--rec-chart-amber);
+	--color-rec-chart-rose: var(--rec-chart-rose);
+	--color-rec-chart-track: var(--rec-chart-track);
+
+	--color-rec-glass-border: var(--rec-glass-border);
 }
 
 html,
 body {
-	background: linear-gradient(180deg, #f5fcf6 0%, #edf8f0 58%, #e9f4ec 100%);
-	color: var(--rec-ink);
+	min-height: 100%;
+	background: var(--rec-auth-bg-gradient);
+	background-color: var(--rec-bg-base);
+	color: var(--rec-text-primary);
 }
 
 ::selection {
@@ -25,28 +98,273 @@ body {
 	color: var(--rec-earth);
 }
 
-a,
-button {
-	transition: all 180ms ease;
+.dark ::selection {
+	background: color-mix(in srgb, var(--rec-primary) 45%, black 55%);
+	color: var(--rec-text-primary);
 }
 
+a,
+button {
+	transition:
+		color 180ms ease,
+		background-color 180ms ease,
+		border-color 180ms ease,
+		box-shadow 180ms ease,
+		transform 180ms ease,
+		opacity 180ms ease;
+}
+
+/* Glassmorphism reutilizable */
 .rec-glass {
-	background: rgba(255, 255, 255, 0.8);
-	backdrop-filter: blur(8px);
-	border: 1px solid color-mix(in srgb, var(--rec-primary) 22%, white 78%);
+	background: var(--rec-glass-bg);
+	backdrop-filter: blur(var(--rec-glass-blur));
+	-webkit-backdrop-filter: blur(var(--rec-glass-blur));
+	border: 1px solid var(--rec-glass-border);
+	box-shadow: var(--rec-glass-shadow);
 }
 
 .rec-grid-bg {
-	background-image:
-		radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--rec-primary) 18%, white 82%) 1px, transparent 0);
+	background-image: radial-gradient(
+		circle at 1px 1px,
+		color-mix(in srgb, var(--rec-primary) 18%, var(--rec-bg-elevated) 82%) 1px,
+		transparent 0
+	);
 	background-size: 26px 26px;
 }
 
-/* Cambia --rec-footer-gif-url por url('/ruta.gif') para activar GIF en footer */
+.rec-hero-overlay {
+	background: var(--rec-hero-overlay);
+}
+
+.rec-nav-glass {
+	background: var(--rec-nav-bg);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+	border-color: var(--rec-nav-border);
+}
+
+/**
+ * Logos raster pensados para fondo claro: en tema oscuro ajusta luminancia/matiz vía filter
+ * (sin segunda imagen ni caja blanca). El footer usa fondo oscuro también en tema claro.
+ */
+.dark .rec-logo-on-dark,
+.rec-footer-glass .rec-logo-on-dark {
+	filter: invert(1) hue-rotate(180deg) brightness(1.06) saturate(1.12);
+}
+
+.rec-footer-glass {
+	border-color: var(--rec-footer-border);
+	background:
+		radial-gradient(
+			ellipse 130% 90% at 100% 100%,
+			color-mix(in srgb, var(--rec-primary) 26%, transparent) 0%,
+			transparent 52%
+		),
+		radial-gradient(
+			ellipse 100% 80% at 0% 0%,
+			color-mix(in srgb, var(--rec-leaf) 20%, transparent) 0%,
+			transparent 48%
+		),
+		linear-gradient(
+			168deg,
+			color-mix(in srgb, var(--rec-footer-from) 88%, var(--rec-primary-strong) 12%) 0%,
+			var(--rec-footer-from) 32%,
+			color-mix(in srgb, var(--rec-footer-to) 72%, var(--rec-primary) 28%) 62%,
+			color-mix(in srgb, var(--rec-footer-to) 82%, var(--rec-leaf) 18%) 100%
+		);
+	color: var(--rec-footer-fg);
+}
+
+.rec-footer-vignette {
+	background: var(--rec-footer-vignette);
+}
+
+.rec-auth-shell {
+	background: var(--rec-auth-bg-gradient);
+}
+
+.rec-auth-secretaria-page {
+	background: var(--rec-auth-secretaria-page-bg);
+	background-color: var(--rec-bg-base);
+}
+
+.rec-modal-scrim {
+	background: var(--rec-modal-scrim);
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+}
+
+/* Botones UI (Modal + páginas secretaría vía dashboard.css) */
+.rec-btn-primary {
+	background: var(--rec-btn-primary-bg);
+	color: var(--rec-text-on-primary);
+}
+.rec-btn-primary:hover:not(:disabled) {
+	background: var(--rec-btn-primary-hover);
+}
+
+.rec-btn-secondary {
+	background: var(--rec-btn-secondary-bg);
+	color: var(--rec-btn-secondary-fg);
+}
+.rec-btn-secondary:hover:not(:disabled) {
+	background: var(--rec-btn-secondary-hover);
+}
+
+.rec-btn-danger {
+	background: var(--rec-btn-danger-bg);
+	color: var(--rec-text-on-primary);
+}
+.rec-btn-danger:hover:not(:disabled) {
+	background: var(--rec-btn-danger-hover);
+}
+
 .rec-footer-gif {
-	background-image: url('https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTFwcG03eGFyd2VqaHR0b2Vhd2dsZWY1emYxamVsMDdsMDRkZzhmMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/iEZIxyg9iJXwuYEOlt/giphy.gif' );
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
 }
 
+/* Gradientes de acción (secretaría / formularios) */
+.rec-gradient-primary-action {
+	background: linear-gradient(
+		to right,
+		var(--rec-primary-strong),
+		color-mix(in srgb, var(--rec-primary) 55%, var(--rec-chart-cyan) 45%)
+	);
+	color: var(--rec-text-on-primary);
+}
+.rec-gradient-primary-action:hover:not(:disabled) {
+	filter: brightness(1.06);
+}
+
+.rec-gradient-danger-action {
+	background: linear-gradient(
+		to right,
+		var(--rec-danger-solid),
+		color-mix(in srgb, var(--rec-danger-solid) 70%, var(--rec-chart-rose) 30%)
+	);
+	color: var(--rec-text-on-primary);
+}
+.rec-gradient-danger-action:hover:not(:disabled) {
+	filter: brightness(1.06);
+}
+
+.rec-gradient-info-action {
+	background: linear-gradient(
+		to right,
+		color-mix(in srgb, var(--role-primary) 75%, var(--rec-chart-cyan) 25%),
+		var(--rec-chart-cyan)
+	);
+	color: var(--rec-text-on-primary);
+}
+.rec-gradient-info-action:hover:not(:disabled) {
+	filter: brightness(1.06);
+}
+
+/* Driver.js — tours Recedu (docente y futuros roles) */
+.driver-active .driver-popover {
+	font-family: inherit !important;
+}
+
+/* Variante premium del tour docente */
+.driver-popover.recedu-driver-tour-popover {
+	max-width: min(22rem, calc(100vw - 1.75rem)) !important;
+	min-width: min(17rem, calc(100vw - 1.75rem)) !important;
+	padding: 1.2rem 1.35rem 1.15rem !important;
+	border-radius: 16px !important;
+	background: var(--rec-bg-elevated) !important;
+	color: var(--rec-text-primary) !important;
+	border: 1px solid var(--rec-border-default) !important;
+	box-shadow:
+		0 24px 48px -12px rgb(0 0 0 / 0.28),
+		0 0 0 1px color-mix(in srgb, var(--rec-primary) 18%, transparent) !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-arrow-side-left {
+	border-left-color: var(--rec-bg-elevated) !important;
+}
+.driver-popover.recedu-driver-tour-popover .driver-popover-arrow-side-right {
+	border-right-color: var(--rec-bg-elevated) !important;
+}
+.driver-popover.recedu-driver-tour-popover .driver-popover-arrow-side-top {
+	border-top-color: var(--rec-bg-elevated) !important;
+}
+.driver-popover.recedu-driver-tour-popover .driver-popover-arrow-side-bottom {
+	border-bottom-color: var(--rec-bg-elevated) !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-title {
+	font-size: 1.05rem !important;
+	font-weight: 700 !important;
+	letter-spacing: -0.02em !important;
+	color: var(--rec-text-primary) !important;
+	line-height: 1.35 !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-description {
+	margin-top: 0.5rem !important;
+	font-size: 0.8125rem !important;
+	color: var(--rec-text-secondary) !important;
+	line-height: 1.55 !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-close-btn {
+	color: var(--rec-text-muted) !important;
+}
+.driver-popover.recedu-driver-tour-popover .driver-popover-close-btn:hover,
+.driver-popover.recedu-driver-tour-popover .driver-popover-close-btn:focus {
+	color: var(--rec-text-primary) !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-progress-text {
+	font-size: 0.6875rem !important;
+	font-weight: 600 !important;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--rec-text-subtle) !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-next-btn {
+	padding: 0.45rem 0.85rem !important;
+	background: var(--rec-primary) !important;
+	color: var(--rec-text-on-primary) !important;
+	border: 1px solid color-mix(in srgb, var(--rec-primary) 85%, black) !important;
+	border-radius: 10px !important;
+	font-size: 0.75rem !important;
+	font-weight: 600 !important;
+	text-shadow: none !important;
+}
+.driver-popover.recedu-driver-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.recedu-driver-tour-popover .driver-popover-next-btn:focus {
+	filter: brightness(1.06);
+	background: var(--rec-primary-strong, var(--rec-primary)) !important;
+}
+
+.driver-popover.recedu-driver-tour-popover .driver-popover-prev-btn {
+	padding: 0.45rem 0.75rem !important;
+	border-radius: 10px !important;
+	font-size: 0.75rem !important;
+	font-weight: 600 !important;
+	background: var(--rec-bg-muted) !important;
+	color: var(--rec-text-secondary) !important;
+	border: 1px solid var(--rec-border-default) !important;
+	text-shadow: none !important;
+}
+.driver-popover.recedu-driver-tour-popover .driver-popover-prev-btn:hover,
+.driver-popover.recedu-driver-tour-popover .driver-popover-prev-btn:focus {
+	background: var(--rec-bg-subtle) !important;
+	color: var(--rec-text-primary) !important;
+}
+
+/* Barra «Guía docente» (debajo del tour Driver.js) */
+.docente-tour-toolbar {
+	position: relative;
+	z-index: 30;
+}
+
+/* Barra «Guía estudiante» */
+.estudiante-tour-toolbar {
+	position: relative;
+	z-index: 30;
+}

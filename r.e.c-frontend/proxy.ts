@@ -8,23 +8,31 @@ function generateNonce(): string {
   return btoa(String.fromCharCode(...array));
 }
 
+/**
+ * CSP compatible con el runtime de Next (App Router). Un `script-src` solo con `nonce-*`
+ * bloquea scripts de arranque que Next no firma con ese nonce → hidratación rota y la UI
+ * parece “sin estilos” (HTML con clases Tailwind pero sin aplicar bien en cliente).
+ */
 function setSecurityHeaders(response: NextResponse, nonce: string): NextResponse {
-  response.headers.set(
-    "Content-Security-Policy",
-    `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com https://media2.giphy.com; font-src 'self'; frame-src 'self' https://www.google.com https://docs.google.com; connect-src 'self' https://*.sentry.io`,
-  );
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com https://media2.giphy.com",
+    "font-src 'self' data:",
+    "frame-src 'self' https://www.google.com https://docs.google.com",
+    "connect-src 'self' https://*.sentry.io",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+
+  response.headers.set("Content-Security-Policy", csp);
   response.headers.set("x-nonce", nonce);
-  response.headers.set(
-    "Strict-Transport-Security",
-    "max-age=31536000; includeSubDomains",
-  );
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
-  );
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   return response;
 }
 
@@ -47,22 +55,23 @@ export function proxy(request: NextRequest) {
   const isDocente = pathname.startsWith("/docente");
   const isEstudiante = pathname.startsWith("/estudiante");
   const isSuperAdmin = pathname.startsWith("/super-admin");
+  const isProfile = pathname.startsWith("/profile");
 
-  // Si ya autenticado y está en páginas de login, redirigir al panel por rol
   if (token && isLogin) {
     const url = request.nextUrl.clone();
     url.pathname = panelFor(role);
     return setSecurityHeaders(NextResponse.redirect(url), nonce);
   }
 
-  // Rutas protegidas: requieren token
-  if (!token && (isSecretaria || isDocente || isEstudiante || isSuperAdmin)) {
+  if (
+    !token &&
+    (isSecretaria || isDocente || isEstudiante || isSuperAdmin || isProfile)
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = isSecretaria || isSuperAdmin ? "/acceso-secretaria" : "/login";
     return setSecurityHeaders(NextResponse.redirect(url), nonce);
   }
 
-  // Enforce rol en paneles
   if (token && role) {
     if (isSecretaria && role !== "SECRETARIA") {
       const url = request.nextUrl.clone();
@@ -88,18 +97,11 @@ export function proxy(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
-  return setSecurityHeaders(
-    NextResponse.next({ request: { headers: requestHeaders } }),
-    nonce,
-  );
-}
-
-export function middleware(request: NextRequest) {
-  return proxy(request);
+  return setSecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }), nonce);
 }
 
 export const config = {
   matcher: [
-    "/(login|acceso-secretaria|super-admin|secretaria|docente|estudiante)(.*)",
+    "/(login|acceso-secretaria|super-admin|secretaria|docente|estudiante|profile)(.*)",
   ],
 };

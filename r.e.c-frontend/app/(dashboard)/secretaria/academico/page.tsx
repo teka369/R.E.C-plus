@@ -5,6 +5,8 @@ import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import { academicApi, type Grade, type Group, type Subject } from "@/lib/academicApi";
 import { usersApi, type UserDTO } from "@/lib/usersApi";
+import { useAuth } from "@/hooks/useAuth";
+import GradingPolicyConfig from "@/components/secretaria/GradingPolicyConfig";
 
 type GroupSubjectsState = {
   loaded: boolean;
@@ -19,6 +21,10 @@ type BulkOperationStatus = {
 };
 
 export default function SecretariaAcademicoPage() {
+  const { user } = useAuth();
+  const canConfigureGrading =
+    user?.role === "SECRETARIA" || user?.role === "SUPER_ADMIN";
+
   const [grades, setGrades] = useState<Grade[]>([]);
   const [groups, setGroups] = useState<(Group & { grade?: Grade })[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -259,12 +265,19 @@ export default function SecretariaAcademicoPage() {
 
       <div className="sec-toolbar">
         <div className="sec-flow-nav">
+          <a className="sec-flow-link" href="#sec-modelo-calificacion">0. Modelo</a>
           <a className="sec-flow-link" href="#sec-creacion">1. Creación</a>
           <a className="sec-flow-link" href="#sec-asignacion">2. Asignación</a>
           <a className="sec-flow-link" href="#sec-resumen">3. Resumen</a>
         </div>
         <span className="sec-muted">Flujo recomendado: crear estructura, asignar responsables y validar resumen</span>
       </div>
+
+      {canConfigureGrading ? (
+        <section id="sec-modelo-calificacion" className="space-y-3">
+          <GradingPolicyConfig />
+        </section>
+      ) : null}
 
       <div id="sec-creacion" className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <form onSubmit={onCreateGrade} className="sec-card p-4 space-y-3">
@@ -306,8 +319,8 @@ export default function SecretariaAcademicoPage() {
             <Button size="sm" onClick={runBulkAssignDirectors} disabled={!bulkDirectorId || Object.values(selectedGroupIdsDirector).every((v) => !v) || bulkDirectorStatus.loading}>{bulkDirectorStatus.loading ? "Asignando..." : "Asignar directores"}</Button>
           </div>
         </div>
-        {bulkDirectorStatus.message && <p className={`text-xs ${bulkDirectorStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkDirectorStatus.message}</p>}
-        <div className="text-xs text-gray-600 max-h-40 overflow-y-auto border rounded p-2">
+        {bulkDirectorStatus.message && <p className={`text-xs ${bulkDirectorStatus.tone === "error" ? "text-rec-danger-text" : "text-rec-success-text"}`}>{bulkDirectorStatus.message}</p>}
+        <div className="text-xs text-rec-text-muted max-h-40 overflow-y-auto border rounded p-2">
           <p className="font-medium mb-2">{Object.values(selectedGroupIdsDirector).filter(Boolean).length} grupos seleccionados:</p>
           {groups.filter((g) => selectedGroupIdsDirector[g.id]).map((g) => (
             <div key={g.id} className="flex items-center gap-2 py-1">
@@ -340,8 +353,8 @@ export default function SecretariaAcademicoPage() {
           <Button size="sm" onClick={runBulkAssignSubjectsToGroups} disabled={!bulkMateriasSubjectId || Object.values(selectedGroupIds).every((v) => !v) || bulkMateriasStatus.loading}>{bulkMateriasStatus.loading ? "Asignando..." : "Asignar materia"}</Button>
         </div>
       </div>
-      {bulkMateriasStatus.message && <p className={`text-xs ${bulkMateriasStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkMateriasStatus.message}</p>}
-      <div className="text-xs text-gray-600 max-h-40 overflow-y-auto border rounded p-2">
+      {bulkMateriasStatus.message && <p className={`text-xs ${bulkMateriasStatus.tone === "error" ? "text-rec-danger-text" : "text-rec-success-text"}`}>{bulkMateriasStatus.message}</p>}
+      <div className="text-xs text-rec-text-muted max-h-40 overflow-y-auto border rounded p-2">
         <p className="font-medium mb-2">{Object.values(selectedGroupIds).filter(Boolean).length} de {visibleGroups.length} grupos seleccionados:</p>
         {visibleGroups.map((g) => (
           <div key={g.id} className="flex items-center gap-2 py-1">
@@ -356,15 +369,15 @@ export default function SecretariaAcademicoPage() {
       <h3 className="font-medium">Resumen</h3>
       <div className="sec-grid-cards">
         <div className="sec-stat">
-          <p className="text-xs text-gray-600">Grados</p>
+          <p className="text-xs text-rec-text-muted">Grados</p>
           <p className="value">{grades.length}</p>
         </div>
         <div className="sec-stat">
-          <p className="text-xs text-gray-600">Grupos</p>
+          <p className="text-xs text-rec-text-muted">Grupos</p>
           <p className="value">{groups.length}</p>
         </div>
         <div className="sec-stat">
-          <p className="text-xs text-gray-600">Materias</p>
+          <p className="text-xs text-rec-text-muted">Materias</p>
           <p className="value">{subjects.length}</p>
         </div>
       </div>
@@ -411,7 +424,7 @@ export default function SecretariaAcademicoPage() {
                       <>
                         <button className="px-2 py-1 border rounded" onClick={() => { setEditingGradeId(g.id); setEditingGradeName(g.nombre); }}>Editar</button>
                         <button
-                          className="px-2 py-1 border rounded text-red-600"
+                          className="px-2 py-1 border rounded text-rec-danger-text"
                           onClick={async () => {
                             await academicApi.deleteGrade(g.id);
                             setGrades((prev) => prev.filter((x) => x.id !== g.id));
@@ -504,7 +517,7 @@ export default function SecretariaAcademicoPage() {
                       <>
                         <button className="px-2 py-1 border rounded" onClick={() => { setEditingGroupId(gr.id); setEditingGroupName(gr.nombre); }}>Editar</button>
                         <button
-                          className="px-2 py-1 border rounded text-red-600"
+                          className="px-2 py-1 border rounded text-rec-danger-text"
                           onClick={async () => {
                             await academicApi.deleteGroup(gr.id);
                             setGroups((prev) => prev.filter((x) => x.id !== gr.id));
@@ -533,7 +546,7 @@ export default function SecretariaAcademicoPage() {
                             <li key={gs.id} className="flex items-center justify-between">
                               <span>{gs.subject.nombre}</span>
                               <button
-                                className="px-2 py-1 border rounded text-red-600"
+                                className="px-2 py-1 border rounded text-rec-danger-text"
                                 onClick={async () => {
                                   await academicApi.deleteGroupSubject(gs.id);
                                   setGroupSubjectsByGroup((prev) => ({
@@ -603,7 +616,7 @@ export default function SecretariaAcademicoPage() {
                       <>
                         <button className="px-2 py-1 border rounded" onClick={() => { setEditingSubjectId(s.id); setEditingSubjectName(s.nombre); setEditingSubjectCode(s.codigo ?? ""); }}>Editar</button>
                         <button
-                          className="px-2 py-1 border rounded text-red-600"
+                          className="px-2 py-1 border rounded text-rec-danger-text"
                           onClick={async () => {
                             await academicApi.deleteSubject(s.id);
                             setSubjects((prev) => prev.filter((x) => x.id !== s.id));

@@ -401,79 +401,83 @@ describe('Security Fixes Integration', () => {
     });
   });
 
-  // ─── FASE 4: Rate limiting headers en auth ───────────────────────────────
+  // ─── FASE 4: Login — solo intentos fallidos (LoginAttemptsService) ───────
 
-  describe('FASE 4 – Rate limiting headers', () => {
-    it('POST /auth/login incluye headers X-RateLimit-Limit', async () => {
-      const { user } = await (async () => {
-        const inst = await prisma.institution.create({
-          data: {
-            nombre: `RL Inst ${Date.now()}`,
-            slug: `rl-inst-${Date.now()}`,
-          },
-        });
-        const u = await prisma.user.create({
-          data: {
-            institutionId: inst.id,
-            nombres: 'RL',
-            apellidos: 'Test',
-            email: `rl.${Date.now()}@test.edu`,
-            password: HASHED,
-            role: 'PROFESOR',
-          },
-        });
-        return { user: u };
-      })();
+  describe('FASE 4 – Login intentos fallidos', () => {
+    it('POST /auth/login responde 201 con credenciales válidas', async () => {
+      const inst = await prisma.institution.create({
+        data: {
+          nombre: `RL Inst ${Date.now()}`,
+          slug: `rl-inst-${Date.now()}`,
+        },
+      });
+      const user = await prisma.user.create({
+        data: {
+          institutionId: inst.id,
+          nombres: 'RL',
+          apellidos: 'Test',
+          email: `rl.${Date.now()}@test.edu`,
+          password: HASHED,
+          role: 'PROFESOR',
+        },
+      });
 
       const res = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: user.email, password: TEST_PASSWORD });
 
       expect(res.status).toBe(201);
-      // Throttler v6 emite X-RateLimit-Limit-default
-      const limitHeader =
-        res.headers['x-ratelimit-limit-default'] ??
-        res.headers['x-ratelimit-limit'];
-      expect(limitHeader).toBeDefined();
-      expect(Number(limitHeader)).toBeGreaterThan(0);
+      expect(res.body).toHaveProperty('access_token');
     });
 
-    // En NODE_ENV=test el límite se eleva a 10_000 para no bloquear otros tests;
-    // el comportamiento de bloqueo solo se verifica fuera de test env.
-    (process.env.NODE_ENV === 'test' ? it.skip : it)(
-      'POST /auth/login bloquea tras superar el límite',
-      async () => {
-        const inst = await prisma.institution.create({
-          data: {
-            nombre: `BF Inst ${Date.now()}`,
-            slug: `bf-inst-${Date.now()}`,
-          },
-        });
-        const u = await prisma.user.create({
-          data: {
-            institutionId: inst.id,
-            nombres: 'BF',
-            apellidos: 'Test',
-            email: `bf.${Date.now()}@test.edu`,
-            password: HASHED,
-            role: 'PROFESOR',
-          },
-        });
+    it('POST /auth/login bloquea en el 5.º fallo; los exitosos no cuentan y reinician el contador', async () => {
+      const inst = await prisma.institution.create({
+        data: {
+          nombre: `BF Inst ${Date.now()}`,
+          slug: `bf-inst-${Date.now()}`,
+        },
+      });
+      const u = await prisma.user.create({
+        data: {
+          institutionId: inst.id,
+          nombres: 'BF',
+          apellidos: 'Test',
+          email: `bf.${Date.now()}@test.edu`,
+          password: HASHED,
+          role: 'PROFESOR',
+        },
+      });
 
-        // 5 intentos fallidos (contraseña incorrecta)
-        for (let i = 0; i < 5; i++) {
-          await request(app.getHttpServer())
-            .post('/auth/login')
-            .send({ email: u.email, password: 'wrongpassword' });
-        }
+      const visitorId = '550e8400-e29b-41d4-a716-446655440000';
 
-        // El 6to intento (incluso con credenciales correctas) debe ser bloqueado por throttler
-        const res = await request(app.getHttpServer())
+      for (let i = 0; i < 4; i++) {
+        const r = await request(app.getHttpServer())
           .post('/auth/login')
-          .send({ email: u.email, password: TEST_PASSWORD });
+          .set('X-Visitor-Id', visitorId)
+          .send({ email: u.email, password: 'wrongpassword' });
+        expect(r.status).toBe(401);
+      }
 
-        expect(res.status).toBe(429);
-      },
-    );
+      const success = await request(app.getHttpServer())
+        .post('/auth/login')
+        .set('X-Visitor-Id', visitorId)
+        .send({ email: u.email, password: TEST_PASSWORD });
+      expect(success.status).toBe(201);
+
+      for (let i = 0; i < 4; i++) {
+        const r = await request(app.getHttpServer())
+          .post('/auth/login')
+          .set('X-Visitor-Id', visitorId)
+          .send({ email: u.email, password: 'wrongpassword' });
+        expect(r.status).toBe(401);
+      }
+
+      const fifthFail = await request(app.getHttpServer())
+        .post('/auth/login')
+        .set('X-Visitor-Id', visitorId)
+        .send({ email: u.email, password: 'wrongpassword' });
+      expect(fifthFail.status).toBe(429);
+      expect(String(fifthFail.body?.message ?? '')).toMatch(/espera \d+ segundos/);
+    });
   });
 });

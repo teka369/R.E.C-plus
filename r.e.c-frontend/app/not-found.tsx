@@ -1,31 +1,30 @@
-import Link from "next/link";
+import HttpErrorPage from "./(errors)/_components/HttpErrorPage";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#f0f8f3_0%,_#f8fbf9_40%,_#ffffff_100%)] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-[color:var(--rec-soft)] bg-white p-8 text-center shadow-lg">
-        <p className="text-6xl font-black text-[color:var(--rec-primary)]">404</p>
-        <h1 className="mt-4 text-xl font-bold text-slate-900">
-          Página no encontrada
-        </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          La página que buscas no existe o fue movida.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/"
-            className="rounded-xl bg-[color:var(--rec-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[color:var(--rec-primary-strong)]"
-          >
-            Ir al inicio
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Iniciar sesión
-          </Link>
-        </div>
-      </div>
-    </main>
+    <HttpErrorPage
+      code="404"
+      title="Página no encontrada"
+      description="La página que buscas no existe o fue movida."
+      primaryCta={{ href: "/", label: "Ir al inicio" }}
+      secondaryCtas={[{ href: "/login", label: "Iniciar sesión" }]}
+      icon={
+        <svg
+          className="h-7 w-7 text-[color:var(--rec-primary)]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="11" y1="8.5" x2="11" y2="11.5" />
+          <line x1="11" y1="14.5" x2="11.01" y2="14.5" />
+        </svg>
+      }
+    />
   );
 }

@@ -120,8 +120,20 @@ export class CommunicationService extends TenantScopedService {
             }
           : undefined,
       },
+      include: {
+        feedbackStrengths: { orderBy: { orden: 'asc' } },
+        feedbackImprovements: { orderBy: { orden: 'asc' } },
+      },
     });
-    return feedback;
+    return {
+      ...feedback,
+      strengths: {
+        items: (feedback.feedbackStrengths ?? []).map((x) => x.texto),
+      },
+      improvements: {
+        items: (feedback.feedbackImprovements ?? []).map((x) => x.texto),
+      },
+    };
   }
 
   async updateFeedback(
@@ -173,7 +185,7 @@ export class CommunicationService extends TenantScopedService {
         });
       }
     }
-    return this.prisma.feedback.update({
+    const updated = await this.prisma.feedback.update({
       where: { id: feedbackId },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
@@ -185,7 +197,20 @@ export class CommunicationService extends TenantScopedService {
           ? { estado: dto.estado as PrismaFeedbackEstado }
           : {}),
       },
+      include: {
+        feedbackStrengths: { orderBy: { orden: 'asc' } },
+        feedbackImprovements: { orderBy: { orden: 'asc' } },
+      },
     });
+    return {
+      ...updated,
+      strengths: {
+        items: (updated.feedbackStrengths ?? []).map((x) => x.texto),
+      },
+      improvements: {
+        items: (updated.feedbackImprovements ?? []).map((x) => x.texto),
+      },
+    };
   }
 
   async deleteFeedback(feedbackId: number, actor: Actor) {
@@ -233,12 +258,29 @@ export class CommunicationService extends TenantScopedService {
         this.prisma.feedback.findMany({
           where,
           orderBy: { createdAt: 'desc' },
+          include: {
+            feedbackStrengths: { orderBy: { orden: 'asc' } },
+            feedbackImprovements: { orderBy: { orden: 'asc' } },
+          },
           skip,
           take,
         }),
         this.prisma.feedback.count({ where }),
       ]);
-      return buildPaginatedResult(data, total, page, limit);
+      return buildPaginatedResult(
+        data.map((fb) => ({
+          ...fb,
+          strengths: {
+            items: (fb.feedbackStrengths ?? []).map((x) => x.texto),
+          },
+          improvements: {
+            items: (fb.feedbackImprovements ?? []).map((x) => x.texto),
+          },
+        })),
+        total,
+        page,
+        limit,
+      );
     }
     if (actor.role === UserRole.PROFESOR) {
       const teaches = await this.prisma.teacherAssignment.findFirst({
@@ -257,12 +299,29 @@ export class CommunicationService extends TenantScopedService {
         this.prisma.feedback.findMany({
           where,
           orderBy: { createdAt: 'desc' },
+          include: {
+            feedbackStrengths: { orderBy: { orden: 'asc' } },
+            feedbackImprovements: { orderBy: { orden: 'asc' } },
+          },
           skip,
           take,
         }),
         this.prisma.feedback.count({ where }),
       ]);
-      return buildPaginatedResult(data, total, page, limit);
+      return buildPaginatedResult(
+        data.map((fb) => ({
+          ...fb,
+          strengths: {
+            items: (fb.feedbackStrengths ?? []).map((x) => x.texto),
+          },
+          improvements: {
+            items: (fb.feedbackImprovements ?? []).map((x) => x.texto),
+          },
+        })),
+        total,
+        page,
+        limit,
+      );
     }
     throw new ForbiddenException('No autorizado');
   }
@@ -288,12 +347,29 @@ export class CommunicationService extends TenantScopedService {
         this.prisma.feedback.findMany({
           where,
           orderBy: { createdAt: 'desc' },
+          include: {
+            feedbackStrengths: { orderBy: { orden: 'asc' } },
+            feedbackImprovements: { orderBy: { orden: 'asc' } },
+          },
           skip,
           take,
         }),
         this.prisma.feedback.count({ where }),
       ]);
-      return buildPaginatedResult(data, total, page, limit);
+      return buildPaginatedResult(
+        data.map((fb) => ({
+          ...fb,
+          strengths: {
+            items: (fb.feedbackStrengths ?? []).map((x) => x.texto),
+          },
+          improvements: {
+            items: (fb.feedbackImprovements ?? []).map((x) => x.texto),
+          },
+        })),
+        total,
+        page,
+        limit,
+      );
     }
     // Profesor: solo puede ver feedback de grupos donde efectivamente enseña.
     const studentGroups = await this.prisma.studentGroup.findMany({

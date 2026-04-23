@@ -1,6 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getUpstreamBaseUrl } from "@/lib/server/upstream";
+import {
+  applyRateLimitVisitorCookie,
+  buildRateLimitForwardHeaders,
+} from "@/lib/server/rate-limit-forward";
 import {
   cookieMaxAgeSeconds,
   verifyAccessToken,
@@ -33,8 +37,9 @@ function clearAll(res: NextResponse) {
  * los tokens, y actualiza todas las cookies de sesión.
  * El cliente (interceptor axios) no necesita enviar body.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
   const store = await cookies();
+  const { headers: rlHeaders, setVisitorCookie } = buildRateLimitForwardHeaders(req, store);
   const refreshToken = store.get("rec_refresh")?.value;
 
   if (!refreshToken) {
@@ -43,6 +48,7 @@ export async function POST() {
       { status: 401 },
     );
     clearAll(res);
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   }
 
@@ -50,16 +56,22 @@ export async function POST() {
 
   let upstream: Response;
   try {
+    const fetchHeaders = new Headers({ "Content-Type": "application/json" });
+    for (const [k, v] of Object.entries(rlHeaders)) {
+      fetchHeaders.set(k, v);
+    }
     upstream = await fetch(`${base}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: fetchHeaders,
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
   } catch {
-    return NextResponse.json(
+    const res = NextResponse.json(
       { ok: false, message: "No se pudo contactar al backend" },
       { status: 502 },
     );
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
+    return res;
   }
 
   if (!upstream.ok) {
@@ -68,6 +80,7 @@ export async function POST() {
       { status: 401 },
     );
     clearAll(res);
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   }
 
@@ -80,6 +93,7 @@ export async function POST() {
       { status: 502 },
     );
     clearAll(res);
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   }
 
@@ -92,6 +106,7 @@ export async function POST() {
       { status: 502 },
     );
     clearAll(res);
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   }
 
@@ -104,6 +119,7 @@ export async function POST() {
       { status: 502 },
     );
     clearAll(res);
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   }
 
@@ -118,5 +134,6 @@ export async function POST() {
     res.cookies.set("rec_refresh", newRefreshToken, cookieOpts(60 * 60 * 24 * 7));
   }
 
+  applyRateLimitVisitorCookie(res, setVisitorCookie);
   return res;
 }

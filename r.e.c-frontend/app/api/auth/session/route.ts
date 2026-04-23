@@ -1,5 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import {
+  applyRateLimitVisitorCookie,
+  buildRateLimitForwardHeaders,
+} from "@/lib/server/rate-limit-forward";
 import {
   cookieMaxAgeSeconds,
   verifyAccessToken,
@@ -7,6 +11,8 @@ import {
 import { getUpstreamBaseUrl } from "@/lib/server/upstream";
 
 const isDev = process.env.NODE_ENV === "development";
+
+const jwtSecretEnvFile = isDev ? "r.e.c-frontend/.env.local" : "r.e.c-frontend/.env.production (en el servidor)";
 
 function sessionCookieOpts(maxAge: number) {
   return {
@@ -32,8 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          message:
-            "JWT_SECRET no está definido en el servidor Next.js. Añádelo en r.e.c-frontend/.env.local con el mismo valor que JWT_SECRET en r.e.c-backend/.env",
+          message: `JWT_SECRET no está definido en el servidor Next.js. Añádelo en ${jwtSecretEnvFile} con el mismo valor que en r.e.c-backend/.env y reinicia el frontend (pm2 restart recedu-frontend).`,
         },
         { status: 500 },
       );
@@ -51,15 +56,14 @@ export async function POST(req: Request) {
     } catch (err) {
       if (process.env.NODE_ENV === "development") {
         console.warn(
-          "[api/auth/session] JWT inválido o secreto distinto al backend. ¿JWT_SECRET en .env.local = backend?",
+          `[api/auth/session] JWT inválido o secreto distinto al backend. ¿JWT_SECRET en ${jwtSecretEnvFile}?`,
           err instanceof Error ? err.message : err,
         );
       }
       return NextResponse.json(
         {
           ok: false,
-          message:
-            "No se pudo validar el token. Comprueba que JWT_SECRET en r.e.c-frontend/.env.local sea idéntico a r.e.c-backend/.env",
+          message: `No se pudo validar el token. En producción, JWT_SECRET en ${jwtSecretEnvFile} debe ser exactamente igual a JWT_SECRET en r.e.c-backend/.env; luego pm2 restart recedu-frontend.`,
         },
         { status: 401 },
       );
@@ -90,7 +94,7 @@ export async function DELETE() {
   return res;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const store = await cookies();
     const token = store.get("rec_token")?.value ?? null;
@@ -98,7 +102,7 @@ export async function GET() {
       // Sin access token: intentar refresh silencioso si hay refresh token
       const refreshToken = store.get("rec_refresh")?.value ?? null;
       if (refreshToken) {
-        return attemptSilentRefresh(refreshToken);
+        return attemptSilentRefresh(refreshToken, req);
       }
       return NextResponse.json({ ok: false, role: null, userId: null });
     }
@@ -110,7 +114,7 @@ export async function GET() {
       // Access token expirado/inválido: intentar refresh antes de limpiar sesión
       const refreshToken = store.get("rec_refresh")?.value ?? null;
       if (refreshToken) {
-        return attemptSilentRefresh(refreshToken);
+        return attemptSilentRefresh(refreshToken, req);
       }
       const res = NextResponse.json({ ok: false, role: null, userId: null });
       clearSessionCookies(res);
@@ -121,18 +125,28 @@ export async function GET() {
   }
 }
 
-async function attemptSilentRefresh(refreshToken: string): Promise<NextResponse> {
+async function attemptSilentRefresh(
+  refreshToken: string,
+  req: NextRequest,
+): Promise<NextResponse> {
+  const cookieStore = await cookies();
+  const { headers: rlHeaders, setVisitorCookie } = buildRateLimitForwardHeaders(req, cookieStore);
   try {
     const base = getUpstreamBaseUrl();
+    const fetchHeaders = new Headers({ "Content-Type": "application/json" });
+    for (const [k, v] of Object.entries(rlHeaders)) {
+      fetchHeaders.set(k, v);
+    }
     const upstream = await fetch(`${base}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: fetchHeaders,
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
     if (!upstream.ok) {
       const res = NextResponse.json({ ok: false, role: null, userId: null });
       clearSessionCookies(res);
+      applyRateLimitVisitorCookie(res, setVisitorCookie);
       return res;
     }
 
@@ -146,6 +160,7 @@ async function attemptSilentRefresh(refreshToken: string): Promise<NextResponse>
     if (!newAccess) {
       const res = NextResponse.json({ ok: false, role: null, userId: null });
       clearSessionCookies(res);
+      applyRateLimitVisitorCookie(res, setVisitorCookie);
       return res;
     }
 
@@ -170,10 +185,12 @@ async function attemptSilentRefresh(refreshToken: string): Promise<NextResponse>
         sessionCookieOpts(60 * 60 * 24 * 7),
       );
     }
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   } catch {
     const res = NextResponse.json({ ok: false, role: null, userId: null });
     clearSessionCookies(res);
+    applyRateLimitVisitorCookie(res, setVisitorCookie);
     return res;
   }
 }

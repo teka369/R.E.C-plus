@@ -109,65 +109,66 @@ export default function EstudianteLigasPage() {
     <>
       <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6">
         <div
-          className="rounded-2xl border p-4 sm:p-6 text-white"
+          id="tour-est-lig-header"
+          className="rounded-2xl border p-4 sm:p-6 text-rec-text-on-media"
           style={{
             borderColor: "var(--rec-soft)",
             background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
           }}
         >
           <h1 className="text-2xl font-bold">Ligas</h1>
-          <p className="text-white/90 mt-1 text-sm">
+          <p className="text-rec-text-on-media/90 mt-1 text-sm">
             Vista general de rendimiento, asistencia y comparativo de tu grupo.
           </p>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
-        <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 text-xs text-cyan-800">
+        <div className="bg-rec-info-bg border border-rec-info-border rounded-xl p-4 text-xs text-rec-info-text">
           Este ranking se calcula automáticamente con datos reales de gestión académica y módulos relacionados.
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-slate-700">
+        <div id="tour-est-lig-grupo" className="bg-rec-bg-elevated border border-rec-border-default rounded-xl p-4 shadow-sm">
+          <p className="text-sm text-rec-text-secondary">
             <span className="font-semibold">Grupo:</span> {groupName || "N/A"}
             {gradeName ? <span> · <span className="font-semibold">Grado:</span> {gradeName}</span> : null}
           </p>
         </div>
 
-        {loading ? <p className="text-sm text-slate-600">Cargando…</p> : null}
-        {error ? <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div> : null}
+        {loading ? <p className="text-sm text-rec-text-muted">Cargando…</p> : null}
+        {error ? <div className="bg-rec-danger-bg border border-rec-danger-border rounded-xl p-4 text-sm text-rec-danger-text">{error}</div> : null}
 
         {!loading && !error && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                <p className="text-xs text-slate-500">Posición de tu grupo</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">
+            <div id="tour-est-lig-posicion" className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <article className="bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4">
+                <p className="text-xs text-rec-text-subtle">Posición de tu grupo</p>
+                <p className="text-2xl font-bold text-rec-text-primary mt-1">
                   {currentPosition ? `#${currentPosition}` : "N/A"}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">de {ranking.length || 0} grupos</p>
+                <p className="text-xs text-rec-text-subtle mt-1">de {ranking.length || 0} grupos</p>
               </article>
-              <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                <p className="text-xs text-slate-500">Puntaje global</p>
-                <p className="text-2xl font-bold text-emerald-700 mt-1">
+              <article className="bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4">
+                <p className="text-xs text-rec-text-subtle">Puntaje global</p>
+                <p className="text-2xl font-bold text-rec-success-text mt-1">
                   {currentScore != null ? currentScore.toFixed(1) : "N/A"}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">escala de 0 a 100</p>
+                <p className="text-xs text-rec-text-subtle mt-1">escala de 0 a 100</p>
               </article>
-              <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                <p className="text-xs text-slate-500">Brecha con el líder</p>
-                <p className="text-2xl font-bold text-amber-700 mt-1">
+              <article className="bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4">
+                <p className="text-xs text-rec-text-subtle">Brecha con el líder</p>
+                <p className="text-2xl font-bold text-rec-warning-text mt-1">
                   {gapToLeader != null ? `${gapToLeader.toFixed(1)} pts` : "N/A"}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">menos es mejor</p>
+                <p className="text-xs text-rec-text-subtle mt-1">menos es mejor</p>
               </article>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div id="tour-est-lig-stats" className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <StatCard
                 title="Rendimiento Academico"
-                icon={<FiBarChart2 className="w-5 h-5 text-indigo-600" />}
-                iconWrap="bg-indigo-100"
+                icon={<FiBarChart2 className="w-5 h-5 text-rec-info-text" />}
+                iconWrap="bg-rec-info-bg"
                 items={[
                   { label: "Promedio General", value: valueOrNA(stats?.promedioGeneral) },
                   { label: "Porcentaje de Aprobacion", value: valueOrNA(stats?.aprobacion, "%") },
@@ -177,8 +178,8 @@ export default function EstudianteLigasPage() {
               />
               <StatCard
                 title="Asistencia"
-                icon={<FiCalendar className="w-5 h-5 text-emerald-600" />}
-                iconWrap="bg-emerald-100"
+                icon={<FiCalendar className="w-5 h-5 text-rec-primary" />}
+                iconWrap="bg-rec-success-bg-muted"
                 items={[
                   { label: "Asistencia Promedio", value: valueOrNA(stats?.asistenciaPromedio, "%") },
                   { label: "Inasistencias Justificadas", value: valueOrNA(stats?.inasistenciasJustificadas) },
@@ -191,8 +192,8 @@ export default function EstudianteLigasPage() {
               />
               <StatCard
                 title="Comparativo"
-                icon={<FiTrendingUp className="w-5 h-5 text-amber-600" />}
-                iconWrap="bg-amber-100"
+                icon={<FiTrendingUp className="w-5 h-5 text-rec-warning-text" />}
+                iconWrap="bg-rec-warning-bg"
                 items={[
                   { label: "Variacion en Promedio", value: valueOrNA(stats?.variacionPromedio) },
                   { label: "Variacion en Aprobacion", value: valueOrNA(stats?.variacionAprobacion, "%") },
@@ -202,25 +203,25 @@ export default function EstudianteLigasPage() {
               />
             </div>
 
-            <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+            <article id="tour-est-lig-trazabilidad" className="bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">Trazabilidad del puntaje</h3>
-                  <p className="text-xs text-slate-500">Detalle del cálculo automático del score para tu grupo.</p>
+                  <h3 className="text-sm font-semibold text-rec-text-primary">Trazabilidad del puntaje</h3>
+                  <p className="text-xs text-rec-text-subtle">Detalle del cálculo automático del score para tu grupo.</p>
                 </div>
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-md px-2 py-1">
+                <span className="text-xs font-semibold text-rec-success-text bg-rec-success-bg rounded-md px-2 py-1">
                   Total {valueOrNA(stats?.scoreBreakdown?.total)}
                 </span>
               </div>
 
               {!stats?.scoreBreakdown ? (
-                <p className="text-sm text-slate-500">Sin desglose disponible aún.</p>
+                <p className="text-sm text-rec-text-subtle">Sin desglose disponible aún.</p>
               ) : (
                 <>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-slate-500 border-b border-slate-200">
+                        <tr className="text-left text-rec-text-subtle border-b border-rec-border-default">
                           <th className="py-2 pr-3">Factor</th>
                           <th className="py-2 pr-3">Dato base</th>
                           <th className="py-2 pr-3">Normalizado</th>
@@ -230,12 +231,12 @@ export default function EstudianteLigasPage() {
                       </thead>
                       <tbody>
                         {traceRows.map((row) => (
-                          <tr key={row.key} className="border-b border-slate-100">
-                            <td className="py-2 pr-3 font-medium text-slate-700">{row.key}</td>
-                            <td className="py-2 pr-3 text-slate-700">{row.raw.toFixed(2)}</td>
-                            <td className="py-2 pr-3 text-slate-700">{row.normalized.toFixed(2)}</td>
-                            <td className="py-2 pr-3 text-slate-700">{(row.weight * 100).toFixed(0)}%</td>
-                            <td className="py-2 font-semibold text-emerald-700">{row.contribution.toFixed(2)}</td>
+                          <tr key={row.key} className="border-b border-rec-border-subtle">
+                            <td className="py-2 pr-3 font-medium text-rec-text-secondary">{row.key}</td>
+                            <td className="py-2 pr-3 text-rec-text-secondary">{row.raw.toFixed(2)}</td>
+                            <td className="py-2 pr-3 text-rec-text-secondary">{row.normalized.toFixed(2)}</td>
+                            <td className="py-2 pr-3 text-rec-text-secondary">{(row.weight * 100).toFixed(0)}%</td>
+                            <td className="py-2 font-semibold text-rec-success-text">{row.contribution.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -243,13 +244,13 @@ export default function EstudianteLigasPage() {
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-cyan-800">
+                    <div className="rounded-lg border border-rec-info-border bg-rec-info-bg px-3 py-2 text-rec-info-text">
                       Cierre recuperaciones: {valueOrNA(stats.derivedSignals?.recoveryCompletionRate, "%")}
                     </div>
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                    <div className="rounded-lg border border-rec-warning-border bg-rec-warning-bg px-3 py-2 text-rec-warning-text">
                       Recursos por materia: {valueOrNA(stats.derivedSignals?.resourcesPerSubject)}
                     </div>
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
+                    <div className="rounded-lg border border-rec-success-border bg-rec-success-bg px-3 py-2 text-rec-success-text">
                       Temarios activos: {valueOrNA(stats.derivedSignals?.activeSyllabusRate, "%")}
                     </div>
                   </div>
@@ -257,26 +258,26 @@ export default function EstudianteLigasPage() {
               )}
             </article>
 
-            <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+            <article className="bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">Tabla de clasificación del grado</h3>
-                  <p className="text-xs text-slate-500">Quién va ganando entre los grupos de tu grado</p>
+                  <h3 className="text-sm font-semibold text-rec-text-primary">Tabla de clasificación del grado</h3>
+                  <p className="text-xs text-rec-text-subtle">Quién va ganando entre los grupos de tu grado</p>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rec-success-bg text-rec-success-text text-xs font-medium">
                   <FiAward className="w-3.5 h-3.5" /> Liga escolar
                 </span>
               </div>
 
               {loadingRanking ? (
-                <p className="text-sm text-slate-500">Calculando clasificación…</p>
+                <p className="text-sm text-rec-text-subtle">Calculando clasificación…</p>
               ) : ranking.length === 0 ? (
-                <p className="text-sm text-slate-500">Sin datos suficientes para clasificación.</p>
+                <p className="text-sm text-rec-text-subtle">Sin datos suficientes para clasificación.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-slate-500 border-b border-slate-200">
+                      <tr className="text-left text-rec-text-subtle border-b border-rec-border-default">
                         <th className="py-2 pr-3">#</th>
                         <th className="py-2 pr-3">Grupo</th>
                         <th className="py-2 pr-3">Puntaje</th>
@@ -289,16 +290,16 @@ export default function EstudianteLigasPage() {
                       {ranking.map((row, index) => {
                         const isCurrent = row.groupId === currentGroupId;
                         return (
-                          <tr key={row.groupId} className={`border-b border-slate-100 ${isCurrent ? "bg-emerald-50/70" : ""}`}>
-                            <td className="py-2 pr-3 font-semibold text-slate-800">#{index + 1}</td>
-                            <td className="py-2 pr-3 text-slate-700">
+                          <tr key={row.groupId} className={`border-b border-rec-border-subtle ${isCurrent ? "bg-rec-success-bg/70" : ""}`}>
+                            <td className="py-2 pr-3 font-semibold text-rec-text-primary">#{index + 1}</td>
+                            <td className="py-2 pr-3 text-rec-text-secondary">
                               {row.groupName}
-                              {isCurrent ? <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Tu grupo</span> : null}
+                              {isCurrent ? <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-rec-success-bg-muted text-rec-success-text">Tu grupo</span> : null}
                             </td>
-                            <td className="py-2 pr-3 font-semibold text-emerald-700">{row.score.toFixed(1)}</td>
-                            <td className="py-2 pr-3 text-slate-700">{valueOrNA(row.promedioGeneral)}</td>
-                            <td className="py-2 pr-3 text-slate-700">{valueOrNA(row.aprobacion, "%")}</td>
-                            <td className="py-2 text-slate-700">{valueOrNA(row.asistenciaPromedio, "%")}</td>
+                            <td className="py-2 pr-3 font-semibold text-rec-success-text">{row.score.toFixed(1)}</td>
+                            <td className="py-2 pr-3 text-rec-text-secondary">{valueOrNA(row.promedioGeneral)}</td>
+                            <td className="py-2 pr-3 text-rec-text-secondary">{valueOrNA(row.aprobacion, "%")}</td>
+                            <td className="py-2 text-rec-text-secondary">{valueOrNA(row.asistenciaPromedio, "%")}</td>
                           </tr>
                         );
                       })}
@@ -309,7 +310,7 @@ export default function EstudianteLigasPage() {
             </article>
 
             {!stats ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-5 text-sm text-slate-600">
+              <div className="bg-rec-bg-elevated border border-rec-border-default rounded-xl p-5 text-sm text-rec-text-muted">
                 Aún no hay datos suficientes para calcular la liga de tu grupo.
               </div>
             ) : null}
@@ -332,16 +333,16 @@ function StatCard({
   items: { label: string; value: string }[];
 }) {
   return (
-    <article className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+    <article className="bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4">
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-10 h-10 rounded-full ${iconWrap} flex items-center justify-center`}>{icon}</div>
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+        <h3 className="text-sm font-semibold text-rec-text-primary">{title}</h3>
       </div>
       <div className="space-y-2">
         {items.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0">
-            <span className="text-xs text-slate-500">{item.label}</span>
-            <span className="text-sm font-semibold text-slate-800 text-right">{item.value}</span>
+          <div key={item.label} className="flex items-center justify-between gap-2 border-b border-rec-border-subtle pb-2 last:border-b-0 last:pb-0">
+            <span className="text-xs text-rec-text-subtle">{item.label}</span>
+            <span className="text-sm font-semibold text-rec-text-primary text-right">{item.value}</span>
           </div>
         ))}
       </div>
