@@ -49,7 +49,7 @@ function speakTourLine(text: string, muted: boolean) {
   window.speechSynthesis.speak(utter);
 }
 
-export type DocenteTourContextValue = {
+export type DocenteTourContextValue = { 
   progress: DocenteTourProgress;
   percentComplete: number;
   completedCount: number;
