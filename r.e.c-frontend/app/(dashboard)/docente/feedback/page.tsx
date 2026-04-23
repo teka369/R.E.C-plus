@@ -11,6 +11,12 @@ import {
   type FeedbackTipo,
 } from "@/lib/communicationApi";
 import { getErrorMessage } from "@/lib/errors";
+import { useDocenteTour } from "@/components/docente/DocenteTourProvider";
+import {
+  FEEDBACK_MODAL_DELETE_TOUR_STEPS,
+  FEEDBACK_MODAL_DETALLE_TOUR_STEPS,
+  FEEDBACK_MODAL_FORM_TOUR_STEPS,
+} from "@/lib/docenteTour/subpageTourSteps";
 import { FiArrowRight, FiCheck, FiEdit2, FiEye, FiMessageSquare, FiPlus, FiTrash2, FiX } from "react-icons/fi";
 
 const TIPO_OPTIONS: { value: FeedbackTipo; label: string }[] = [
@@ -27,20 +33,20 @@ const ESTADO_OPTIONS: { value: FeedbackEstado; label: string }[] = [
 
 const TIPO_STYLE: Record<FeedbackTipo, string> = {
   POSITIVA: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
-  NEGATIVA: "bg-red-100 text-red-800 border border-red-200",
+  NEGATIVA: "bg-rec-danger-bg-strong text-rec-danger-text border border-rec-danger-border",
   INFORMATIVA: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
-  SEGUIMIENTO: "bg-amber-100 text-amber-800 border border-amber-200",
+  SEGUIMIENTO: "bg-rec-warning-bg text-rec-warning-text border border-rec-warning-border",
 };
 
 const TIPO_BORDER: Record<FeedbackTipo, string> = {
   POSITIVA: "border-l-[color:var(--rec-primary)]",
-  NEGATIVA: "border-l-red-400",
+  NEGATIVA: "border-l-rec-danger-border",
   INFORMATIVA: "border-l-[color:var(--rec-primary-strong)]",
-  SEGUIMIENTO: "border-l-amber-400",
+  SEGUIMIENTO: "border-l-rec-warning-border",
 };
 
 const ESTADO_STYLE: Record<FeedbackEstado, string> = {
-  PENDIENTE: "bg-amber-100 text-amber-800 border border-amber-200",
+  PENDIENTE: "bg-rec-warning-bg text-rec-warning-text border border-rec-warning-border",
   ATENDIDA: "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
 };
 
@@ -59,6 +65,7 @@ const EMPTY_FORM = {
 
 export default function DocenteFeedbackPage() {
   const { user } = useAuth();
+  const { runHelpTour } = useDocenteTour();
 
   const [assignments, setAssignments] = useState<TeacherAssignment[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
@@ -267,7 +274,8 @@ export default function DocenteFeedbackPage() {
       {/* Header */}
       <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6">
         <div
-          className="rounded-2xl border p-4 sm:p-6 text-white"
+          id="tour-fb-header"
+          className="rounded-2xl border p-4 sm:p-6 text-rec-text-on-media"
           style={{
             borderColor: "var(--rec-soft)",
             background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
@@ -276,14 +284,14 @@ export default function DocenteFeedbackPage() {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl font-bold">Feedback &amp; Observaciones</h1>
-              <p className="text-white/90 mt-1 text-sm">
+              <p className="text-rec-text-on-media/90 mt-1 text-sm">
                 Registra retroalimentación y observaciones para tus estudiantes.
               </p>
             </div>
             {selectedGroupId && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-medium shadow hover:opacity-90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-rec-bg-elevated rounded-lg text-sm font-medium shadow hover:opacity-90 transition-colors"
                 style={{ color: "var(--rec-primary-strong)" }}
               >
                 <FiPlus className="w-4 h-4" />
@@ -296,7 +304,11 @@ export default function DocenteFeedbackPage() {
 
       <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6">
         {/* Control panel */}
-        <div className="bg-white rounded-xl p-4 shadow-sm space-y-4" style={{ border: "1px solid var(--rec-soft)" }}>
+        <div
+          id="tour-fb-grupo"
+          className="bg-rec-bg-elevated rounded-xl p-4 shadow-sm space-y-4"
+          style={{ border: "1px solid var(--rec-soft)" }}
+        >
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm font-semibold" style={{ color: "var(--rec-title)" }}>Control del grupo</p>
             {!loading && (
@@ -307,7 +319,7 @@ export default function DocenteFeedbackPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Grupo</label>
+              <label className="block text-xs font-medium text-rec-text-subtle mb-1">Grupo</label>
               <select
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
                 style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
@@ -320,13 +332,13 @@ export default function DocenteFeedbackPage() {
               </select>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border px-3 py-2 text-center bg-white" style={{ borderColor: "var(--rec-soft)" }}>
-                <p className="text-[11px] text-slate-500">Total</p>
+              <div className="rounded-lg border px-3 py-2 text-center bg-rec-bg-elevated" style={{ borderColor: "var(--rec-soft)" }}>
+                <p className="text-[11px] text-rec-text-subtle">Total</p>
                 <p className="text-sm font-bold" style={{ color: "var(--rec-title)" }}>{feedbackStats.total}</p>
               </div>
-              <div className="rounded-lg border px-3 py-2 text-center bg-amber-50 border-amber-200">
-                <p className="text-[11px] text-amber-700">Pend.</p>
-                <p className="text-sm font-bold text-amber-700">{feedbackStats.pendientes}</p>
+              <div className="rounded-lg border px-3 py-2 text-center bg-rec-warning-bg border-rec-warning-border">
+                <p className="text-[11px] text-rec-warning-text">Pend.</p>
+                <p className="text-sm font-bold text-rec-warning-text">{feedbackStats.pendientes}</p>
               </div>
               <div className="rounded-lg px-3 py-2 text-center" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)" }}>
                 <p className="text-[11px]" style={{ color: "var(--rec-primary-strong)" }}>Atend.</p>
@@ -336,7 +348,11 @@ export default function DocenteFeedbackPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-sm space-y-3" style={{ border: "1px solid var(--rec-soft)" }}>
+        <div
+          id="tour-fb-filtros"
+          className="bg-rec-bg-elevated rounded-xl p-4 shadow-sm space-y-3"
+          style={{ border: "1px solid var(--rec-soft)" }}
+        >
           <p className="text-sm font-semibold" style={{ color: "var(--rec-title)" }}>Filtros y segmentación</p>
           {!loading && feedbackList.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -349,7 +365,7 @@ export default function DocenteFeedbackPage() {
                     className={`rounded-xl p-3 border text-left transition-all ${
                       filterTipo === tipo
                         ? TIPO_STYLE[tipo] + " ring-2 ring-offset-1 ring-current"
-                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                        : "bg-rec-bg-elevated border-rec-border-default text-rec-text-secondary hover:bg-rec-bg-base"
                     }`}
                   >
                     <p className="text-lg font-bold">{count}</p>
@@ -401,23 +417,24 @@ export default function DocenteFeedbackPage() {
         </div>
 
         {error && !modalOpen && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
+          <div className="bg-rec-danger-bg border border-rec-danger-border rounded-xl p-4 text-sm text-rec-danger-text">{error}</div>
         )}
         {ok && !modalOpen && (
           <div className="rounded-xl p-4 text-sm" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)", color: "var(--rec-primary-strong)" }}>{ok}</div>
         )}
 
+        <div id="tour-fb-lista">
         {loading ? (
-          <div className="text-center py-12 text-slate-500 text-sm">Cargando…</div>
+          <div className="text-center py-12 text-rec-text-subtle text-sm">Cargando…</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 bg-white border border-slate-200 rounded-xl text-slate-500 text-sm">
-            <FiMessageSquare className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+          <div className="text-center py-12 bg-rec-bg-elevated border border-rec-border-default rounded-xl text-rec-text-subtle text-sm">
+            <FiMessageSquare className="w-10 h-10 mx-auto mb-3 text-rec-text-subtle" />
             <p className="font-medium">Sin feedback registrado</p>
             <p className="mt-1">Crea el primer feedback para este grupo.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-rec-text-subtle font-medium">
               {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
             </p>
             {filtered.map((fb) => {
@@ -425,7 +442,7 @@ export default function DocenteFeedbackPage() {
               return (
                 <article
                   key={fb.id}
-                  className={`bg-white border border-slate-200 rounded-xl shadow-sm p-4 border-l-4 ${TIPO_BORDER[fb.tipo]}`}
+                  className={`bg-rec-bg-elevated border border-rec-border-default rounded-xl shadow-sm p-4 border-l-4 ${TIPO_BORDER[fb.tipo]}`}
                 >
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -439,7 +456,7 @@ export default function DocenteFeedbackPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setDetailFeedback(fb)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[color:var(--rec-soft)] transition-colors"
+                        className="p-1.5 rounded-lg text-rec-text-subtle hover:bg-[color:var(--rec-soft)] transition-colors"
                         style={{ color: "var(--rec-primary-strong)" }}
                         title="Ver detalle"
                       >
@@ -447,7 +464,7 @@ export default function DocenteFeedbackPage() {
                       </button>
                       <button
                         onClick={() => openEdit(fb)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[color:var(--rec-soft)] transition-colors"
+                        className="p-1.5 rounded-lg text-rec-text-subtle hover:bg-[color:var(--rec-soft)] transition-colors"
                         style={{ color: "var(--rec-primary-strong)" }}
                         title="Editar"
                       >
@@ -455,21 +472,21 @@ export default function DocenteFeedbackPage() {
                       </button>
                       <button
                         onClick={() => setDeleteConfirm({ id: fb.id, title: fb.title })}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-lg text-rec-text-subtle hover:text-rec-danger-text hover:bg-rec-danger-bg transition-colors"
                         title="Eliminar"
                       >
                         <FiTrash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-slate-900 mt-2">{fb.title}</h3>
-                  <p className="text-sm text-slate-500 mb-1">
-                    Para: <span className="text-slate-700">{studentName}</span>
+                  <h3 className="font-semibold text-rec-text-primary mt-2">{fb.title}</h3>
+                  <p className="text-sm text-rec-text-subtle mb-1">
+                    Para: <span className="text-rec-text-secondary">{studentName}</span>
                     {fb.createdAt && (
                       <> · <span>{new Date(fb.createdAt).toLocaleDateString()}</span></>
                     )}
                   </p>
-                  <p className="text-sm text-slate-700 mt-2">{fb.content}</p>
+                  <p className="text-sm text-rec-text-secondary mt-2">{fb.content}</p>
                   {(fb.strengths?.items?.length ?? 0) > 0 || (fb.improvements?.items?.length ?? 0) > 0 ? (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {(fb.strengths?.items?.length ?? 0) > 0 && (
@@ -486,11 +503,11 @@ export default function DocenteFeedbackPage() {
                         </div>
                       )}
                       {(fb.improvements?.items?.length ?? 0) > 0 && (
-                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-amber-800 mb-1.5">Áreas de mejora</p>
+                        <div className="bg-rec-warning-bg border border-rec-warning-border rounded-lg p-3">
+                          <p className="text-xs font-semibold text-rec-warning-text mb-1.5">Áreas de mejora</p>
                           <ul className="space-y-1">
                             {fb.improvements!.items.map((item, i) => (
-                              <li key={i} className="flex items-start gap-1.5 text-xs text-amber-700">
+                              <li key={i} className="flex items-start gap-1.5 text-xs text-rec-warning-text">
                                 <FiArrowRight className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                                 {item}
                               </li>
@@ -505,25 +522,42 @@ export default function DocenteFeedbackPage() {
             })}
           </div>
         )}
+        </div>
       </div>
 
       {/* Create / Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rec-text-primary/50 p-4">
+          <div className="bg-rec-bg-elevated rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div
+              id="tour-fb-modal-header"
+              className="flex items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-rec-border-subtle"
+            >
+              <h2 className="font-semibold text-rec-text-primary">
                 {editingId ? "Editar feedback" : "Nuevo feedback"}
               </h2>
-              <button onClick={() => setModalOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
-                <FiX className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => runHelpTour(FEEDBACK_MODAL_FORM_TOUR_STEPS)}
+                  className="rounded-lg border border-rec-border-default px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-rec-primary hover:bg-rec-bg-muted"
+                >
+                  Guía
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-rec-bg-muted text-rec-text-subtle"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <form id="feedback-form" className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4" onSubmit={onSubmit}>
               {!editingId && (
-                <div className="grid grid-cols-1 gap-3">
+                <div id="tour-fb-modal-alumno" className="grid grid-cols-1 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Estudiante *</label>
+                    <label className="block text-xs font-medium text-rec-text-muted mb-1">Estudiante *</label>
                     <select
                       required
                       className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
@@ -538,7 +572,7 @@ export default function DocenteFeedbackPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Materia</label>
+                    <label className="block text-xs font-medium text-rec-text-muted mb-1">Materia</label>
                     <select
                       className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
                       style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
@@ -553,9 +587,9 @@ export default function DocenteFeedbackPage() {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div id="tour-fb-modal-clasificacion" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Tipo</label>
+                  <label className="block text-xs font-medium text-rec-text-muted mb-1">Tipo</label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
                     style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
@@ -566,7 +600,7 @@ export default function DocenteFeedbackPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Estado</label>
+                  <label className="block text-xs font-medium text-rec-text-muted mb-1">Estado</label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
                     style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)" }}
@@ -577,8 +611,9 @@ export default function DocenteFeedbackPage() {
                   </select>
                 </div>
               </div>
+              <div id="tour-fb-modal-texto" className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Título *</label>
+                <label className="block text-xs font-medium text-rec-text-muted mb-1">Título *</label>
                 <input
                   required
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)]"
@@ -589,7 +624,7 @@ export default function DocenteFeedbackPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Contenido *</label>
+                <label className="block text-xs font-medium text-rec-text-muted mb-1">Contenido *</label>
                 <textarea
                   required
                   rows={4}
@@ -600,8 +635,10 @@ export default function DocenteFeedbackPage() {
                   onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
                 />
               </div>
+              </div>
+              <div id="tour-fb-modal-extras" className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-emerald-700 mb-1">Fortalezas (una por línea)</label>
+                <label className="block text-xs font-medium text-rec-success-text mb-1">Fortalezas (una por línea)</label>
                 <textarea
                   rows={3}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--rec-primary)] resize-none"
@@ -612,22 +649,23 @@ export default function DocenteFeedbackPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-amber-700 mb-1">Áreas de mejora (una por línea)</label>
+                <label className="block text-xs font-medium text-rec-warning-text mb-1">Áreas de mejora (una por línea)</label>
                 <textarea
                   rows={3}
-                  className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300 bg-amber-50 resize-none"
+                  className="w-full border border-rec-warning-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rec-warning-border bg-rec-warning-bg resize-none"
                   placeholder={"Mejorar presentación de ejercicios\nMayor atención en clase"}
                   value={form.improvementsText}
                   onChange={(e) => setForm((f) => ({ ...f, improvementsText: e.target.value }))}
                 />
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              </div>
+              {error && <p className="text-sm text-rec-danger-text">{error}</p>}
             </form>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end gap-3 flex-wrap">
+            <div id="tour-fb-modal-actions" className="px-4 sm:px-6 py-4 border-t border-rec-border-subtle flex justify-end gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm text-rec-text-muted hover:bg-rec-bg-muted rounded-lg transition-colors"
               >
                 Cancelar
               </button>
@@ -635,7 +673,7 @@ export default function DocenteFeedbackPage() {
                 type="submit"
                 form="feedback-form"
                 disabled={saving}
-                className="px-4 py-2 text-sm text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm text-rec-text-on-media rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
                 style={{ background: "var(--rec-primary)" }}
               >
                 {saving ? "Guardando…" : editingId ? "Actualizar" : "Crear feedback"}
@@ -647,15 +685,31 @@ export default function DocenteFeedbackPage() {
 
       {/* Detail modal */}
       {detailFeedback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Detalle del feedback</h2>
-              <button onClick={() => setDetailFeedback(null)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
-                <FiX className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rec-text-primary/50 p-4">
+          <div className="bg-rec-bg-elevated rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div
+              id="tour-fb-modal-det-header"
+              className="flex items-center justify-between gap-2 px-4 sm:px-6 py-4 border-b border-rec-border-subtle"
+            >
+              <h2 className="font-semibold text-rec-text-primary">Detalle del feedback</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => runHelpTour(FEEDBACK_MODAL_DETALLE_TOUR_STEPS)}
+                  className="rounded-lg border border-rec-border-default px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-rec-primary hover:bg-rec-bg-muted"
+                >
+                  Guía
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailFeedback(null)}
+                  className="p-1.5 rounded-lg hover:bg-rec-bg-muted text-rec-text-subtle"
+                >
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto">
+            <div id="tour-fb-modal-det-cuerpo" className="px-4 sm:px-6 py-4 space-y-3 overflow-y-auto">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIPO_STYLE[detailFeedback.tipo]}`}>
                   {detailFeedback.tipo.charAt(0) + detailFeedback.tipo.slice(1).toLowerCase()}
@@ -664,8 +718,8 @@ export default function DocenteFeedbackPage() {
                   {detailFeedback.estado === "PENDIENTE" ? "Pendiente" : "Atendida"}
                 </span>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">{detailFeedback.title}</h3>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">{detailFeedback.content}</p>
+              <h3 className="text-lg font-semibold text-rec-text-primary">{detailFeedback.title}</h3>
+              <p className="text-sm text-rec-text-secondary whitespace-pre-wrap">{detailFeedback.content}</p>
               {(detailFeedback.strengths?.items?.length ?? 0) > 0 && (
                 <div className="rounded-lg p-3" style={{ background: "var(--rec-soft)", border: "1px solid var(--rec-soft)" }}>
                   <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--rec-primary-strong)" }}>Fortalezas</p>
@@ -680,11 +734,11 @@ export default function DocenteFeedbackPage() {
                 </div>
               )}
               {(detailFeedback.improvements?.items?.length ?? 0) > 0 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-amber-800 mb-1.5">Áreas de mejora</p>
+                <div className="bg-rec-warning-bg border border-rec-warning-border rounded-lg p-3">
+                  <p className="text-xs font-semibold text-rec-warning-text mb-1.5">Áreas de mejora</p>
                   <ul className="space-y-1">
                     {detailFeedback.improvements!.items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-sm text-amber-700">
+                      <li key={i} className="flex items-start gap-1.5 text-sm text-rec-warning-text">
                         <FiArrowRight className="w-4 h-4 mt-0.5 shrink-0" />
                         {item}
                       </li>
@@ -693,10 +747,10 @@ export default function DocenteFeedbackPage() {
                 </div>
               )}
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-end">
+            <div id="tour-fb-modal-det-actions" className="px-4 sm:px-6 py-4 border-t border-rec-border-subtle flex justify-end">
               <button
                 onClick={() => setDetailFeedback(null)}
-                className="px-4 py-2 text-sm text-white rounded-lg hover:opacity-90 transition-colors"
+                className="px-4 py-2 text-sm text-rec-text-on-media rounded-lg hover:opacity-90 transition-colors"
                 style={{ background: "var(--rec-primary)" }}
               >
                 Cerrar
@@ -708,23 +762,34 @@ export default function DocenteFeedbackPage() {
 
       {/* Delete confirmation */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h2 className="font-semibold text-slate-900 mb-2">Eliminar feedback</h2>
-            <p className="text-sm text-slate-600 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rec-text-primary/50 p-4">
+          <div className="bg-rec-bg-elevated rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h2 className="font-semibold text-rec-text-primary">Eliminar feedback</h2>
+              <button
+                type="button"
+                onClick={() => runHelpTour(FEEDBACK_MODAL_DELETE_TOUR_STEPS)}
+                className="shrink-0 rounded-lg border border-rec-border-default px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-rec-primary hover:bg-rec-bg-muted"
+              >
+                Guía
+              </button>
+            </div>
+            <div id="tour-fb-modal-del-body">
+            <p className="text-sm text-rec-text-muted mb-6">
               ¿Eliminar &ldquo;{deleteConfirm.title}&rdquo;? Esta acción no se puede deshacer.
             </p>
-            <div className="flex justify-end gap-3">
+            </div>
+            <div id="tour-fb-modal-del-actions" className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm text-rec-text-muted hover:bg-rec-bg-muted rounded-lg transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => { void onDelete(); }}
                 disabled={deleting}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm bg-rec-danger-solid text-rec-text-on-media rounded-lg hover:bg-rec-danger-solid-hover disabled:opacity-50 transition-colors"
               >
                 {deleting ? "Eliminando…" : "Eliminar"}
               </button>

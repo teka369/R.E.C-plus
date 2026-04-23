@@ -1,3 +1,4 @@
+import type { Request } from 'express';
 import { AuthController } from '../../../src/auth/auth.controller';
 import { AuthService } from '../../../src/auth/auth.service';
 
@@ -18,16 +19,29 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('delegates to service.login', async () => {
+    it('delegates to service.login con tracker desde headers', async () => {
       service.login.mockResolvedValue({
         access_token: 'at',
         refresh_token: 'rt',
       } as any);
-      const result = await controller.login({
-        email: 'a@b.com',
-        password: '123',
-      });
-      expect(service.login).toHaveBeenCalledWith('a@b.com', '123');
+      const req = {
+        headers: { 'x-forwarded-for': '203.0.113.10' },
+        ip: undefined,
+        ips: [],
+        socket: {},
+      } as unknown as Request;
+      const result = await controller.login(
+        {
+          email: 'a@b.com',
+          password: '123',
+        },
+        req,
+      );
+      expect(service.login).toHaveBeenCalledWith(
+        'a@b.com',
+        '123',
+        'ip:203.0.113.10',
+      );
       expect(result).toEqual({ access_token: 'at', refresh_token: 'rt' });
     });
   });

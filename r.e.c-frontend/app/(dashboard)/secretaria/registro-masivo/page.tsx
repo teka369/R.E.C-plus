@@ -3,7 +3,6 @@ import React, { useCallback, useMemo, useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { usersApi, type CreateUserDto, type BulkCreateResult } from "@/lib/usersApi";
-import * as XLSX from "xlsx";
 import { getErrorMessage } from "@/lib/errors";
 import api from "@/lib/axios";
 
@@ -54,20 +53,48 @@ function parseCSV(text: string): PreviewItem[] {
   return items;
 }
 
+async function buildXlsxBlob(
+  rows: (string | number)[][],
+  sheetName = "Sheet1",
+): Promise<Blob> {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(sheetName);
+  rows.forEach((r) => ws.addRow(r));
+  const buf = await wb.xlsx.writeBuffer();
+  return new Blob([buf], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
 async function parseXLSX(file: File): Promise<PreviewItem[]> {
   const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array" });
-  const wsName = wb.SheetNames[0];
-  if (!wsName) return [];
-  const ws = wb.Sheets[wsName];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-    defval: "",
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  const ws = wb.worksheets[0];
+  if (!ws) return [];
+  const headerRow = ws.getRow(1);
+  const maxCol = Math.max(headerRow.actualCellCount, 1);
+  const headers: string[] = [];
+  for (let c = 1; c <= maxCol; c++) {
+    headers.push(headerRow.getCell(c).text.trim());
+  }
+  const dataRows: Record<string, string>[] = [];
+  ws.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    const obj: Record<string, string> = {};
+    for (let c = 1; c <= maxCol; c++) {
+      const h = headers[c - 1];
+      if (!h) continue;
+      obj[h] = row.getCell(c).text.trim();
+    }
+    dataRows.push(obj);
   });
-  // Normalizamos claves a minúsculas
-  return rows.map((row, idx) => {
+  return dataRows.map((row, idx) => {
     const get = (k: string) => {
       const key = Object.keys(row).find((x) => x.toLowerCase() === k.toLowerCase());
-      return key ? String(row[key]).trim() : "";
+      return key ? row[key] : "";
     };
     const roleVal = (get("role") || "").toUpperCase();
     return {
@@ -131,7 +158,7 @@ export default function RegistroMasivoPage() {
           };
         });
         setItems(normalized);
-      } else if (file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls")) {
+      } else if (file.name.toLowerCase().endsWith(".xlsx")) {
         const parsed = await parseXLSX(file);
         setItems(parsed);
       } else {
@@ -207,21 +234,30 @@ export default function RegistroMasivoPage() {
   }, []);
 
   useEffect(() => {
-    // Generar plantilla Excel
+    let alive = true;
+    let objectUrl: string | null = null;
     const headers = ["nombres", "apellidos", "email", "role"];
     const data = [
       ["Ana", "Romero", "ana.romero@colegio.edu.co", "ESTUDIANTE"],
       ["Carlos", "Lopez", "carlos.lopez@colegio.edu.co", "PROFESOR"],
     ];
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "usuarios");
-    const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
-    setTemplateXlsxUrl(url);
+    (async () => {
+      try {
+        const blob = await buildXlsxBlob([headers, ...data], "usuarios");
+        const url = URL.createObjectURL(blob);
+        if (!alive) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setTemplateXlsxUrl(url);
+      } catch {
+        if (alive) setTemplateXlsxUrl(null);
+      }
+    })();
     return () => {
-      if (url) URL.revokeObjectURL(url);
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, []);
 
@@ -378,12 +414,12 @@ export default function RegistroMasivoPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="sec-card p-4 space-y-3">
           <h2 className="font-medium">Subir archivo</h2>
-          <Input type="file" accept=".csv,.json,.xlsx,.xls" onChange={(e) => {
+          <Input type="file" accept=".csv,.json,.xlsx" onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) onFile(file);
           }} />
-          <p className="text-xs text-gray-600">Formatos soportados: CSV con encabezados, Excel (.xlsx/.xls) o JSON (arreglo).</p>
-          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          <p className="text-xs text-rec-text-muted">Formatos soportados: CSV con encabezados, Excel (.xlsx) o JSON (arreglo).</p>
+          {error ? <p className="text-xs text-rec-danger-text">{error}</p> : null}
           <div className="sec-action-cluster">
             <label className="text-xs flex items-center gap-2">
               <input type="checkbox" checked={registerOnlyValid} onChange={(e) => setRegisterOnlyValid(e.target.checked)} /> Registrar sólo filas válidas
@@ -403,7 +439,7 @@ export default function RegistroMasivoPage() {
         <div className="md:col-span-2 sec-card p-4">
           <h2 className="font-medium mb-3">Vista previa ({items.length} filas)</h2>
           {items.length === 0 ? (
-            <p className="text-xs text-gray-600">Sube un archivo para ver la vista previa.</p>
+            <p className="text-xs text-rec-text-muted">Sube un archivo para ver la vista previa.</p>
           ) : (
             <div className="space-y-3">
               <div className="sec-toolbar">
@@ -418,17 +454,17 @@ export default function RegistroMasivoPage() {
               </div>
 
               {uploadProgress && (
-                <div className="border rounded p-2 bg-emerald-50">
+                <div className="border rounded p-2 bg-rec-success-bg">
                   <div className="text-xs font-medium mb-1">Registrando: {uploadProgress.current}/{uploadProgress.total}</div>
                   <div className="w-full border rounded overflow-hidden" style={{ height: "4px" }}>
-                    <div className="bg-emerald-500" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
+                    <div className="bg-rec-primary" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: "100%", transition: "width 0.3s" }} />
                   </div>
                 </div>
               )}
 
               <div className="overflow-x-auto sec-table">
                 <table className="min-w-full text-xs">
-                  <thead className="bg-gray-100">
+                  <thead className="bg-rec-bg-muted">
                     <tr>
                       <th className="p-2 text-left" style={{ width: "32px" }}>Sel.</th>
                       <th className="p-2 text-left">#</th>
@@ -448,10 +484,10 @@ export default function RegistroMasivoPage() {
                         .map((x) => x.message)
                         .join("; ");
                       const isEditing = editingRow?.rowIndex === actualIdx;
-                      const rowClass = v.isValid ? "bg-white" : "bg-red-50";
+                      const rowClass = v.isValid ? "bg-rec-bg-elevated" : "bg-rec-danger-bg";
                       
                       return (
-                        <tr key={displayIdx} className={`border-t border-gray-200 ${rowClass}`}>
+                        <tr key={displayIdx} className={`border-t border-rec-border-default ${rowClass}`}>
                           <td className="p-2">
                             <input
                               type="checkbox"
@@ -510,7 +546,7 @@ export default function RegistroMasivoPage() {
                           </td>
                           <td className="p-2">{it.role || "ESTUDIANTE"}</td>
                           <td className="p-2">
-                            {errText ? <div className="text-red-600 text-xs">{errText}</div> : <span className="text-green-700 text-xs">✓</span>}
+                            {errText ? <div className="text-rec-danger-text text-xs">{errText}</div> : <span className="text-rec-success-text text-xs">✓</span>}
                           </td>
                         </tr>
                       );
@@ -520,7 +556,7 @@ export default function RegistroMasivoPage() {
               </div>
             </div>
           )}
-          <div className="mt-2 text-xs text-gray-700">
+          <div className="mt-2 text-xs text-rec-text-secondary">
             Válidas: {validCount} · Inválidas: {invalidCount}
             {selectedRows.size > 0 && ` · Seleccionadas: ${selectedRows.size}`}
           </div>
@@ -539,20 +575,21 @@ export default function RegistroMasivoPage() {
               URL.revokeObjectURL(url);
             }}>Descargar errores CSV</Button>
             <Button variant="secondary" onClick={() => {
-              // Exportar errores a Excel
-              const header = ["row", "field", "severity", "message"];
-              const rows = validation.flatMap((v) => v.issues.filter((i) => i.severity === "error").map((i) => [v.row, i.field, i.severity, i.message]));
-              const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "errores");
-              const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-              const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "errores-registro-masivo.xlsx";
-              a.click();
-              URL.revokeObjectURL(url);
+              void (async () => {
+                const header = ["row", "field", "severity", "message"];
+                const rows = validation.flatMap((v) =>
+                  v.issues
+                    .filter((i) => i.severity === "error")
+                    .map((i) => [v.row, i.field, i.severity, i.message] as (string | number)[]),
+                );
+                const blob = await buildXlsxBlob([header, ...rows], "errores");
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "errores-registro-masivo.xlsx";
+                a.click();
+                URL.revokeObjectURL(url);
+              })();
             }}>Descargar errores Excel</Button>
           </div>
         </div>
@@ -561,13 +598,13 @@ export default function RegistroMasivoPage() {
       <div className="sec-card p-4">
         <h2 className="font-medium mb-2">Resultado</h2>
         {!result ? (
-          <p className="text-xs text-gray-600">Se mostrará el resumen después de registrar.</p>
+          <p className="text-xs text-rec-text-muted">Se mostrará el resumen después de registrar.</p>
         ) : (
           <div className="space-y-2">
             <p className="text-sm">Creados: {result.created} · Fallidos: {result.failed}</p>
             <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-200 text-xs">
-                <thead className="bg-gray-100">
+              <table className="min-w-full border border-rec-border-default text-xs">
+                <thead className="bg-rec-bg-muted">
                   <tr>
                     <th className="p-2 text-left">#</th>
                     <th className="p-2 text-left">Estado</th>
@@ -577,7 +614,7 @@ export default function RegistroMasivoPage() {
                 </thead>
                 <tbody>
                   {result.results.map((r, idx) => (
-                    <tr key={idx} className="border-t border-gray-200">
+                    <tr key={idx} className="border-t border-rec-border-default">
                       <td className="p-2">{r.index + 1}</td>
                       <td className="p-2">{r.id ? "OK" : "ERROR"}</td>
                       <td className="p-2 font-mono">{r.codigo ?? "—"}</td>
@@ -588,7 +625,7 @@ export default function RegistroMasivoPage() {
               </table>
             </div>
             {result.created > 0 && (
-              <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="mt-2 text-xs text-rec-warning-text bg-rec-warning-bg border border-rec-warning-border rounded-lg p-3">
                 <strong>Importante:</strong> El código de cada usuario es su contraseña inicial. Comparta los códigos con los usuarios para que puedan acceder a la plataforma.
               </p>
             )}

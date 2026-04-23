@@ -29,9 +29,9 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const STATUS_STYLE: Record<string, string> = {
-  BORRADOR: "bg-amber-100 text-amber-800 border-amber-200",
-  ACTIVO: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  ARCHIVADO: "bg-slate-200 text-slate-700 border-slate-300",
+  BORRADOR: "bg-rec-warning-bg text-rec-warning-text border-rec-warning-border",
+  ACTIVO: "bg-rec-success-bg-muted text-rec-success-text border-rec-success-border",
+  ARCHIVADO: "bg-rec-bg-subtle text-rec-text-secondary border-rec-border-strong",
 };
 
 type SyllabusSections = {
@@ -271,37 +271,38 @@ export default function EstudianteTemariosPage() {
   return (
     <section className="space-y-4">
       <div
-        className="rounded-2xl border p-4 sm:p-6 text-white"
+        id="tour-est-tem-header"
+        className="rounded-2xl border p-4 sm:p-6 text-rec-text-on-media"
         style={{
           borderColor: "var(--rec-soft)",
           background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
         }}
       >
         <h2 className="text-2xl font-bold tracking-tight">Temarios</h2>
-        <p className="text-sm text-white/90">Consulta contenidos por materia con una vista mas clara y filtrable.</p>
+        <p className="text-sm text-rec-text-on-media/90">Consulta contenidos por materia con una vista mas clara y filtrable.</p>
       </div>
 
       {loading && (
         <div className="space-y-3 animate-pulse">
-          <div className="h-6 w-40 rounded bg-slate-200" />
-          <div className="h-4 w-72 rounded bg-slate-100" />
-          <div className="h-56 rounded-2xl bg-slate-100" />
+          <div className="h-6 w-40 rounded bg-rec-bg-subtle" />
+          <div className="h-4 w-72 rounded bg-rec-bg-muted" />
+          <div className="h-56 rounded-2xl bg-rec-bg-muted" />
         </div>
       )}
 
-      {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-rec-danger-text bg-rec-danger-bg border border-rec-danger-border rounded-xl px-3 py-2">{error}</p>}
 
       {!loading && !error && (
         <>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-            <p className="text-xs text-slate-500">Grupo actual: <span className="font-medium text-slate-700">{groupLabel || "Sin grupo"}</span></p>
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-sm font-medium text-slate-800">Filtros de búsqueda</p>
+          <div id="tour-est-tem-filtros" className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-4 space-y-3">
+            <p className="text-xs text-rec-text-subtle">Grupo actual: <span className="font-medium text-rec-text-secondary">{groupLabel || "Sin grupo"}</span></p>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rec-border-default bg-rec-bg-base px-3 py-2">
+              <p className="text-sm font-medium text-rec-text-primary">Filtros de búsqueda</p>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setFiltersExpanded((prev) => !prev)}
-                  className="inline-flex items-center gap-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                  className="inline-flex items-center gap-1 border border-rec-border-strong rounded-lg px-2.5 py-1.5 text-sm text-rec-text-secondary hover:bg-rec-bg-muted"
                   aria-expanded={filtersExpanded}
                   aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
                 >
@@ -319,7 +320,7 @@ export default function EstudianteTemariosPage() {
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
-                <span className="text-xs rounded-full bg-white border border-slate-200 px-2 py-1 text-slate-600">
+                <span className="text-xs rounded-full bg-rec-bg-elevated border border-rec-border-default px-2 py-1 text-rec-text-muted">
                   {activeFiltersCount} activo(s)
                 </span>
                 <button
@@ -334,7 +335,7 @@ export default function EstudianteTemariosPage() {
                     setSearch("");
                   }}
                   disabled={activeFiltersCount === 0}
-                  className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="border border-rec-border-strong rounded-lg px-3 py-1.5 text-sm text-rec-text-secondary hover:bg-rec-bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Limpiar filtros
                 </button>
@@ -343,10 +344,10 @@ export default function EstudianteTemariosPage() {
 
             {filtersExpanded && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              <label className="text-xs text-slate-600 space-y-1">
+              <label className="text-xs text-rec-text-muted space-y-1">
                 <span className="block">Materia</span>
                 <select
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm text-rec-text-primary"
                   value={selectedSubjectId}
                   onChange={(event) => setSelectedSubjectId(Number(event.target.value))}
                 >
@@ -359,10 +360,10 @@ export default function EstudianteTemariosPage() {
                 </select>
               </label>
 
-              <label className="text-xs text-slate-600 space-y-1">
+              <label className="text-xs text-rec-text-muted space-y-1">
                 <span className="block">Estado</span>
                 <select
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm text-rec-text-primary"
                   value={filterStatus}
                   onChange={(event) => setFilterStatus(event.target.value as "ALL" | "BORRADOR" | "ACTIVO" | "ARCHIVADO")}
                 >
@@ -375,10 +376,10 @@ export default function EstudianteTemariosPage() {
                 </select>
               </label>
 
-              <label className="text-xs text-slate-600 space-y-1">
+              <label className="text-xs text-rec-text-muted space-y-1">
                 <span className="block">Periodo</span>
                 <select
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm text-rec-text-primary"
                   value={filterPeriod}
                   onChange={(event) => setFilterPeriod(event.target.value)}
                 >
@@ -391,10 +392,10 @@ export default function EstudianteTemariosPage() {
                 </select>
               </label>
 
-              <label className="text-xs text-slate-600 space-y-1">
+              <label className="text-xs text-rec-text-muted space-y-1">
                 <span className="block">Contenido</span>
                 <select
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm text-rec-text-primary"
                   value={filterHasContent}
                   onChange={(event) => setFilterHasContent(event.target.value as "all" | "with" | "without")}
                 >
@@ -404,10 +405,10 @@ export default function EstudianteTemariosPage() {
                 </select>
               </label>
 
-              <label className="text-xs text-slate-600 space-y-1">
+              <label className="text-xs text-rec-text-muted space-y-1">
                 <span className="block">Duración</span>
                 <select
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm text-rec-text-primary"
                   value={filterHasDuration}
                   onChange={(event) => setFilterHasDuration(event.target.value as "all" | "with" | "without")}
                 >
@@ -417,10 +418,10 @@ export default function EstudianteTemariosPage() {
                 </select>
               </label>
 
-              <label className="text-xs text-slate-600 space-y-1 xl:col-span-1">
+              <label className="text-xs text-rec-text-muted space-y-1 xl:col-span-1">
                 <span className="block">Ordenar por</span>
                 <select
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-800"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm text-rec-text-primary"
                   value={sortBy}
                   onChange={(event) => setSortBy(event.target.value as "newest" | "oldest" | "title_asc" | "title_desc" | "updated")}
                 >
@@ -432,10 +433,10 @@ export default function EstudianteTemariosPage() {
                 </select>
               </label>
 
-              <label className="text-xs text-slate-600 space-y-1 sm:col-span-2 xl:col-span-2">
+              <label className="text-xs text-rec-text-muted space-y-1 sm:col-span-2 xl:col-span-2">
                 <span className="block">Búsqueda rápida</span>
                 <input
-                  className="w-full border border-slate-300 rounded-lg p-2 text-sm"
+                  className="w-full border border-rec-border-strong rounded-lg p-2 text-sm"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Ej: título, materia, periodo, duración o contenido"
@@ -444,15 +445,15 @@ export default function EstudianteTemariosPage() {
             </div>
             )}
 
-            <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center justify-between text-xs text-rec-text-subtle">
               <p>{visibleSyllabi.length} resultado(s)</p>
               <p>Filtra por materia, estado y periodo para ubicar más rápido.</p>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div id="tour-est-tem-list" className="space-y-3">
             {visibleSyllabi.length === 0 ? (
-              <p className="text-sm text-slate-500">No hay temarios para mostrar con los filtros actuales.</p>
+              <p className="text-sm text-rec-text-subtle">No hay temarios para mostrar con los filtros actuales.</p>
             ) : (
               visibleSyllabi.map((item) => {
                 const expanded = Boolean(expandedIds[item.id]);
@@ -462,24 +463,24 @@ export default function EstudianteTemariosPage() {
                 const hasStructuredContent = hasStructuredSyllabusContent(item.content);
                 const parsedSections = hasStructuredContent ? parseSyllabusContent(item.content) : { ...EMPTY_SECTIONS };
                 return (
-                  <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article key={item.id} className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="text-base font-semibold text-slate-900 truncate">{item.title}</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <h3 className="text-base font-semibold text-rec-text-primary truncate">{item.title}</h3>
+                        <p className="text-xs text-rec-text-subtle mt-0.5">
                           {subjectNameById.get(item.subjectId) ?? `Materia #${item.subjectId}`}
                           {item.updatedAt && ` | Actualizado ${formatDate(item.updatedAt)}`}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          {item.period && <span className="text-[11px] px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-700">Periodo: {item.period}</span>}
+                          {item.period && <span className="text-[11px] px-1.5 py-0.5 rounded border border-rec-info-border text-rec-info-text">Periodo: {item.period}</span>}
                           <span className={`text-[11px] px-1.5 py-0.5 rounded border ${STATUS_STYLE[item.status ?? "BORRADOR"]}`}>
                             {STATUS_OPTIONS.find((s) => s.value === (item.status ?? "BORRADOR"))?.label ?? "Borrador"}
                           </span>
                         </div>
-                        {item.duration && <p className="text-xs text-indigo-700 mt-1">Duración: {item.duration}</p>}
-                        <p className="text-[11px] text-slate-500 mt-1">Creado: {formatDate(item.createdAt)}</p>
+                        {item.duration && <p className="text-xs text-rec-info-text mt-1">Duración: {item.duration}</p>}
+                        <p className="text-[11px] text-rec-text-subtle mt-1">Creado: {formatDate(item.createdAt)}</p>
                       </div>
-                      <Link href={`/estudiante/temarios/${item.id}`} className="px-2 py-1 rounded text-xs border border-indigo-200 text-indigo-700 hover:bg-indigo-50 shrink-0">
+                      <Link href={`/estudiante/temarios/${item.id}`} className="px-2 py-1 rounded text-xs border border-rec-info-border text-rec-info-text hover:bg-rec-info-bg shrink-0">
                         Ver temario
                       </Link>
                     </div>
@@ -492,10 +493,10 @@ export default function EstudianteTemariosPage() {
                             const text = parsedSections[key].replace(/\s+/g, " ").trim();
                             const shortText = text.length > 110 ? `${text.slice(0, 110)}...` : text;
                             return (
-                              <div key={key} className="text-xs text-slate-700 flex items-start gap-1.5">
-                                <Icon className="mt-0.5 shrink-0 text-slate-500" />
+                              <div key={key} className="text-xs text-rec-text-secondary flex items-start gap-1.5">
+                                <Icon className="mt-0.5 shrink-0 text-rec-text-subtle" />
                                 <p className="leading-4">
-                                  <span className="font-semibold text-slate-800">{SECTION_TITLES[key]}: </span>
+                                  <span className="font-semibold text-rec-text-primary">{SECTION_TITLES[key]}: </span>
                                   {shortText}
                                 </p>
                               </div>
@@ -503,7 +504,7 @@ export default function EstudianteTemariosPage() {
                           })}
                       </div>
                     ) : (
-                      <p className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">
+                      <p className="mt-2 text-sm text-rec-text-secondary whitespace-pre-wrap">
                         {item.content?.trim() ? displayContent : "Sin contenido detallado."}
                       </p>
                     )}
@@ -511,7 +512,7 @@ export default function EstudianteTemariosPage() {
                       <button
                         type="button"
                         onClick={() => toggleExpand(item.id)}
-                        className="mt-2 text-xs text-indigo-700 hover:underline"
+                        className="mt-2 text-xs text-rec-info-text hover:underline"
                       >
                         {expanded ? "▲ Minimizar" : "▼ Extender"}
                       </button>

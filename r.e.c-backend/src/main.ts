@@ -10,6 +10,26 @@ import { SanitizeInputPipe } from './common/pipes/sanitize-input.pipe';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { Logger } from 'nestjs-pino';
 
+/** Express/proxy-addr: "1"/"true" → 1 salto (Nginx delante); número → N saltos; false → sin confiar */
+function resolveTrustProxy(): boolean | number | string {
+  const raw = process.env.TRUST_PROXY;
+  if (raw == null || String(raw).trim() === '') {
+    return 'loopback';
+  }
+  const t = String(raw).trim().toLowerCase();
+  if (t === 'true' || t === '1' || t === 'yes') {
+    return 1;
+  }
+  if (t === 'false' || t === '0' || t === 'no') {
+    return false;
+  }
+  const n = Number(raw);
+  if (Number.isInteger(n) && n >= 0) {
+    return n;
+  }
+  return raw;
+}
+
 async function bootstrap() {
   // Inicializar Sentry con configuración mejorada
   if (process.env.SENTRY_DSN) {
@@ -44,9 +64,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
-  // Confiar en la IP del proxy (Docker/Nginx/Coolify) para rate limiting correcto
+  // Confiar en la IP del proxy (Nginx): TRUST_PROXY=1 → un salto; sin definir → solo loopback (dev)
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback');
+  expressApp.set('trust proxy', resolveTrustProxy());
   // Comprimir todas las respuestas JSON >= 1KB (reduce tráfico ~60-70%)
   app.use(compression());
   // Body limit reducido: 8mb era un vector DoS para cualquier usuario autenticado
@@ -80,7 +100,7 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-internal-key'],
     credentials: true,
   });
   app.useGlobalPipes(

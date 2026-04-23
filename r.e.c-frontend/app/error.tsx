@@ -14,11 +14,11 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#f0f8f3_0%,_#f8fbf9_40%,_#ffffff_100%)] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-8 text-center shadow-lg">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+    <main className="rec-auth-shell flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl border border-rec-danger-border bg-rec-bg-elevated p-8 text-center shadow-lg">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rec-danger-bg">
           <svg
-            className="h-7 w-7 text-red-500"
+            className="h-7 w-7 text-rec-danger-text"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -31,20 +31,20 @@ export default function Error({
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold text-slate-900">
+        <h1 className="text-xl font-bold text-rec-text-primary">
           Algo salió mal
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-rec-text-muted">
           Ocurrió un error inesperado. Por favor intenta de nuevo.
         </p>
         {error.digest && (
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-rec-text-subtle">
             Ref: {error.digest}
           </p>
         )}
         <button
           onClick={reset}
-          className="mt-6 rounded-xl bg-[color:var(--rec-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[color:var(--rec-primary-strong)]"
+          className="mt-6 rounded-xl bg-[color:var(--rec-primary)] px-6 py-3 text-sm font-semibold text-rec-text-on-media transition hover:bg-[color:var(--rec-primary-strong)]"
         >
           Reintentar
         </button>

@@ -22,6 +22,7 @@ import { UpdateStudentGroupDto } from './dto/update-student-group.dto';
 import { AssignGroupDirectorDto } from './dto/assign-group-director.dto';
 import type { PromoteGradeDto } from './dto/promote-grade.dto';
 import { PaginationQuery } from '../common/dto/pagination.dto';
+import { UpdateGradingPolicyDto } from './dto/update-grading-policy.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -490,6 +491,7 @@ export class AcademicController {
       tipo?: string;
       porcentaje?: number;
       orden?: number;
+      competencyCategory?: string;
     },
     @Req() req: AuthenticatedRequest,
   ) {
@@ -521,5 +523,21 @@ export class AcademicController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.academic.deleteEvaluation(req.user, evalId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('grading-policy')
+  getGradingPolicy(@Req() req: AuthenticatedRequest) {
+    return this.academic.getGradingPolicy(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
+  @Put('grading-policy')
+  updateGradingPolicy(
+    @Body() dto: UpdateGradingPolicyDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.academic.updateGradingPolicy(req.user, dto);
   }
 }

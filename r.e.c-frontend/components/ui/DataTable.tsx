@@ -22,7 +22,7 @@ function SkeletonRows({ cols }: { cols: number }) {
         <tr key={i}>
           {Array.from({ length: cols }).map((_, j) => (
             <td key={j} className="p-2">
-              <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-rec-bg-subtle" />
             </td>
           ))}
         </tr>
@@ -63,7 +63,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             data.map((row, idx) => (
               <tr
                 key={idx}
-                className={`border-t border-gray-200${onRowClick ? " cursor-pointer" : ""}`}
+                className={`border-t border-rec-border-default${onRowClick ? " cursor-pointer" : ""}`}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {columns.map((col) => (

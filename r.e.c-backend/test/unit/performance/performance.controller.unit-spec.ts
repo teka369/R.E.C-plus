@@ -46,13 +46,13 @@ describe('PerformanceController', () => {
   });
 
   it('getStudentAcademic delegates', () => {
-    controller.getStudentAcademic(5, req);
-    expect(service.getStudentAcademic).toHaveBeenCalledWith(actor, 5);
+    controller.getStudentAcademic(5, undefined, req);
+    expect(service.getStudentAcademic).toHaveBeenCalledWith(actor, 5, 1);
   });
 
   it('getGroupAcademicOverview delegates', () => {
-    controller.getGroupAcademicOverview(1, req);
-    expect(service.getGroupAcademicOverview).toHaveBeenCalledWith(actor, 1);
+    controller.getGroupAcademicOverview(1, undefined, req);
+    expect(service.getGroupAcademicOverview).toHaveBeenCalledWith(actor, 1, 1);
   });
 
   it('upsertStudentAcademic delegates', () => {

@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -25,10 +25,12 @@
     "load:test": "k6 run ./test/load/critical-endpoints.k6.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "db:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed:json": "node scripts/seed-from-json.js",
     "saas:superadmin": "node scripts/bootstrap-super-admin.js",
-    "bootstrap:dev-access": "node scripts/bootstrap-dev-access.js"
+    "bootstrap:dev-access": "node scripts/bootstrap-dev-access.js",
+    "deploy": "npm run build && pm2 restart recedu-backend"
   },
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.2.0",

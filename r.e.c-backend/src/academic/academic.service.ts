@@ -7,9 +7,12 @@ import {
 import {
   AcademicPeriodStatus,
   AcademicPeriodType,
+  CompetencyCategory,
   EnrollmentStatus,
   EvaluacionTipo,
+  GradingMode,
 } from '@prisma/client';
+import { UpdateGradingPolicyDto } from './dto/update-grading-policy.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
 
@@ -38,6 +41,7 @@ interface CreateAcademicEvaluationDto {
   tipo?: string;
   porcentaje?: number;
   orden?: number;
+  competencyCategory?: string;
 }
 
 interface UpdateAcademicEvaluationDto {
@@ -116,6 +120,92 @@ export class AcademicService extends TenantScopedService {
     private readonly cache: RedisCacheService,
   ) {
     super();
+  }
+
+  /** Misma lógica de fallback que PerformanceService.upsertStudentAcademic. */
+  private async getInstitutionGradingPolicyWithWeights(institutionId: number) {
+    const policy =
+      (await this.prisma.institutionGradingPolicy.findUnique({
+        where: { institutionId },
+      })) ?? {
+        allowClosedPeriodEdits: false,
+        allowFinalOverride: true,
+        gradeScaleMax: 5,
+        passingThreshold: 3.0,
+        gradingMode: GradingMode.SIMPLE,
+        competencyWeights: {
+          COGNITIVE: 30,
+          PROCEDURAL: 30,
+          ATTITUDINAL: 30,
+          SELF_EVAL: 5,
+          CO_EVAL: 5,
+        },
+      };
+
+    const rawCompetencyWeights = policy.competencyWeights;
+    const competencyWeightsRecord: Record<string, number> =
+      rawCompetencyWeights &&
+      typeof rawCompetencyWeights === 'object' &&
+      !Array.isArray(rawCompetencyWeights)
+        ? (rawCompetencyWeights as Record<string, number>)
+        : {
+            COGNITIVE: 30,
+            PROCEDURAL: 30,
+            ATTITUDINAL: 30,
+            SELF_EVAL: 5,
+            CO_EVAL: 5,
+          };
+
+    return { policy, competencyWeightsRecord };
+  }
+
+  async getGradingPolicy(actor: Actor) {
+    const institutionId = this.getActorInstitutionId(actor);
+    const { policy, competencyWeightsRecord } =
+      await this.getInstitutionGradingPolicyWithWeights(institutionId);
+    return {
+      gradingMode: policy.gradingMode,
+      competencyWeights: competencyWeightsRecord,
+    };
+  }
+
+  async updateGradingPolicy(actor: Actor, dto: UpdateGradingPolicyDto) {
+    const institutionId = this.getActorInstitutionId(actor);
+
+    if (dto.competencyWeights) {
+      const total = Object.values(dto.competencyWeights).reduce(
+        (a, b) => a + b,
+        0,
+      );
+      if (Math.round(total) !== 100) {
+        throw new BadRequestException(
+          'Los pesos de competencias deben sumar 100%',
+        );
+      }
+    }
+
+    const result = await this.prisma.institutionGradingPolicy.upsert({
+      where: { institutionId },
+      update: {
+        gradingMode: dto.gradingMode,
+        ...(dto.competencyWeights && {
+          competencyWeights: dto.competencyWeights,
+        }),
+      },
+      create: {
+        institutionId,
+        gradingMode: dto.gradingMode,
+        competencyWeights: dto.competencyWeights ?? {
+          COGNITIVE: 30,
+          PROCEDURAL: 30,
+          ATTITUDINAL: 30,
+          SELF_EVAL: 5,
+          CO_EVAL: 5,
+        },
+      },
+    });
+
+    return result;
   }
 
   // Grados
@@ -482,24 +572,37 @@ export class AcademicService extends TenantScopedService {
       );
     }
 
-    // Verificar si existe un registro soft-deleted que colisionaría con la unique constraint.
-    // El filtro explícito `deletedAt: { not: null }` bypasea el interceptor de soft-delete
-    // (ver hasExplicitDeletedAt en PrismaService).
-    const softDeleted = await this.prisma.studentGroup.findFirst({
+    // Restaurar fila soft-deleted (mismo estudiante + grupo + período). No usar solo findFirst
+    // con deletedAt: el interceptor de lectura puede interferir; updateMany no está envuelto
+    // y evita P2002 al hacer create cuando la fila sigue existiendo por @@unique.
+    const revived = await this.prisma.studentGroup.updateMany({
       where: {
         studentId: dto.studentId,
         groupId: dto.groupId,
         academicPeriodId: activePeriod.id,
         deletedAt: { not: null },
       },
+      data: {
+        deletedAt: null,
+        status: EnrollmentStatus.ACTIVE,
+        endedAt: null,
+      },
     });
 
-    if (softDeleted) {
-      // Restaurar el registro soft-deleted en vez de crear uno nuevo
-      return this.prisma.studentGroup.update({
-        where: { id: softDeleted.id },
-        data: { deletedAt: null },
+    if (revived.count > 0) {
+      const restored = await this.prisma.studentGroup.findFirst({
+        where: {
+          studentId: dto.studentId,
+          groupId: dto.groupId,
+          academicPeriodId: activePeriod.id,
+        },
       });
+      if (!restored) {
+        throw new BadRequestException(
+          'No se pudo completar la reasignación al mismo grupo. Intenta de nuevo.',
+        );
+      }
+      return restored;
     }
 
     // Crear la asignación con el período activo
@@ -780,10 +883,12 @@ export class AcademicService extends TenantScopedService {
       );
     }
 
-    return this.prisma.group.update({
+    const updated = await this.prisma.group.update({
       where: { id: groupId },
       data: { directorId },
     });
+    await this.cache.delByPattern('groups:*');
+    return updated;
   }
 
   // Listar estudiantes de un grupo
@@ -1070,7 +1175,15 @@ export class AcademicService extends TenantScopedService {
     });
     if (!offering)
       throw new NotFoundException('Oferta académica no encontrada');
-    return offering;
+
+    const { policy, competencyWeightsRecord } =
+      await this.getInstitutionGradingPolicyWithWeights(offering.group.institutionId);
+
+    return {
+      ...offering,
+      gradingMode: policy.gradingMode,
+      competencyWeights: competencyWeightsRecord,
+    };
   }
 
   // ─── Evaluaciones (AcademicEvaluation) ─────────────────────────────────────
@@ -1126,6 +1239,12 @@ export class AcademicService extends TenantScopedService {
         tipo: (dto.tipo ?? EvaluacionTipo.PARCIAL) as EvaluacionTipo,
         porcentaje: dto.porcentaje ?? null,
         orden,
+        ...(dto.competencyCategory
+          ? {
+              competencyCategory:
+                dto.competencyCategory as CompetencyCategory,
+            }
+          : {}),
       },
     });
   }
@@ -1200,13 +1319,20 @@ export class AcademicService extends TenantScopedService {
   }
 
   // ─── Listado de ofertas de un profesor ─────────────────────────────────────
+  //
+  // Casos de prueba esperados:
+  // - SUPER_ADMIN consulta docente de su institución → debe pasar
+  // - SECRETARIA consulta docente de su institución → debe pasar
+  // - PROFESOR consulta sus propias ofertas → debe pasar
+  // - ESTUDIANTE intenta consultar cualquier docente → debe lanzar ForbiddenException
 
   async listTeacherOfferings(
     actor: Actor,
     teacherId: number,
     periodId?: number,
   ) {
-    if (actor.role !== UserRole.SUPER_ADMIN && actor.userId !== teacherId) {
+    // [FIX] Institución antes que rol (SUPER_ADMIN sin filtro de tenant aquí)
+    if (actor.role !== UserRole.SUPER_ADMIN) {
       const teacher = await this.prisma.user.findUnique({
         where: { id: teacherId },
         select: { institutionId: true },
@@ -1219,6 +1345,28 @@ export class AcademicService extends TenantScopedService {
           'Profesor fuera del alcance de su institucion',
         );
       }
+    }
+
+    // [FIX] Autorización por rol (endpoint solo JwtAuthGuard: docente/estudiante pueden llegar aquí)
+    if (
+      actor.role === UserRole.SUPER_ADMIN ||
+      actor.role === UserRole.SECRETARIA
+    ) {
+      // permitido
+    } else if (actor.role === UserRole.PROFESOR) {
+      if (actor.userId !== teacherId) {
+        throw new ForbiddenException(
+          'No tienes permiso para realizar esta acción',
+        );
+      }
+    } else if (actor.role === UserRole.ESTUDIANTE) {
+      throw new ForbiddenException(
+        'No tienes permiso para realizar esta acción',
+      );
+    } else {
+      throw new ForbiddenException(
+        'No tienes permiso para realizar esta acción',
+      );
     }
 
     let academicPeriodId = periodId;

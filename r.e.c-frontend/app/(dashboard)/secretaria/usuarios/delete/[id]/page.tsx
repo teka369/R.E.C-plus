@@ -41,13 +41,13 @@ export default function DeleteUsuarioPage() {
         </div>
         <span className="sec-chip">Acción crítica</span>
       </div>
-      {loading && <p className="text-sm text-gray-600">Cargando usuario...</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-rec-text-muted">Cargando usuario...</p>}
+      {error && <p className="text-sm text-rec-danger-text">{error}</p>}
       {!loading && !error && !user ? (
         <p className="sec-muted">Usuario no encontrado.</p>
       ) : !loading && user ? (
         <div className="sec-card p-4 space-y-3 max-w-xl">
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-rec-text-secondary">
             ¿Seguro que deseas eliminar a <span className="font-medium">{user.nombres} {user.apellidos}</span> ({user.email})?
           </p>
           <div className="flex gap-2">

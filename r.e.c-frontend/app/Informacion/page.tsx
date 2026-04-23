@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/layouts/Navbar";
 import Footer from "@/components/layouts/Footer";
@@ -5,9 +6,17 @@ import Footer from "@/components/layouts/Footer";
 export const dynamic = "force-static";
 export const revalidate = false;
 
-export const metadata = {
-  title: "Información | R.E.C",
-  description: "Conoce R.E.C: Refuerzo Educativo Complementario, la plataforma académica integral",
+export const metadata: Metadata = {
+  title: "¿Qué es Recedu? — Plataforma Académica Integral",
+  description:
+    "Conoce Recedu (R.E.C): plataforma de gestión académica integral para colegios en Colombia. Módulos de horarios, materiales, temarios, recuperaciones, feedback y rendimiento académico.",
+  alternates: { canonical: "/Informacion" },
+  openGraph: {
+    title: "¿Qué es Recedu? — Plataforma Académica Integral",
+    description:
+      "Descubre los módulos y funcionalidades de Recedu para la gestión académica de colegios e instituciones educativas colombianas.",
+    url: "/Informacion",
+  },
 };
 
 const modules = [
@@ -56,19 +65,22 @@ export default function InformacionPage() {
 
       {/* Hero */}
       <section
-        className="relative text-white text-center py-24 overflow-hidden"
+        className="relative text-rec-text-on-media text-center py-24 overflow-hidden"
         style={{ background: "linear-gradient(135deg, var(--rec-primary-strong) 0%, var(--rec-primary) 100%)" }}
       >
         <div className="absolute inset-0 rec-grid-bg opacity-20" />
         <div className="relative z-10 max-w-3xl mx-auto px-6">
           <span
             className="inline-block mb-4 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
-            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}
+            style={{
+              background: "color-mix(in srgb, var(--rec-text-on-media) 15%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--rec-text-on-media) 30%, transparent)",
+            }}
           >
             Acerca de R.E.C
           </span>
           <h1 className="text-5xl font-extrabold mb-4 drop-shadow-lg">¿Qué es R.E.C?</h1>
-          <p className="text-white/85 text-lg max-w-xl mx-auto">
+          <p className="text-rec-text-on-media/85 text-lg max-w-xl mx-auto">
             Refuerzo Educativo Complementario: la plataforma que centraliza toda la gestión académica
             de tu institución en un solo lugar.
           </p>
@@ -83,7 +95,7 @@ export default function InformacionPage() {
               <div key={s.label} className="rec-glass rounded-2xl py-7 px-4">
                 <p className="text-4xl font-extrabold mb-1" style={{ color: "var(--rec-primary)" }}>{s.value}</p>
                 <p className="text-sm font-semibold" style={{ color: "var(--rec-title)" }}>{s.label}</p>
-                <p className="text-xs text-slate-500 mt-1">{s.sub}</p>
+                <p className="text-xs text-rec-text-subtle mt-1">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -96,12 +108,12 @@ export default function InformacionPage() {
           <div>
             <span className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider" style={{ background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>La plataforma</span>
             <h2 className="text-3xl font-extrabold mb-4" style={{ color: "var(--rec-title)" }}>Una solución completa para instituciones educativas</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
+            <p className="text-rec-text-muted leading-relaxed mb-4">
               R.E.C nace como respuesta a la fragmentación de herramientas académicas en las instituciones educativas
               colombianas. Centraliza en un único sistema digital la comunicación, seguimiento y gestión del proceso
               de enseñanza-aprendizaje.
             </p>
-            <p className="text-slate-600 leading-relaxed mb-6">
+            <p className="text-rec-text-muted leading-relaxed mb-6">
               Diseñada pensando en tres actores clave: <strong style={{ color: "var(--rec-title)" }}>docentes</strong> que
               necesitan gestionar contenidos, <strong style={{ color: "var(--rec-title)" }}>estudiantes</strong> que
               requieren acceso fácil a recursos, y <strong style={{ color: "var(--rec-title)" }}>secretaría</strong> que
@@ -110,7 +122,7 @@ export default function InformacionPage() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/tutorial"
-                className="rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                className="rounded-full px-6 py-2.5 text-sm font-bold text-rec-text-on-media transition hover:opacity-90"
                 style={{ background: "var(--rec-primary)" }}
               >
                 Ver tutorial
@@ -139,10 +151,10 @@ export default function InformacionPage() {
                 ].map((feat) => (
                   <li key={feat} className="flex items-center gap-3 text-sm">
                     <span
-                      className="flex h-5 w-5 items-center justify-center rounded-full text-white text-xs flex-shrink-0"
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-rec-text-on-media text-xs flex-shrink-0"
                       style={{ background: "var(--rec-primary)" }}
                     >✓</span>
-                    <span className="text-slate-700">{feat}</span>
+                    <span className="text-rec-text-secondary">{feat}</span>
                   </li>
                 ))}
               </ul>
@@ -155,7 +167,7 @@ export default function InformacionPage() {
       <section className="py-20" style={{ background: "var(--rec-soft)" }}>
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center mb-14">
-            <span className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-white" style={{ color: "var(--rec-primary-strong)" }}>Funcionalidades</span>
+            <span className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-rec-bg-elevated" style={{ color: "var(--rec-primary-strong)" }}>Funcionalidades</span>
             <h2 className="text-3xl font-extrabold" style={{ color: "var(--rec-title)" }}>Módulos principales</h2>
             <div className="h-1 w-14 mx-auto mt-3 rounded-full" style={{ background: "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))" }} />
           </div>
@@ -167,7 +179,7 @@ export default function InformacionPage() {
               >
                 <div className="text-4xl mb-4">{mod.icon}</div>
                 <h3 className="font-bold mb-2" style={{ color: "var(--rec-title)" }}>{mod.title}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{mod.desc}</p>
+                <p className="text-sm text-rec-text-muted leading-relaxed">{mod.desc}</p>
               </div>
             ))}
           </div>
@@ -176,23 +188,23 @@ export default function InformacionPage() {
 
       {/* CTA */}
       <section
-        className="py-16 text-white text-center"
+        className="py-16 text-rec-text-on-media text-center"
         style={{ background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))" }}
       >
         <div className="mx-auto max-w-xl px-6">
           <h2 className="text-2xl font-extrabold mb-3">¿Tu institución aún no usa R.E.C?</h2>
-          <p className="text-white/80 mb-8">Contáctanos para agendar una demostración de la plataforma</p>
+          <p className="text-rec-text-on-media/80 mb-8">Contáctanos para agendar una demostración de la plataforma</p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
               href="/Contacto"
-              className="rounded-full px-7 py-3 text-sm font-bold bg-white transition hover:opacity-90"
+              className="rounded-full px-7 py-3 text-sm font-bold bg-rec-bg-elevated transition hover:opacity-90"
               style={{ color: "var(--rec-primary-strong)" }}
             >
               Solicitar información
             </Link>
             <Link
               href="/tutorial"
-              className="rounded-full px-7 py-3 text-sm font-bold border border-white/50 text-white transition hover:bg-white/10"
+              className="rounded-full px-7 py-3 text-sm font-bold border border-rec-text-on-media/50 text-rec-text-on-media transition hover:bg-rec-bg-elevated/10"
             >
               Ver tutorial
             </Link>

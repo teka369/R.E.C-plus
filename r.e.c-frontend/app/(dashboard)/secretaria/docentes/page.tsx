@@ -244,7 +244,7 @@ export default function SecretariaDocentesPage() {
       <div className="sec-card p-3 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Asignacion rapida masiva</span>
-          <span className="text-xs text-gray-600">{selectedVisibleTeacherIds.length} seleccionados en esta vista</span>
+          <span className="text-xs text-rec-text-muted">{selectedVisibleTeacherIds.length} seleccionados en esta vista</span>
         </div>
         <div className="sec-action-cluster">
           <div className="min-w-[220px]">
@@ -299,13 +299,13 @@ export default function SecretariaDocentesPage() {
           >{bulkStatus.loading ? "Asignando..." : "Asignar materia"}</Button>
         </div>
         {bulkStatus.message && (
-          <p className={`text-xs ${bulkStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkStatus.message}</p>
+          <p className={`text-xs ${bulkStatus.tone === "error" ? "text-rec-danger-text" : "text-rec-success-text"}`}>{bulkStatus.message}</p>
         )}
       </div>
 
       <div className="overflow-x-auto sec-table">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
+          <thead className="bg-rec-bg-muted">
             <tr>
               <th className="p-2 text-left">Sel.</th>
               <th className="p-2 text-left">Nombre</th>
@@ -318,7 +318,7 @@ export default function SecretariaDocentesPage() {
           <tbody>
             {visible.map((u) => (
               <React.Fragment key={u.id}>
-              <tr className="border-t border-gray-200">
+              <tr className="border-t border-rec-border-default">
                 <td className="p-2">
                   <input
                     type="checkbox"
@@ -333,7 +333,7 @@ export default function SecretariaDocentesPage() {
                   <div className="min-w-[360px] space-y-2">
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                       <div>
-                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Grupo</p>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-rec-text-subtle">Grupo</p>
                         <Select
                           options={[{ label: "Seleccione grupo", value: "" }, ...groups.map((g) => ({ label: g.label, value: String(g.id) }))]}
                           value={assignments[u.id]?.groupId || ""}
@@ -347,7 +347,7 @@ export default function SecretariaDocentesPage() {
                         />
                       </div>
                       <div>
-                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Materia</p>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-rec-text-subtle">Materia</p>
                         {(() => {
                           const selectedGroupId = Number(assignments[u.id]?.groupId || 0);
                           const groupSubjects = selectedGroupId ? (groupSubjectsMap[selectedGroupId]?.options ?? []) : [];
@@ -405,8 +405,8 @@ export default function SecretariaDocentesPage() {
                           }
                         }}
                       >Asignar materia</Button>
-                      {assignStatus[u.id] === "ok" && <span className="text-xs font-medium text-green-700">Asignado correctamente</span>}
-                      {assignStatus[u.id] === "error" && <span className="text-xs font-medium text-red-600">Revisa grupo/materia</span>}
+                      {assignStatus[u.id] === "ok" && <span className="text-xs font-medium text-rec-success-text">Asignado correctamente</span>}
+                      {assignStatus[u.id] === "error" && <span className="text-xs font-medium text-rec-danger-text">Revisa grupo/materia</span>}
                     </div>
                   </div>
                 </td>
@@ -442,13 +442,13 @@ export default function SecretariaDocentesPage() {
                 </td>
               </tr>
               {teacherAssignmentsMap[u.id]?.expanded && (
-                <tr className="border-t border-gray-200">
-                  <td className="p-2 bg-gray-50" colSpan={6}>
+                <tr className="border-t border-rec-border-default">
+                  <td className="p-2 bg-rec-bg-base" colSpan={6}>
                     <div className="text-sm">
                       <div className="font-medium mb-2">Asignaciones de {u.nombres} {u.apellidos}</div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full border border-gray-200 text-xs">
-                          <thead className="bg-gray-100">
+                        <table className="min-w-full border border-rec-border-default text-xs">
+                          <thead className="bg-rec-bg-muted">
                             <tr>
                               <th className="p-2 text-left">Grupo</th>
                               <th className="p-2 text-left">Materia</th>
@@ -457,7 +457,7 @@ export default function SecretariaDocentesPage() {
                           </thead>
                           <tbody>
                             {teacherAssignmentsMap[u.id]?.items.map((it) => (
-                              <tr key={it.id} className="border-t border-gray-200">
+                              <tr key={it.id} className="border-t border-rec-border-default">
                                 <td className="p-2">{it.groupLabel}</td>
                                 <td className="p-2">{it.subjectName}</td>
                                 <td className="p-2">

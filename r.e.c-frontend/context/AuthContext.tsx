@@ -10,10 +10,31 @@ export type AuthUser = {
   role: Role;
 };
 
+/** Usuario tal como viene de `POST /auth/login` (nombres/apellidos, sin `name`). */
+export type LoginApiUser = {
+  id: string;
+  email: string;
+  role: Role;
+  nombres?: string;
+  apellidos?: string;
+};
+
+function toAuthUser(u: AuthUser | LoginApiUser): AuthUser {
+  const raw = u as AuthUser & LoginApiUser;
+  const nameFromParts = [raw.nombres, raw.apellidos].filter(Boolean).join(" ").trim();
+  const name = (typeof raw.name === "string" && raw.name.trim() !== "" ? raw.name : nameFromParts) || "";
+  return {
+    id: String(raw.id),
+    email: raw.email ?? "",
+    name,
+    role: raw.role,
+  };
+}
+
 type AuthContextType = {
   user: AuthUser | null;
   token: string | null;
-  login: (user: AuthUser, token: string, refreshToken?: string) => Promise<void>;
+  login: (user: AuthUser | LoginApiUser, token: string, refreshToken?: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -79,19 +100,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, token]);
 
-  const login = async (u: AuthUser, t: string, refreshToken?: string) => {
-    setUser(u);
-    setToken(t);
-    // Cookies HttpOnly vía API (JWT validado en servidor; proxy usa rec_token)
-    try {
-      await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: t, refreshToken }),
-      });
-    } catch {
-      // Ignorar errores de red; el proxy depende de cookies, pero el contexto mantiene estado en memoria para esta sesión
+  const login = async (u: AuthUser | LoginApiUser, t: string, refreshToken?: string) => {
+    // Primero las cookies httpOnly: si setUser/setToken van antes, el effect de perfil
+    // puede llamar a /api/rec antes de que exista rec_token → 401 → refresh → redirect.
+    const res = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: t, refreshToken }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(
+        typeof data?.message === "string" ? data.message : "No se pudo establecer la sesión",
+      );
     }
+    setUser(toAuthUser(u));
+    setToken(t);
   };
 
   const logout = () => {

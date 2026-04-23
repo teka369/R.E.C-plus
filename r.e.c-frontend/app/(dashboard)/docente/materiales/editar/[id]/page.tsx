@@ -7,12 +7,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { materialsApi, type StudyMaterial, type UpdateStudyMaterialInput } from "@/lib/materialsApi";
 import { academicApi, type Grade, type Subject } from "@/lib/academicApi";
 import { getErrorMessage } from "@/lib/errors";
+import { useDocenteTour } from "@/components/docente/DocenteTourProvider";
+import { MATERIALES_EDITAR_STEPS } from "@/lib/docenteTour/subpageTourSteps";
 
 export default function EditarMaterialPage() {
   const params = useParams();
   const idParam = Array.isArray(params?.id) ? params?.id[0] : (params?.id as string | undefined);
   const idNum = Number(idParam);
   const { user } = useAuth();
+  const { runHelpTour } = useDocenteTour();
   const isProfessor = user?.role === "PROFESOR";
   const [item, setItem] = useState<StudyMaterial | null>(null);
   const [form, setForm] = useState<UpdateStudyMaterialInput>({});
@@ -171,40 +174,47 @@ export default function EditarMaterialPage() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div id="tour-mat-ed-header" className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-xl font-semibold" style={{ color: "var(--rec-title)" }}>Editar material</h2>
-          <p className="text-sm text-gray-600">Actualiza contenido, recurso, miniatura y visibilidad del material.</p>
+          <p className="text-sm text-rec-text-muted">Actualiza contenido, recurso, miniatura y visibilidad del material.</p>
         </div>
-        <div className="flex gap-2">
-          <Link href={`/materiales/${idNum}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border text-gray-700 hover:bg-gray-100" style={{ borderColor: "var(--rec-soft)" }}>Ver</Link>
-          <Link href={`/docente/materiales`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border text-gray-700 hover:bg-gray-100" style={{ borderColor: "var(--rec-soft)" }}>Volver</Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => runHelpTour(MATERIALES_EDITAR_STEPS)}
+            className="rounded-lg border border-rec-border-default bg-rec-bg-base px-2.5 py-1.5 text-xs font-semibold text-rec-primary hover:bg-rec-bg-muted"
+          >
+            Guía del formulario
+          </button>
+          <Link href={`/materiales/${idNum}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border text-rec-text-secondary hover:bg-rec-bg-muted" style={{ borderColor: "var(--rec-soft)" }}>Ver</Link>
+          <Link href={`/docente/materiales`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border text-rec-text-secondary hover:bg-rec-bg-muted" style={{ borderColor: "var(--rec-soft)" }}>Volver</Link>
         </div>
       </div>
-      {!isProfessor && <p className="text-sm text-red-600">No autorizado. Solo docentes pueden editar/eliminar materiales.</p>}
+      {!isProfessor && <p className="text-sm text-rec-danger-text">No autorizado. Solo docentes pueden editar/eliminar materiales.</p>}
       {loading && (
         <div className="space-y-4 animate-pulse" aria-label="Cargando material">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-            <div className="h-4 w-44 rounded bg-slate-200" />
+          <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-4 space-y-3">
+            <div className="h-4 w-44 rounded bg-rec-bg-subtle" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="h-10 rounded-lg bg-slate-100 border border-slate-200" />
-              <div className="h-10 rounded-lg bg-slate-100 border border-slate-200" />
+              <div className="h-10 rounded-lg bg-rec-bg-muted border border-rec-border-default" />
+              <div className="h-10 rounded-lg bg-rec-bg-muted border border-rec-border-default" />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-            <div className="h-4 w-40 rounded bg-slate-200" />
-            <div className="h-10 rounded-lg bg-slate-100 border border-slate-200" />
-            <div className="h-10 rounded-lg bg-slate-100 border border-slate-200" />
-            <div className="h-24 rounded-lg bg-slate-100 border border-slate-200" />
+          <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-4 space-y-3">
+            <div className="h-4 w-40 rounded bg-rec-bg-subtle" />
+            <div className="h-10 rounded-lg bg-rec-bg-muted border border-rec-border-default" />
+            <div className="h-10 rounded-lg bg-rec-bg-muted border border-rec-border-default" />
+            <div className="h-24 rounded-lg bg-rec-bg-muted border border-rec-border-default" />
           </div>
         </div>
       )}
-      {error && <p className="text-sm text-red-700 border border-red-200 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-rec-danger-text border border-rec-danger-border bg-rec-danger-bg rounded-lg px-3 py-2">{error}</p>}
       {ok && <p className="text-sm rounded-lg px-3 py-2" style={{ color: "var(--rec-primary-strong)", border: "1px solid var(--rec-soft)", background: "var(--rec-soft)" }}>{ok}</p>}
 
       {item && (
         <>
-        <div className="rounded-xl border px-3 py-2 text-xs flex flex-wrap gap-2" style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
+        <div id="tour-mat-ed-resumen" className="rounded-xl border px-3 py-2 text-xs flex flex-wrap gap-2" style={{ borderColor: "var(--rec-soft)", background: "var(--rec-soft)", color: "var(--rec-primary-strong)" }}>
           <span className="font-medium">Resumen:</span>
           <span>{subjectLabel(item.subjectId)}</span>
           <span>•</span>
@@ -220,30 +230,30 @@ export default function EditarMaterialPage() {
         </div>
 
         <form className="space-y-4" onSubmit={onSubmit}>
-          <div className="rounded-xl border bg-white p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
-            <h3 className="text-sm font-semibold text-slate-900">Asignación académica</h3>
+          <div id="tour-mat-ed-asig" className="rounded-xl border bg-rec-bg-elevated p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
+            <h3 className="text-sm font-semibold text-rec-text-primary">Asignación académica</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-600">Grupo</label>
+                <label className="block text-xs text-rec-text-muted">Grupo</label>
                 <input className={inputClass} value={groupLabel(item.groupId)} disabled />
               </div>
               <div>
-                <label className="block text-xs text-gray-600">Materia</label>
+                <label className="block text-xs text-rec-text-muted">Materia</label>
                 <input className={inputClass} value={subjectLabel(item.subjectId)} disabled />
               </div>
             </div>
-            <p className="text-[11px] text-gray-500">Grupo y materia no se cambian desde esta vista para mantener consistencia de asignación docente.</p>
+            <p className="text-[11px] text-rec-text-subtle">Grupo y materia no se cambian desde esta vista para mantener consistencia de asignación docente.</p>
           </div>
 
-          <div className="rounded-xl border bg-white p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
-            <h3 className="text-sm font-semibold text-slate-900">Contenido del material</h3>
+          <div id="tour-mat-ed-contenido" className="rounded-xl border bg-rec-bg-elevated p-4 space-y-3" style={{ borderColor: "var(--rec-soft)" }}>
+            <h3 className="text-sm font-semibold text-rec-text-primary">Contenido del material</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600">Título</label>
+              <label className="block text-xs text-rec-text-muted">Título</label>
               <input className={inputClass} value={form.title ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} />
             </div>
             <div>
-              <label className="block text-xs text-gray-600">Tipo</label>
+              <label className="block text-xs text-rec-text-muted">Tipo</label>
               <select
                 className={inputClass}
                 value={form.type ?? item.type}
@@ -262,25 +272,25 @@ export default function EditarMaterialPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-600">Descripción</label>
+            <label className="block text-xs text-rec-text-muted">Descripción</label>
             <textarea className={inputClass} rows={3} value={form.description ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600">URL del recurso</label>
+              <label className="block text-xs text-rec-text-muted">URL del recurso</label>
               <input className={inputClass} value={form.resourceUrl ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, resourceUrl: e.target.value }))} />
-              <p className="mt-1 text-[11px] text-gray-500">También puedes subir archivo local abajo para reemplazar este enlace.</p>
+              <p className="mt-1 text-[11px] text-rec-text-subtle">También puedes subir archivo local abajo para reemplazar este enlace.</p>
             </div>
             <div>
-              <label className="block text-xs text-gray-600">URL de imagen (miniatura)</label>
+              <label className="block text-xs text-rec-text-muted">URL de imagen (miniatura)</label>
               <input className={inputClass} value={form.imageUrl ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600">Miniatura local (opcional)</label>
+              <label className="block text-xs text-rec-text-muted">Miniatura local (opcional)</label>
               <input
                 type="file"
                 accept="image/*"
@@ -315,33 +325,33 @@ export default function EditarMaterialPage() {
                   readThumbnailFile(file);
                 }}
               />
-              <p className="mt-1 text-[11px] text-gray-500">Si eliges imagen local, tendrá prioridad sobre la URL de imagen.</p>
+              <p className="mt-1 text-[11px] text-rec-text-subtle">Si eliges imagen local, tendrá prioridad sobre la URL de imagen.</p>
             </div>
             <div>
-              <label className="block text-xs text-gray-600">Vista previa de miniatura</label>
+              <label className="block text-xs text-rec-text-muted">Vista previa de miniatura</label>
               {previewImage ? (
-                <div className="mt-1 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <div className="mt-1 space-y-2 rounded-lg border border-rec-border-default bg-rec-bg-base p-2">
                   <img src={previewImage} alt="Vista previa" className="h-28 w-full object-cover rounded border" />
-                  {localImageName ? <p className="text-[11px] text-gray-600">Archivo: {localImageName}</p> : null}
+                  {localImageName ? <p className="text-[11px] text-rec-text-muted">Archivo: {localImageName}</p> : null}
                   <button
                     type="button"
                     onClick={() => {
                       setLocalImageDataUrl(null);
                       setLocalImageName(null);
                     }}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
+                    className="px-2 py-1 text-xs border border-rec-border-strong rounded hover:bg-rec-bg-muted"
                   >
                     Limpiar miniatura local
                   </button>
                 </div>
               ) : (
-                <p className="mt-1 text-[11px] text-gray-500 rounded-lg border border-dashed border-gray-300 p-3">Sin miniatura seleccionada.</p>
+                <p className="mt-1 text-[11px] text-rec-text-subtle rounded-lg border border-dashed border-rec-border-strong p-3">Sin miniatura seleccionada.</p>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-gray-600">Archivo local del material (opcional)</label>
+            <label className="block text-xs text-rec-text-muted">Archivo local del material (opcional)</label>
             <input
               type="file"
               className={inputClass}
@@ -354,10 +364,10 @@ export default function EditarMaterialPage() {
             />
             {localResourceName ? (
               <div className="mt-2 flex items-center gap-2">
-                <p className="text-[11px] text-gray-600">Archivo seleccionado: {localResourceName}</p>
+                <p className="text-[11px] text-rec-text-muted">Archivo seleccionado: {localResourceName}</p>
                 <button
                   type="button"
-                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100"
+                  className="px-2 py-1 text-xs border border-rec-border-strong rounded hover:bg-rec-bg-muted"
                   onClick={() => {
                     setLocalResourceFile(null);
                     setLocalResourceName(null);
@@ -368,7 +378,7 @@ export default function EditarMaterialPage() {
               </div>
             ) : (
               <div className="mt-1 flex flex-wrap items-center gap-2">
-                <p className="text-[11px] text-gray-500">Actual: {currentLocalPath ? `Archivo local (${currentLocalPath})` : "Sin archivo local"}.</p>
+                <p className="text-[11px] text-rec-text-subtle">Actual: {currentLocalPath ? `Archivo local (${currentLocalPath})` : "Sin archivo local"}.</p>
                 {currentLocalPath ? (
                   <button
                     type="button"
@@ -377,20 +387,20 @@ export default function EditarMaterialPage() {
                       setLocalResourceFile(null);
                       setLocalResourceName(null);
                     }}
-                    className="px-2 py-1 text-xs border border-red-200 text-red-700 rounded hover:bg-red-50"
+                    className="px-2 py-1 text-xs border border-rec-danger-border text-rec-danger-text rounded hover:bg-rec-danger-bg"
                   >
                     Quitar archivo local actual
                   </button>
                 ) : null}
               </div>
             )}
-            {removeLocalFile ? <p className="mt-1 text-[11px] text-amber-700">Se quitará el archivo local al guardar.</p> : null}
+            {removeLocalFile ? <p className="mt-1 text-[11px] text-rec-warning-text">Se quitará el archivo local al guardar.</p> : null}
           </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600">Visibilidad</label>
+              <label className="block text-xs text-rec-text-muted">Visibilidad</label>
               <select
                 className={inputClass}
                 value={form.visibility ?? item.visibility}
@@ -408,16 +418,16 @@ export default function EditarMaterialPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border bg-white p-3 flex gap-2 items-center justify-end" style={{ borderColor: "var(--rec-soft)" }}>
+          <div id="tour-mat-ed-actions" className="rounded-xl border bg-rec-bg-elevated p-3 flex gap-2 items-center justify-end" style={{ borderColor: "var(--rec-soft)" }}>
             {!confirmDelete && (
-              <button type="button" onClick={() => setConfirmDelete(true)} disabled={!isProfessor} className="px-4 py-2 rounded-md text-sm border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50">Eliminar</button>
+              <button type="button" onClick={() => setConfirmDelete(true)} disabled={!isProfessor} className="px-4 py-2 rounded-md text-sm border border-rec-danger-border text-rec-danger-text hover:bg-rec-danger-bg disabled:opacity-50">Eliminar</button>
             )}
-            <button disabled={saving || !isProfessor} className="px-4 py-2 rounded-md text-sm text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "var(--rec-primary)" }}>{saving ? "Guardando..." : "Guardar cambios"}</button>
+            <button disabled={saving || !isProfessor} className="px-4 py-2 rounded-md text-sm text-rec-text-on-media hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "var(--rec-primary)" }}>{saving ? "Guardando..." : "Guardar cambios"}</button>
             {confirmDelete && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-600">¿Confirmar?</span>
-                <button type="button" onClick={onDeleteConfirm} className="px-2 py-1 rounded-md text-xs bg-red-600 text-white hover:bg-red-700">Sí</button>
-                <button type="button" onClick={() => setConfirmDelete(false)} className="px-2 py-1 rounded-md text-xs border border-gray-300 text-gray-700 hover:bg-gray-100">No</button>
+                <span className="text-xs text-rec-text-muted">¿Confirmar?</span>
+                <button type="button" onClick={onDeleteConfirm} className="px-2 py-1 rounded-md text-xs bg-rec-danger-solid text-rec-text-on-media hover:bg-rec-danger-solid-hover">Sí</button>
+                <button type="button" onClick={() => setConfirmDelete(false)} className="px-2 py-1 rounded-md text-xs border border-rec-border-strong text-rec-text-secondary hover:bg-rec-bg-muted">No</button>
               </div>
             )}
           </div>
@@ -426,17 +436,17 @@ export default function EditarMaterialPage() {
       )}
 
       {showHeavyImageModal && pendingThumbnailFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
-          <div className="w-full max-w-md rounded-xl border border-amber-200 bg-white p-4 shadow-xl">
-            <h4 className="text-sm font-semibold text-slate-900">Miniatura pesada</h4>
-            <p className="mt-2 text-sm text-slate-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rec-ink/45 px-4">
+          <div className="w-full max-w-md rounded-xl border border-rec-warning-border bg-rec-bg-elevated p-4 shadow-xl">
+            <h4 className="text-sm font-semibold text-rec-text-primary">Miniatura pesada</h4>
+            <p className="mt-2 text-sm text-rec-text-secondary">
               La imagen <span className="font-medium">{pendingThumbnailFile.name}</span> pesa aproximadamente <span className="font-medium">{(pendingThumbnailFile.size / (1024 * 1024)).toFixed(2)} MB</span>.
             </p>
-            <p className="mt-1 text-xs text-slate-500">Podría tardar más en cargar. ¿Deseas usarla de todos modos?</p>
+            <p className="mt-1 text-xs text-rec-text-subtle">Podría tardar más en cargar. ¿Deseas usarla de todos modos?</p>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100"
+                className="px-3 py-1.5 rounded-md text-sm border border-rec-border-strong text-rec-text-secondary hover:bg-rec-bg-muted"
                 onClick={() => {
                   setShowHeavyImageModal(false);
                   setPendingThumbnailFile(null);
@@ -449,7 +459,7 @@ export default function EditarMaterialPage() {
               </button>
               <button
                 type="button"
-                className="px-3 py-1.5 rounded-md text-sm text-white hover:opacity-90"
+                className="px-3 py-1.5 rounded-md text-sm text-rec-text-on-media hover:opacity-90"
                 style={{ background: "var(--rec-primary)" }}
                 onClick={() => {
                   readThumbnailFile(pendingThumbnailFile);

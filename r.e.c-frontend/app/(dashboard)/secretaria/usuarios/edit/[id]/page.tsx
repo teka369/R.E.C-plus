@@ -77,7 +77,7 @@ export default function EditUsuarioPage() {
               { label: "Profesor", value: "PROFESOR" },
             ]}
           />
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {error ? <p className="text-sm text-rec-danger-text">{error}</p> : null}
           <div className="flex gap-2">
             <Button type="submit">Guardar cambios</Button>
             <Button

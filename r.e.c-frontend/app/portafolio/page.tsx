@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Footer from "@/components/layouts/Footer";
 import Navbar from "@/components/layouts/Navbar";
@@ -5,9 +6,17 @@ import Navbar from "@/components/layouts/Navbar";
 export const dynamic = "force-static";
 export const revalidate = false;
 
-export const metadata = {
-  title: "Portafolio | R.E.C",
-  description: "Equipo de desarrollo y proyectos del ecosistema R.E.C",
+export const metadata: Metadata = {
+  title: "Portafolio — Equipo de Desarrollo",
+  description:
+    "Conoce al equipo detrás de Recedu. Desarrollo de software educativo con tecnologías modernas para colegios e instituciones educativas en Colombia.",
+  alternates: { canonical: "/portafolio" },
+  openGraph: {
+    title: "Portafolio del Equipo de Desarrollo | Recedu",
+    description:
+      "El equipo de desarrollo detrás de Recedu, la plataforma de gestión académica para colegios colombianos.",
+    url: "/portafolio",
+  },
 };
 
 
@@ -112,7 +121,7 @@ export default function PortafolioPage() {
 
       {/* Hero */}
       <section
-        className="relative flex items-center justify-center text-center text-white h-[72vh] overflow-hidden"
+        className="relative flex items-center justify-center text-center text-rec-text-on-media h-[72vh] overflow-hidden"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')",
@@ -131,8 +140,8 @@ export default function PortafolioPage() {
           <span
             className="inline-block mb-4 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
             style={{
-              background: "rgba(255,255,255,0.15)",
-              border: "1px solid rgba(255,255,255,0.3)",
+              background: "color-mix(in srgb, var(--rec-text-on-media) 15%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--rec-text-on-media) 30%, transparent)",
             }}
           >
             Portafolio del Equipo
@@ -147,7 +156,7 @@ export default function PortafolioPage() {
           <div className="mt-8 flex flex-wrap gap-4 justify-center">
             <a
               href="#nosotros"
-              className="rounded-full px-6 py-3 text-sm font-semibold text-white transition"
+              className="rounded-full px-6 py-3 text-sm font-semibold text-rec-text-on-media transition"
               style={{ background: "var(--rec-cta)" }}
             >
               Conócenos
@@ -156,8 +165,8 @@ export default function PortafolioPage() {
               href="#stack"
               className="rounded-full px-6 py-3 text-sm font-semibold transition"
               style={{
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.35)",
+                background: "color-mix(in srgb, var(--rec-text-on-media) 15%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--rec-text-on-media) 35%, transparent)",
                 color: "white",
               }}
             >
@@ -182,7 +191,7 @@ export default function PortafolioPage() {
                 >
                   {stat.value}
                 </p>
-                <p className="text-sm text-slate-500 font-medium">
+                <p className="text-sm text-rec-text-subtle font-medium">
                   {stat.label}
                 </p>
               </div>
@@ -216,7 +225,7 @@ export default function PortafolioPage() {
                 "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))",
             }}
           />
-          <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
+          <p className="mt-4 text-rec-text-muted max-w-2xl mx-auto">
             Somos un equipo de tres desarrolladores Full Stack en formación en
             el SENA, unidos por la pasión por la tecnología y el deseo de
             construir herramientas digitales que transformen la educación en
@@ -242,7 +251,7 @@ export default function PortafolioPage() {
               >
                 {value.title}
               </h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
+              <p className="text-sm text-rec-text-subtle leading-relaxed">
                 {value.description}
               </p>
             </div>
@@ -257,7 +266,7 @@ export default function PortafolioPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center mb-14">
             <span
-              className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-white"
+              className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-rec-bg-elevated"
               style={{ color: "var(--rec-primary-strong)" }}
             >
               Capacidades
@@ -275,7 +284,7 @@ export default function PortafolioPage() {
                   "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))",
               }}
             />
-            <p className="mt-4 text-slate-600 max-w-xl mx-auto">
+            <p className="mt-4 text-rec-text-muted max-w-xl mx-auto">
               Habilidades técnicas y profesionales que el equipo ha desarrollado
               a lo largo de su formación
             </p>
@@ -285,7 +294,7 @@ export default function PortafolioPage() {
             {capabilities.map((cap) => (
               <div
                 key={cap.title}
-                className="group rounded-2xl bg-white border p-6 transition hover:shadow-lg"
+                className="group rounded-2xl bg-rec-bg-elevated border p-6 transition hover:shadow-lg"
                 style={{ borderColor: "var(--rec-soft)" }}
               >
                 <div
@@ -302,7 +311,7 @@ export default function PortafolioPage() {
                 >
                   {cap.title}
                 </h3>
-                <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                <p className="text-sm text-rec-text-subtle leading-relaxed mb-4">
                   {cap.description}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -350,7 +359,7 @@ export default function PortafolioPage() {
                 "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))",
             }}
           />
-          <p className="mt-4 text-slate-600 max-w-xl mx-auto">
+          <p className="mt-4 text-rec-text-muted max-w-xl mx-auto">
             Instituciones y organizaciones que hacen posible nuestra formación y
             el desarrollo de estos proyectos
           </p>
@@ -362,12 +371,12 @@ export default function PortafolioPage() {
               key={collab.name}
               href={collab.url}
               target="_blank"
-              className="group relative flex flex-col items-center text-center rounded-2xl border p-8 bg-white transition hover:shadow-xl w-full max-w-sm"
+              className="group relative flex flex-col items-center text-center rounded-2xl border p-8 bg-rec-bg-elevated transition hover:shadow-xl w-full max-w-sm"
               style={{ borderColor: "var(--rec-soft)" }}
             >
               {/* Badge */}
               <span
-                className="absolute top-4 right-4 rounded-full px-3 py-1 text-xs font-bold text-white"
+                className="absolute top-4 right-4 rounded-full px-3 py-1 text-xs font-bold text-rec-text-on-media"
                 style={{ background: collab.badgeColor }}
               >
                 {collab.badge}
@@ -402,8 +411,8 @@ export default function PortafolioPage() {
               >
                 {collab.name}
               </h3>
-              <p className="text-sm text-slate-500 mb-1">{collab.fullName}</p>
-              <p className="text-sm text-slate-600 leading-relaxed mt-3">
+              <p className="text-sm text-rec-text-subtle mb-1">{collab.fullName}</p>
+              <p className="text-sm text-rec-text-muted leading-relaxed mt-3">
                 {collab.description}
               </p>
 
@@ -433,7 +442,7 @@ export default function PortafolioPage() {
             >
               ¿Tu organización aquí?
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-rec-text-subtle">
               Estamos abiertos a nuevas alianzas y colaboraciones con
               instituciones educativas y empresas del sector tecnológico.
             </p>
@@ -450,7 +459,7 @@ export default function PortafolioPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center mb-14">
             <span
-              className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-white"
+              className="inline-block mb-3 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wider bg-rec-bg-elevated"
               style={{ color: "var(--rec-primary-strong)" }}
             >
               Tecnología
@@ -468,7 +477,7 @@ export default function PortafolioPage() {
                   "linear-gradient(90deg, var(--rec-primary), var(--rec-leaf))",
               }}
             />
-            <p className="mt-4 text-slate-600">
+            <p className="mt-4 text-rec-text-muted">
               La arquitectura tecnológica que impulsa nuestra plataforma
               educativa
             </p>
@@ -501,7 +510,7 @@ export default function PortafolioPage() {
             ].map((layer) => (
               <div
                 key={layer.title}
-                className="rec-glass rounded-2xl p-7 text-center bg-white shadow-sm hover:shadow-md transition"
+                className="rec-glass rounded-2xl p-7 text-center bg-rec-bg-elevated shadow-sm hover:shadow-md transition"
               >
                 <div className="text-4xl mb-4">{layer.icon}</div>
                 <h3
@@ -532,7 +541,7 @@ export default function PortafolioPage() {
 
       {/* CTA Final */}
       <section
-        className="py-20 text-white text-center"
+        className="py-20 text-rec-text-on-media text-center"
         style={{
           background:
             "linear-gradient(135deg, var(--rec-primary-strong) 0%, var(--rec-primary) 100%)",
@@ -542,21 +551,20 @@ export default function PortafolioPage() {
           <h2 className="text-3xl font-extrabold mb-4">
             ¿Listo para conocer más?
           </h2>
-          <p className="text-white/85 mb-8 text-lg">
-            Explora los certificados del equipo o vuelve a la plataforma
-            educativa
+          <p className="text-rec-text-on-media/85 mb-8 text-lg">
+            Si quieres implementar R.E.C en tu institución o tienes dudas técnicas, escríbenos o vuelve al inicio.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
-              href="/certificados"
-              className="rounded-full px-7 py-3 text-sm font-bold bg-white transition hover:opacity-90"
+              href="/Contacto"
+              className="rounded-full px-7 py-3 text-sm font-bold bg-rec-bg-elevated transition hover:opacity-90"
               style={{ color: "var(--rec-primary-strong)" }}
             >
-              Ver certificados
+              Contacto
             </Link>
             <Link
               href="/"
-              className="rounded-full px-7 py-3 text-sm font-bold border border-white/50 text-white transition hover:bg-white/10"
+              className="rounded-full px-7 py-3 text-sm font-bold border border-rec-text-on-media/50 text-rec-text-on-media transition hover:bg-rec-bg-elevated/10"
             >
               Volver al inicio
             </Link>

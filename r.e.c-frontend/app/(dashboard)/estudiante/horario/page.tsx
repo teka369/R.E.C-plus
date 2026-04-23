@@ -14,14 +14,14 @@ const HOUR_HEIGHT = 42;
 type ViewMode = "grid" | "list";
 
 const ENTRY_COLORS = [
-  "bg-emerald-100 border-l-emerald-500 text-emerald-900",
-  "bg-sky-100 border-l-sky-500 text-sky-900",
-  "bg-indigo-100 border-l-indigo-500 text-indigo-900",
-  "bg-amber-100 border-l-amber-500 text-amber-900",
-  "bg-rose-100 border-l-rose-500 text-rose-900",
-  "bg-violet-100 border-l-violet-500 text-violet-900",
-  "bg-teal-100 border-l-teal-500 text-teal-900",
-  "bg-orange-100 border-l-orange-500 text-orange-900",
+  "bg-rec-success-bg-muted border-l-rec-chart-emerald text-rec-text-primary",
+  "bg-rec-info-bg-strong border-l-rec-chart-cyan text-rec-info-text",
+  "bg-rec-info-bg border-l-rec-role-primary text-rec-text-primary",
+  "bg-rec-warning-bg border-l-rec-chart-amber text-rec-text-primary",
+  "bg-rec-danger-bg border-l-rec-chart-rose text-rec-text-primary",
+  "bg-rec-role-surface border-l-rec-role-primary text-rec-text-primary",
+  "bg-rec-success-bg border-l-rec-chart-cyan text-rec-text-primary",
+  "bg-rec-warning-bg border-l-rec-chart-amber text-rec-text-primary",
 ];
 
 function entryColorClass(subjectId?: number | null, idx = 0): string {
@@ -167,66 +167,69 @@ export default function EstudianteHorarioPage() {
   return (
     <section className="space-y-4 overflow-x-hidden">
       <div
-        className="rounded-2xl border p-4 sm:p-6 text-white"
+        id="tour-est-hr-header"
+        className="rounded-2xl border p-4 sm:p-6 text-rec-text-on-media"
         style={{
           borderColor: "var(--rec-soft)",
           background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
         }}
       >
         <h2 className="text-xl md:text-2xl font-bold tracking-tight">Mi horario</h2>
-        <p className="text-sm text-white/90">Consulta rapidamente clases, eventos y avisos del grupo.</p>
+        <p className="text-sm text-rec-text-on-media/90">Consulta rapidamente clases, eventos y avisos del grupo.</p>
       </div>
 
-      {groupLabel && (
-        <p className="text-sm font-medium text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full w-fit border border-emerald-200">
-          Grupo: {groupLabel}
-        </p>
-      )}
+      <div id="tour-est-hr-grupo" className="min-h-[2.5rem]">
+        {groupLabel ? (
+          <p className="text-sm font-medium text-rec-success-text bg-rec-success-bg px-4 py-2 rounded-full w-fit border border-rec-success-border">
+            Grupo: {groupLabel}
+          </p>
+        ) : null}
+      </div>
 
-      {error && <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-rec-danger-text bg-rec-danger-bg border border-rec-danger-border rounded-xl px-3 py-2">{error}</p>}
 
       {loading && (
         <div className="space-y-3 animate-pulse">
-          <div className="h-7 w-56 rounded bg-slate-200" />
-          <div className="h-4 w-72 rounded bg-slate-100" />
-          <div className="h-[460px] rounded-2xl bg-slate-100" />
+          <div className="h-7 w-56 rounded bg-rec-bg-subtle" />
+          <div className="h-4 w-72 rounded bg-rec-bg-muted" />
+          <div className="h-[460px] rounded-2xl bg-rec-bg-muted" />
         </div>
       )}
 
       {!loading && withoutGroup && (
-        <div className="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+        <div className="text-sm text-rec-text-subtle bg-rec-bg-base border border-rec-border-default rounded-xl px-3 py-2">
           Sin grupo asignado. Contacta a la secretaria para completar la asignacion.
         </div>
       )}
 
       {!loading && !withoutGroup && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
-            <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-3.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Clases</p>
-              <p className="text-2xl font-bold text-slate-900">{entries.length}</p>
+          <div id="tour-est-hr-stats" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+            <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-3 md:p-3.5">
+              <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Clases</p>
+              <p className="text-2xl font-bold text-rec-text-primary">{entries.length}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-3.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Horas semana</p>
-              <p className="text-2xl font-bold text-slate-900">{weeklyHours}</p>
+            <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-3 md:p-3.5">
+              <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Horas semana</p>
+              <p className="text-2xl font-bold text-rec-text-primary">{weeklyHours}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-3.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Eventos</p>
-              <p className="text-2xl font-bold text-slate-900">{events.length}</p>
+            <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-3 md:p-3.5">
+              <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Eventos</p>
+              <p className="text-2xl font-bold text-rec-text-primary">{events.length}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-3.5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Notas</p>
-              <p className="text-2xl font-bold text-slate-900">{notes.length}</p>
+            <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-3 md:p-3.5">
+              <p className="text-xs uppercase tracking-wide text-rec-text-subtle">Notas</p>
+              <p className="text-2xl font-bold text-rec-text-primary">{notes.length}</p>
             </div>
           </div>
 
           <div className="flex flex-col 2xl:flex-row gap-4">
-            <div className="flex-1 min-w-0 space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <div id="tour-est-hr-calendario" className="flex-1 min-w-0 space-y-4">
+              <div id="tour-est-hr-vista" className="flex items-center gap-2 border-b border-rec-border-default pb-2">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
-                    viewMode === "grid" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+                    viewMode === "grid" ? "bg-rec-ink text-rec-text-on-media" : "text-rec-text-muted hover:bg-rec-bg-muted"
                   }`}
                 >
                   Grilla
@@ -234,7 +237,7 @@ export default function EstudianteHorarioPage() {
                 <button
                   onClick={() => setViewMode("list")}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
-                    viewMode === "list" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+                    viewMode === "list" ? "bg-rec-ink text-rec-text-on-media" : "text-rec-text-muted hover:bg-rec-bg-muted"
                   }`}
                 >
                   Lista
@@ -242,30 +245,30 @@ export default function EstudianteHorarioPage() {
               </div>
 
               {viewMode === "grid" && (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-rec-bg-elevated border border-rec-border-default rounded-2xl shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
                     <div className="min-w-[560px] lg:min-w-[700px]">
-                      <div className="sticky top-0 z-10 flex border-b border-slate-200 bg-slate-50">
-                        <div className="w-12 shrink-0 border-r border-slate-200" />
+                      <div className="sticky top-0 z-10 flex border-b border-rec-border-default bg-rec-bg-base">
+                        <div className="w-12 shrink-0 border-r border-rec-border-default" />
                         {DAYS.map((day) => (
                           <div
                             key={day}
-                            className={`flex-1 text-center py-3 border-r last:border-r-0 border-slate-200 ${today === day ? "bg-cyan-50" : ""}`}
+                            className={`flex-1 text-center py-3 border-r last:border-r-0 border-rec-border-default ${today === day ? "bg-rec-info-bg" : ""}`}
                           >
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">{DAY_SHORT[day]}</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-rec-text-secondary">{DAY_SHORT[day]}</span>
                           </div>
                         ))}
                       </div>
 
                       <div className="relative" style={{ height: `${calendarRange.gridHeight}px` }}>
-                        <div className="w-12 h-full absolute left-0 top-0 border-r border-slate-200 bg-white">
+                        <div className="w-12 h-full absolute left-0 top-0 border-r border-rec-border-default bg-rec-bg-elevated">
                           {calendarRange.hours.slice(0, -1).map((h, i) => (
                             <div
                               key={h}
-                              className="absolute w-full flex items-start justify-end pr-2 border-t border-slate-100"
+                              className="absolute w-full flex items-start justify-end pr-2 border-t border-rec-border-subtle"
                               style={{ top: `${i * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
                             >
-                              <span className="text-[10px] text-slate-500 mt-0.5">{String(h).padStart(2, "0")}:00</span>
+                              <span className="text-[10px] text-rec-text-subtle mt-0.5">{String(h).padStart(2, "0")}:00</span>
                             </div>
                           ))}
                         </div>
@@ -274,24 +277,24 @@ export default function EstudianteHorarioPage() {
                           {DAYS.map((day) => {
                             const dayEntries = entries.filter((entry) => entry.dayOfWeek === day);
                             return (
-                              <div key={day} className={`flex-1 relative border-r last:border-r-0 border-slate-200 ${today === day ? "bg-cyan-50/30" : ""}`}>
+                              <div key={day} className={`flex-1 relative border-r last:border-r-0 border-rec-border-default ${today === day ? "bg-rec-info-bg/30" : ""}`}>
                                 {calendarRange.hours.slice(0, -1).map((_, i) => (
-                                  <div key={i} className="absolute w-full border-t border-slate-100" style={{ top: `${i * HOUR_HEIGHT}px` }} />
+                                  <div key={i} className="absolute w-full border-t border-rec-border-subtle" style={{ top: `${i * HOUR_HEIGHT}px` }} />
                                 ))}
                                 {calendarRange.hours.slice(0, -1).map((_, i) => (
                                   <div
                                     key={`half-${i}`}
-                                    className="absolute w-full border-t border-slate-50"
+                                    className="absolute w-full border-t border-rec-bg-muted"
                                     style={{ top: `${i * HOUR_HEIGHT + HOUR_HEIGHT / 2}px` }}
                                   />
                                 ))}
 
                                 {today === day && nowInRange && (
                                   <div
-                                    className="absolute left-0 right-0 border-t border-red-400 z-10"
+                                    className="absolute left-0 right-0 border-t border-rec-danger-border z-10"
                                     style={{ top: `${((nowMinutes - calendarRange.gridStart) / calendarRange.totalMinutes) * calendarRange.gridHeight}px` }}
                                   >
-                                    <span className="absolute -top-2 right-1 text-[10px] bg-red-500 text-white px-1 rounded">ahora</span>
+                                    <span className="absolute -top-2 right-1 text-[10px] bg-rec-danger-solid text-rec-text-on-media px-1 rounded">ahora</span>
                                   </div>
                                 )}
 
@@ -300,7 +303,7 @@ export default function EstudianteHorarioPage() {
                                   const height = Math.max(((entry.endMinutes - entry.startMinutes) / calendarRange.totalMinutes) * calendarRange.gridHeight, 24);
                                   const isBreak = isBreakEntry(entry);
                                   const subjectName = entry.subjectId ? subjectMap[entry.subjectId] : null;
-                                  const colorClass = isBreak ? "bg-amber-100 border-l-amber-500 text-amber-900" : entryColorClass(entry.subjectId, idx);
+                                  const colorClass = isBreak ? "bg-rec-warning-bg border-l-rec-chart-amber text-rec-text-primary" : entryColorClass(entry.subjectId, idx);
                                   return (
                                     <div
                                       key={entry.id}
@@ -331,15 +334,15 @@ export default function EstudianteHorarioPage() {
               )}
 
               {viewMode === "list" && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Agenda de clases</h3>
+                <div className="bg-rec-bg-elevated border border-rec-border-default rounded-2xl p-3.5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-rec-text-secondary mb-3">Agenda de clases</h3>
                   {sortedEntries.length === 0 ? (
-                    <p className="text-sm text-slate-500">No hay clases registradas para este grupo.</p>
+                    <p className="text-sm text-rec-text-subtle">No hay clases registradas para este grupo.</p>
                   ) : (
                     <div className="space-y-2">
                       {sortedEntries.map((entry, idx) => {
                         const isBreak = isBreakEntry(entry);
-                        const colorClass = isBreak ? "bg-amber-100 border-l-amber-500 text-amber-900" : entryColorClass(entry.subjectId, idx);
+                        const colorClass = isBreak ? "bg-rec-warning-bg border-l-rec-chart-amber text-rec-text-primary" : entryColorClass(entry.subjectId, idx);
                         const subjectName = entry.subjectId ? subjectMap[entry.subjectId] : null;
                         return (
                           <div key={entry.id} className={`rounded-xl px-3 py-2 border-l-[3px] text-sm ${colorClass}`}>
@@ -359,48 +362,48 @@ export default function EstudianteHorarioPage() {
             </div>
 
             <div className="2xl:w-72 space-y-4 shrink-0">
-              <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-700 mb-2">Proximo evento</h3>
+              <div className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-3.5 shadow-sm">
+                <h3 className="text-sm font-semibold text-rec-text-secondary mb-2">Proximo evento</h3>
                 {nextEvent ? (
                   <div className="text-xs space-y-1">
-                    <p className="text-sm font-semibold text-slate-900">{nextEvent.title}</p>
-                    <p className="text-slate-600">{formatDateTime(nextEvent.startAt)} - {formatDateTime(nextEvent.endAt)}</p>
-                    {nextEvent.location && <p className="text-slate-600">{nextEvent.location}</p>}
+                    <p className="text-sm font-semibold text-rec-text-primary">{nextEvent.title}</p>
+                    <p className="text-rec-text-muted">{formatDateTime(nextEvent.startAt)} - {formatDateTime(nextEvent.endAt)}</p>
+                    {nextEvent.location && <p className="text-rec-text-muted">{nextEvent.location}</p>}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500">No hay eventos proximos.</p>
+                  <p className="text-xs text-rec-text-subtle">No hay eventos proximos.</p>
                 )}
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Eventos ({events.length})</h3>
+              <div className="bg-rec-bg-elevated border border-rec-border-default rounded-2xl p-3.5 shadow-sm">
+                <h3 className="text-sm font-semibold text-rec-text-secondary mb-3">Eventos ({events.length})</h3>
                 {events.length === 0 ? (
-                  <p className="text-xs text-slate-500">Sin eventos programados.</p>
+                  <p className="text-xs text-rec-text-subtle">Sin eventos programados.</p>
                 ) : (
                   <ul className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {[...events]
                       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
                       .map((item) => (
-                        <li key={item.id} className="border border-slate-100 rounded-xl p-2.5 space-y-0.5 text-xs">
-                          <p className="font-semibold text-slate-800 text-sm leading-tight">{item.title}</p>
-                          <p className="text-slate-600">{formatDateTime(item.startAt)} - {formatDateTime(item.endAt)}</p>
-                          {item.description && <p className="text-slate-600">{item.description}</p>}
-                          {item.location && <p className="text-slate-500">{item.location}</p>}
+                        <li key={item.id} className="border border-rec-border-subtle rounded-xl p-2.5 space-y-0.5 text-xs">
+                          <p className="font-semibold text-rec-text-primary text-sm leading-tight">{item.title}</p>
+                          <p className="text-rec-text-muted">{formatDateTime(item.startAt)} - {formatDateTime(item.endAt)}</p>
+                          {item.description && <p className="text-rec-text-muted">{item.description}</p>}
+                          {item.location && <p className="text-rec-text-subtle">{item.location}</p>}
                         </li>
                       ))}
                   </ul>
                 )}
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Notas ({notes.length})</h3>
+              <div className="bg-rec-bg-elevated border border-rec-border-default rounded-2xl p-3.5 shadow-sm">
+                <h3 className="text-sm font-semibold text-rec-text-secondary mb-3">Notas ({notes.length})</h3>
                 {notes.length === 0 ? (
-                  <p className="text-xs text-slate-500">Sin notas publicadas.</p>
+                  <p className="text-xs text-rec-text-subtle">Sin notas publicadas.</p>
                 ) : (
                   <ul className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {notes.map((item) => (
-                      <li key={item.id} className="border border-amber-100 bg-amber-50 rounded-xl p-2.5">
-                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{item.content}</p>
+                      <li key={item.id} className="border border-rec-warning-border bg-rec-warning-bg rounded-xl p-2.5">
+                        <p className="text-sm text-rec-text-secondary whitespace-pre-wrap">{item.content}</p>
                       </li>
                     ))}
                   </ul>
@@ -408,8 +411,8 @@ export default function EstudianteHorarioPage() {
               </div>
 
               {Object.keys(subjectMap).length > 0 && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Materias activas</h3>
+                <div className="bg-rec-bg-elevated border border-rec-border-default rounded-2xl p-3.5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-rec-text-secondary mb-2">Materias activas</h3>
                   <ul className="space-y-1">
                     {Object.entries(subjectMap).map(([id, name]) => (
                       <li key={id} className={`rounded-lg px-2 py-1 text-xs font-medium border-l-[3px] ${entryColorClass(Number(id))}`}>

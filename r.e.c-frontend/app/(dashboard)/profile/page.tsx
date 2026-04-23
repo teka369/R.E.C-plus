@@ -140,69 +140,69 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-6 md:p-8">
+      <main className="min-h-screen bg-rec-bg-base p-6 md:p-8">
         <div className="mx-auto max-w-2xl">
-          <p className="text-sm text-slate-500">Cargando perfil...</p>
+          <p className="text-sm text-rec-text-subtle">Cargando perfil...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6 md:p-8">
+    <main className="min-h-screen bg-rec-bg-base p-6 md:p-8">
       <section className="mx-auto max-w-2xl space-y-6">
-        <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-900">Mi Perfil</h1>
-          <p className="mt-2 text-sm text-slate-600">
+        <header className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-6 shadow-sm">
+          <h1 className="text-3xl font-black text-rec-text-primary">Mi Perfil</h1>
+          <p className="mt-2 text-sm text-rec-text-muted">
             Actualiza tu información personal y contraseña
           </p>
         </header>
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="rounded-lg border border-rec-danger-border bg-rec-danger-bg p-4 text-sm text-rec-danger-text">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          <div className="rounded-lg border border-rec-success-border bg-rec-success-bg p-4 text-sm text-rec-success-text">
             {success}
           </div>
         )}
 
         {/* Update Profile Form */}
-        <form onSubmit={handleUpdateProfile} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Información Personal</h2>
-          <p className="mt-1 text-sm text-slate-500">Actualiza tus datos</p>
+        <form onSubmit={handleUpdateProfile} className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-rec-text-primary">Información Personal</h2>
+          <p className="mt-1 text-sm text-rec-text-subtle">Actualiza tus datos</p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700">Nombres</label>
+              <label className="block text-sm font-medium text-rec-text-secondary">Nombres</label>
               <input
                 type="text"
                 value={updateForm.nombres}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, nombres: e.target.value }))}
-                className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
+                className="mt-1 rounded-lg border border-rec-border-strong px-3 py-2 text-sm w-full"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Apellidos</label>
+              <label className="block text-sm font-medium text-rec-text-secondary">Apellidos</label>
               <input
                 type="text"
                 value={updateForm.apellidos}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, apellidos: e.target.value }))}
-                className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
+                className="mt-1 rounded-lg border border-rec-border-strong px-3 py-2 text-sm w-full"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700">Correo</label>
+              <label className="block text-sm font-medium text-rec-text-secondary">Correo</label>
               <input
                 type="email"
                 value={updateForm.email}
                 onChange={(e) => setUpdateForm((p) => ({ ...p, email: e.target.value }))}
-                className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
+                className="mt-1 rounded-lg border border-rec-border-strong px-3 py-2 text-sm w-full"
                 required
               />
             </div>
@@ -212,7 +212,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={updating}
-              className="rounded-lg bg-sky-700 px-6 py-2 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-60"
+              className="rounded-lg bg-rec-primary px-6 py-2 text-sm font-semibold text-rec-text-on-media hover:bg-rec-primary-strong disabled:opacity-60"
             >
               {updating ? "Guardando..." : "Guardar Cambios"}
             </button>
@@ -220,21 +220,21 @@ export default function ProfilePage() {
         </form>
 
         {/* Change Password Form */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Seguridad</h2>
-          <p className="mt-1 text-sm text-slate-500">Cambia tu contraseña</p>
+        <div className="rounded-2xl border border-rec-border-default bg-rec-bg-elevated p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-rec-text-primary">Seguridad</h2>
+          <p className="mt-1 text-sm text-rec-text-subtle">Cambia tu contraseña</p>
 
           {!showPasswordForm ? (
             <button
               onClick={() => setShowPasswordForm(true)}
-              className="mt-6 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="mt-6 rounded-lg border border-rec-border-strong px-4 py-2 text-sm font-semibold text-rec-text-secondary hover:bg-rec-bg-base"
             >
               Cambiar Contraseña
             </button>
           ) : (
             <form onSubmit={handleChangePassword} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700">Contraseña Actual</label>
+                <label className="block text-sm font-medium text-rec-text-secondary">Contraseña Actual</label>
                 <input
                   type="password"
                   value={passwordForm.currentPassword}
@@ -242,12 +242,12 @@ export default function ProfilePage() {
                     setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))
                   }
                   placeholder="Ingresa tu contraseña actual"
-                  className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
+                  className="mt-1 rounded-lg border border-rec-border-strong px-3 py-2 text-sm w-full"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700">Nueva Contraseña</label>
+                <label className="block text-sm font-medium text-rec-text-secondary">Nueva Contraseña</label>
                 <input
                   type="password"
                   value={passwordForm.newPassword}
@@ -255,12 +255,12 @@ export default function ProfilePage() {
                     setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))
                   }
                   placeholder="Mínimo 8 caracteres"
-                  className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
+                  className="mt-1 rounded-lg border border-rec-border-strong px-3 py-2 text-sm w-full"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700">Confirmar Nueva Contraseña</label>
+                <label className="block text-sm font-medium text-rec-text-secondary">Confirmar Nueva Contraseña</label>
                 <input
                   type="password"
                   value={passwordForm.confirmPassword}
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                     setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))
                   }
                   placeholder="Repite la nueva contraseña"
-                  className="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm w-full"
+                  className="mt-1 rounded-lg border border-rec-border-strong px-3 py-2 text-sm w-full"
                   required
                 />
               </div>
@@ -277,7 +277,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={changingPassword}
-                  className="rounded-lg bg-emerald-700 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                  className="rounded-lg bg-rec-primary-strong px-6 py-2 text-sm font-semibold text-rec-text-on-media hover:bg-rec-primary-strong disabled:opacity-60"
                 >
                   {changingPassword ? "Actualizando..." : "Actualizar Contraseña"}
                 </button>
@@ -291,7 +291,7 @@ export default function ProfilePage() {
                       confirmPassword: "",
                     });
                   }}
-                  className="rounded-lg border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-rec-border-strong px-6 py-2 text-sm font-semibold text-rec-text-secondary hover:bg-rec-bg-base"
                 >
                   Cancelar
                 </button>
@@ -302,16 +302,16 @@ export default function ProfilePage() {
 
         {/* Profile Info Display */}
         {profile && (
-          <div className="rounded-2xl border border-slate-200 bg-blue-50 p-6 shadow-sm">
-            <h3 className="font-semibold text-slate-900">Información de tu Cuenta</h3>
+          <div className="rounded-2xl border border-rec-border-default bg-rec-info-bg p-6 shadow-sm">
+            <h3 className="font-semibold text-rec-text-primary">Información de tu Cuenta</h3>
             <div className="mt-4 space-y-2 text-sm">
               <p>
-                <span className="font-medium text-slate-700">Rol:</span>{" "}
-                <span className="text-slate-600 uppercase font-semibold">{profile.role}</span>
+                <span className="font-medium text-rec-text-secondary">Rol:</span>{" "}
+                <span className="text-rec-text-muted uppercase font-semibold">{profile.role}</span>
               </p>
               <p>
-                <span className="font-medium text-slate-700">ID Usuario:</span>{" "}
-                <span className="text-slate-600">{profile.id}</span>
+                <span className="font-medium text-rec-text-secondary">ID Usuario:</span>{" "}
+                <span className="text-rec-text-muted">{profile.id}</span>
               </p>
             </div>
           </div>

@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -70,9 +71,11 @@ export class PerformanceController {
   @Get('students/:studentId/academic')
   getStudentAcademic(
     @Param('studentId', ParseIntPipe) studentId: number,
+    @Query('v') v: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.performance.getStudentAcademic(req.user, studentId);
+    const version = v != null ? Number(v) : 1;
+    return this.performance.getStudentAcademic(req.user, studentId, version);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -80,9 +83,11 @@ export class PerformanceController {
   @Get('groups/:groupId/students-academic')
   getGroupAcademicOverview(
     @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('v') v: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.performance.getGroupAcademicOverview(req.user, groupId);
+    const version = v != null ? Number(v) : 1;
+    return this.performance.getGroupAcademicOverview(req.user, groupId, version);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

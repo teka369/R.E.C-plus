@@ -113,6 +113,19 @@ enum EvaluacionTipo {
   PRACTICA
 }
 
+enum GradingMode {
+  SIMPLE
+  COMPETENCY
+}
+
+enum CompetencyCategory {
+  COGNITIVE
+  PROCEDURAL
+  ATTITUDINAL
+  SELF_EVAL
+  CO_EVAL
+}
+
 model User {
   id                 Int      @id @default(autoincrement())
   publicId           String   @unique @default(uuid())
@@ -149,6 +162,7 @@ model User {
   recoveryMessagesSent RecoveryMessage[] @relation("RecoveryMessageAuthor")
   academicRecords StudentAcademicRecord[] @relation("AcademicRecordStudent")
   academicRecordsUpdated StudentAcademicRecord[] @relation("AcademicRecordTeacher")
+  evaluationGradesUpdated EvaluationGrade[] @relation("EvaluationGradeUpdatedBy")
   authSessions       AuthSession[]
   passwordResetTokens PasswordResetToken[]
   institution        Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
@@ -192,9 +206,25 @@ model Institution {
   groups      Group[]
   subjects    Subject[]
   periods     AcademicPeriod[]
+  gradingPolicy InstitutionGradingPolicy?
 
   @@index([publicId])
   @@index([deletedAt])
+}
+
+model InstitutionGradingPolicy {
+  id                   Int       @id @default(autoincrement())
+  institutionId        Int       @unique
+  gradeScaleMax        Float     @default(5)
+  passingThreshold     Float     @default(3.0)
+  allowClosedPeriodEdits Boolean @default(false)
+  allowFinalOverride   Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  institution          Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  gradingMode        GradingMode @default(SIMPLE)
+  competencyWeights  Json        @default("{\"COGNITIVE\":30,\"PROCEDURAL\":30,\"ATTITUDINAL\":30,\"SELF_EVAL\":5,\"CO_EVAL\":5}")
 }
 
 // Modelos académicos
@@ -329,6 +359,9 @@ model StudentAcademicRecord {
   subjectId              Int
   updatedByTeacherId     Int?
   notaFinal              Float?
+  finalOverride          Float?
+  finalSource            String   @default("NONE")
+  finalUpdatedAt         DateTime?
   progresoMateria        Float?
   inasistenciasJustificadas   Int  @default(0)
   inasistenciasInjustificadas Int  @default(0)
@@ -775,13 +808,16 @@ model AcademicEvaluation {
   tipo               EvaluacionTipo   @default(PARCIAL)
   porcentaje         Float?
   orden              Int              @default(0)
+  termSlot           Int?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  competencyCategory CompetencyCategory?
 
   academicOffering   AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
   calificaciones     EvaluationGrade[]
 
   @@unique([academicOfferingId, orden])
+  @@index([academicOfferingId, termSlot, orden])
 }
 
 // Nota de un estudiante en una evaluación concreta (reemplaza gradesJson)
@@ -790,12 +826,14 @@ model EvaluationGrade {
   publicId             String             @unique @default(uuid())
   academicEvaluationId Int
   studentGroupId       Int
+  updatedByTeacherId   Int?
   nota                 Float
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
   academicEvaluation   AcademicEvaluation @relation(fields: [academicEvaluationId], references: [id], onDelete: Cascade)
   studentGroup         StudentGroup       @relation(fields: [studentGroupId], references: [id], onDelete: Cascade)
+  updatedByTeacher     User?              @relation("EvaluationGradeUpdatedBy", fields: [updatedByTeacherId], references: [id], onDelete: SetNull)
 
   @@unique([academicEvaluationId, studentGroupId])
   @@index([studentGroupId])

@@ -154,7 +154,7 @@ export default function SecretariaEstudiantesPage() {
       <div className="sec-card p-3 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Asignacion rapida masiva</span>
-          <span className="text-xs text-gray-600">{selectedVisibleIds.length} seleccionados en esta vista</span>
+          <span className="text-xs text-rec-text-muted">{selectedVisibleIds.length} seleccionados en esta vista</span>
         </div>
         <div className="sec-action-cluster">
           <div className="min-w-[220px]">
@@ -191,13 +191,13 @@ export default function SecretariaEstudiantesPage() {
           >{bulkStatus.loading ? "Asignando..." : "Asignar grupo"}</Button>
         </div>
         {bulkStatus.message && (
-          <p className={`text-xs ${bulkStatus.tone === "error" ? "text-red-600" : "text-green-700"}`}>{bulkStatus.message}</p>
+          <p className={`text-xs ${bulkStatus.tone === "error" ? "text-rec-danger-text" : "text-rec-success-text"}`}>{bulkStatus.message}</p>
         )}
       </div>
 
       <div className="overflow-x-auto sec-table">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
+          <thead className="bg-rec-bg-muted">
             <tr>
               <th className="p-2 text-left">Sel.</th>
               <th className="p-2 text-left">Nombre</th>
@@ -209,7 +209,7 @@ export default function SecretariaEstudiantesPage() {
           </thead>
           <tbody>
             {visible.map((u) => (
-              <tr key={u.id} className="border-t border-gray-200">
+              <tr key={u.id} className="border-t border-rec-border-default">
                 <td className="p-2">
                   <input
                     type="checkbox"
@@ -250,14 +250,14 @@ export default function SecretariaEstudiantesPage() {
                         }
                       }}
                     >{currentGroup[u.id] ? "Cambiar" : "Asignar"}</Button>
-                    {assignStatus[u.id] === "ok" && <span className="text-xs text-green-600">Asignado</span>}
-                    {assignStatus[u.id] === "error" && <span className="text-xs text-red-600">Error</span>}
+                    {assignStatus[u.id] === "ok" && <span className="text-xs text-rec-success-text">Asignado</span>}
+                    {assignStatus[u.id] === "error" && <span className="text-xs text-rec-danger-text">Error</span>}
                     {currentGroup[u.id]?.id === Number(assignments[u.id]) && assignments[u.id] && (
-                      <span className="text-xs text-amber-700">Ya esta en ese grupo</span>
+                      <span className="text-xs text-rec-warning-text">Ya esta en ese grupo</span>
                     )}
                     {currentGroup[u.id] && (
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs text-gray-700">Grupo actual: {currentGroup[u.id]?.label}</span>
+                        <span className="text-xs text-rec-text-secondary">Grupo actual: {currentGroup[u.id]?.label}</span>
                         <Button
                           size="sm"
                           variant="secondary"

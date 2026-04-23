@@ -38,6 +38,14 @@ describe('AuthService (unit)', () => {
     sendPasswordReset: jest.fn().mockResolvedValue(undefined),
   };
 
+  const loginAttempts = {
+    getCount: jest.fn<Promise<{ count: number; ttl: number }>, [string]>(),
+    increment: jest.fn<Promise<{ count: number; ttl: number }>, [string]>(),
+    reset: jest.fn<Promise<void>, [string]>(),
+  };
+
+  const tr = 'ip:unit';
+
   let service: AuthService;
   const compareMock = bcrypt.compare as jest.Mock;
   const hashMock = bcrypt.hash as jest.Mock;
@@ -69,7 +77,14 @@ describe('AuthService (unit)', () => {
     process.env.JWT_REFRESH_SECRET = 'unit-refresh-secret';
     process.env.JWT_REFRESH_EXPIRES = '30d';
     prisma.authSession.create.mockResolvedValue({ id: 999 });
-    service = new AuthService(prisma as never, jwt as never, mail as never);
+    loginAttempts.getCount.mockResolvedValue({ count: 0, ttl: 0 });
+    loginAttempts.increment.mockResolvedValue({ count: 1, ttl: 900 });
+    service = new AuthService(
+      prisma as never,
+      jwt as never,
+      mail as never,
+      loginAttempts as never,
+    );
   });
 
   // ─── login ─────────────────────────────────────────────────────────────
@@ -83,6 +98,7 @@ describe('AuthService (unit)', () => {
       const result: AuthTokensResponse = await service.login(
         ' ana@test.dev ',
         'Password!',
+        tr,
       );
 
       expect(result.access_token).toBe('access-token-1');
@@ -100,7 +116,7 @@ describe('AuthService (unit)', () => {
       compareMock.mockResolvedValue(true);
       setupTokenIssuance();
 
-      await service.login('  ANA@Test.DEV  ', 'Password!');
+      await service.login('  ANA@Test.DEV  ', 'Password!', tr);
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -112,7 +128,7 @@ describe('AuthService (unit)', () => {
     it('lanza UnauthorizedException si el usuario no existe', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.login('noexiste@test.dev', 'pass')).rejects.toThrow(
+      await expect(service.login('noexiste@test.dev', 'pass', tr)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -121,7 +137,7 @@ describe('AuthService (unit)', () => {
       prisma.user.findUnique.mockResolvedValue(fakeUser);
       compareMock.mockResolvedValue(false);
 
-      await expect(service.login('ana@test.dev', 'wrong')).rejects.toThrow(
+      await expect(service.login('ana@test.dev', 'wrong', tr)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -133,7 +149,7 @@ describe('AuthService (unit)', () => {
       });
       compareMock.mockResolvedValue(true);
 
-      await expect(service.login('ana@test.dev', 'Password!')).rejects.toThrow(
+      await expect(service.login('ana@test.dev', 'Password!', tr)).rejects.toThrow(
         UnauthorizedException,
       );
     });
@@ -147,7 +163,7 @@ describe('AuthService (unit)', () => {
       compareMock.mockResolvedValue(true);
       setupTokenIssuance();
 
-      const result = await service.login('ana@test.dev', 'Password!');
+      const result = await service.login('ana@test.dev', 'Password!', tr);
       expect(result.access_token).toBeDefined();
     });
 
@@ -161,7 +177,7 @@ describe('AuthService (unit)', () => {
       compareMock.mockResolvedValue(true);
       setupTokenIssuance();
 
-      const result = await service.login('ana@test.dev', 'Password!');
+      const result = await service.login('ana@test.dev', 'Password!', tr);
       expect(result.user.institution).toBeNull();
       expect(result.user.institutionId).toBeNull();
     });

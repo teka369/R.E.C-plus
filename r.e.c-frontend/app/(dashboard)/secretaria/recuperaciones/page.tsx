@@ -20,7 +20,7 @@ function fmtDateTime(iso: string | null | undefined) {
 }
 
 function fmtDuration(ms: number): string {
-  if (ms <= 0) return "N/D";
+  if (!Number.isFinite(ms) || ms <= 0) return "N/D";
   const days = Math.floor(ms / 86400000);
   const hours = Math.floor((ms % 86400000) / 3600000);
   if (days > 0) return `${days}d ${hours}h`;
@@ -70,31 +70,66 @@ export default function SecretariaRecuperacionesPage() {
   }, []);
 
   const now = nowMs;
-  const isFuture = config ? new Date(config.startAt).getTime() > now : false;
-  const isPast = config ? new Date(config.endAt).getTime() < now : false;
-  const remaining = config ? Math.max(0, new Date(config.endAt).getTime() - now) : 0;
-  const totalDuration = config
-    ? new Date(config.endAt).getTime() - new Date(config.startAt).getTime()
-    : 0;
-  const progress = config && totalDuration > 0
-    ? Math.min(100, Math.max(0, ((now - new Date(config.startAt).getTime()) / totalDuration) * 100))
-    : 0;
+  const hasDateWindow =
+    config != null && config.startAt != null && config.endAt != null;
+
+  const startMs =
+    config != null && config.startAt != null
+      ? new Date(config.startAt).getTime()
+      : NaN;
+  const endMs =
+    config != null && config.endAt != null
+      ? new Date(config.endAt).getTime()
+      : NaN;
+
+  const isFuture =
+    hasDateWindow && !Number.isNaN(startMs) && startMs > now;
+  const isPast = hasDateWindow && !Number.isNaN(endMs) && endMs < now;
+  const remaining =
+    hasDateWindow && !Number.isNaN(endMs)
+      ? Math.max(0, endMs - now)
+      : 0;
+  const totalDuration =
+    hasDateWindow && !Number.isNaN(startMs) && !Number.isNaN(endMs)
+      ? endMs - startMs
+      : 0;
+  const progress =
+    hasDateWindow && totalDuration > 0 && !Number.isNaN(startMs)
+      ? Math.min(
+          100,
+          Math.max(0, ((now - startMs) / totalDuration) * 100),
+        )
+      : 0;
+
+  const periodInactive = !!config && !config.active;
+
+  const heroStatusLabel = !config
+    ? null
+    : config.active
+      ? "Activo"
+      : !hasDateWindow
+        ? "Sin configurar"
+        : isFuture
+          ? "Proximo"
+          : "Finalizado";
 
   const statusBg = config?.active
-    ? "border-green-300 bg-green-50 text-green-800"
-    : isFuture
-      ? "border-blue-300 bg-blue-50 text-blue-800"
-      : "border-slate-300 bg-slate-50 text-slate-600";
+    ? "border-rec-success-border bg-rec-success-bg text-rec-success-text"
+    : !hasDateWindow
+      ? "border-rec-border-strong bg-rec-bg-base text-rec-text-muted"
+      : isFuture
+        ? "border-rec-info-border bg-rec-info-bg text-rec-info-text"
+        : "border-rec-border-strong bg-rec-bg-base text-rec-text-muted";
 
   const barColor = config?.active
     ? remaining < 86400000
-      ? "bg-red-500"
+      ? "bg-rec-danger-solid"
       : remaining < 3 * 86400000
-        ? "bg-amber-400"
-        : "bg-emerald-500"
+        ? "bg-rec-chart-amber"
+        : "bg-rec-primary"
     : isPast
-      ? "bg-slate-400"
-      : "bg-blue-400";
+      ? "bg-rec-text-subtle"
+      : "bg-[var(--rec-info-text)]";
 
   return (
     <section className="sec-page space-y-6">
@@ -107,14 +142,33 @@ export default function SecretariaRecuperacionesPage() {
         </div>
         {!loading && config && (
           <span className={`rounded-full border px-3 py-1 text-sm font-semibold ${statusBg}`}>
-            {config.active ? "Activo" : isFuture ? "Proximo" : "Finalizado"}
+            {heroStatusLabel}
           </span>
         )}
       </div>
 
+      {!loading && periodInactive && (
+        <div
+          role="status"
+          className="rounded-xl border border-rec-warning-border bg-rec-warning-bg px-4 py-3 text-sm text-rec-warning-text"
+        >
+          <p className="font-semibold">No hay período de recuperaciones activo</p>
+          <p className="mt-1 text-xs opacity-90">
+            Puedes definir fechas desde{" "}
+            <Link
+              href="/secretaria/recuperaciones/configuracion"
+              className="font-medium underline underline-offset-2"
+            >
+              Configuración
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       {loading && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-400">Cargando estado del periodo...</p>
+        <div className="rounded-xl border border-rec-border-default bg-rec-bg-elevated p-5">
+          <p className="text-sm text-rec-text-subtle">Cargando estado del periodo...</p>
         </div>
       )}
 
@@ -124,13 +178,15 @@ export default function SecretariaRecuperacionesPage() {
             <h2 className="font-semibold">
               {config.active
                 ? "Periodo activo"
-                : isFuture
-                  ? "Periodo proximo"
-                  : "Periodo finalizado"}
+                : !hasDateWindow
+                  ? "Sin periodo configurado"
+                  : isFuture
+                    ? "Periodo proximo"
+                    : "Periodo finalizado"}
             </h2>
             <Link
               href="/secretaria/recuperaciones/configuracion"
-              className="rounded-lg border border-current/30 bg-white/70 px-3 py-1 text-xs font-medium hover:bg-white transition"
+              className="rounded-lg border border-current/30 bg-rec-bg-elevated/70 px-3 py-1 text-xs font-medium hover:bg-rec-bg-elevated transition"
             >
               Gestionar
             </Link>
@@ -152,7 +208,7 @@ export default function SecretariaRecuperacionesPage() {
             {config.active && (
               <div>
                 <p className="text-xs opacity-60">Restante</p>
-                <p className={`font-semibold ${remaining < 86400000 ? "text-red-700" : remaining < 3 * 86400000 ? "text-amber-700" : ""}`}>
+                <p className={`font-semibold ${remaining < 86400000 ? "text-rec-danger-text" : remaining < 3 * 86400000 ? "text-rec-warning-text" : ""}`}>
                   {fmtDuration(remaining)}
                 </p>
               </div>
@@ -178,10 +234,10 @@ export default function SecretariaRecuperacionesPage() {
             </div>
           </div>
 
-          {config.active && remaining > 0 && (
+          {config.active && remaining > 0 && config.endAt != null && (
             <MiniCountdown targetIso={config.endAt} label="Cierra en" />
           )}
-          {isFuture && (
+          {isFuture && config.startAt != null && (
             <MiniCountdown targetIso={config.startAt} label="Abre en" />
           )}
           {isPast && (
@@ -191,12 +247,12 @@ export default function SecretariaRecuperacionesPage() {
           )}
 
           {config.active && remaining < 86400000 && remaining > 0 && (
-            <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+            <div className="mt-3 rounded-lg border border-rec-danger-border bg-rec-danger-bg px-3 py-2 text-xs font-semibold text-rec-danger-text">
               El periodo cierra en menos de 24 horas. Considera extenderlo si es necesario.
             </div>
           )}
           {config.active && remaining >= 86400000 && remaining < 3 * 86400000 && (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <div className="mt-3 rounded-lg border border-rec-warning-border bg-rec-warning-bg px-3 py-2 text-xs text-rec-warning-text">
               El periodo cierra en menos de 3 dias.
             </div>
           )}
@@ -207,25 +263,25 @@ export default function SecretariaRecuperacionesPage() {
         <Link
           href="/secretaria/recuperaciones/configuracion"
           prefetch={false}
-          className="group rounded-xl border border-slate-200 bg-white p-5 transition hover:border-emerald-300 hover:shadow-md"
+          className="group rounded-xl border border-rec-border-default bg-rec-bg-elevated p-5 transition hover:border-rec-success-border hover:shadow-md"
         >
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-xl group-hover:scale-110 transition-transform">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rec-success-bg-muted text-xl group-hover:scale-110 transition-transform">
               C
             </div>
             <div className="flex-1">
-              <h2 className="font-semibold text-slate-900 group-hover:text-emerald-700 transition">
+              <h2 className="font-semibold text-rec-text-primary group-hover:text-rec-success-text transition">
                 Configuracion de periodo
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-rec-text-subtle">
                 Countdown en vivo, barra de progreso, botones de activar/desactivar/extender y edicion de fechas.
               </p>
               {!loading && config && (
                 <span
                   className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
                     config.active
-                      ? "border-green-300 bg-green-50 text-green-700"
-                      : "border-slate-300 bg-slate-50 text-slate-500"
+                      ? "border-rec-success-border bg-rec-success-bg text-rec-success-text"
+                      : "border-rec-border-strong bg-rec-bg-base text-rec-text-subtle"
                   }`}
                 >
                   {config.active ? "Activo" : "Inactivo"}
@@ -238,17 +294,17 @@ export default function SecretariaRecuperacionesPage() {
         <Link
           href="/secretaria/recuperaciones/horario"
           prefetch={false}
-          className="group rounded-xl border border-slate-200 bg-white p-5 transition hover:border-blue-300 hover:shadow-md"
+          className="group rounded-xl border border-rec-border-default bg-rec-bg-elevated p-5 transition hover:border-rec-info-border hover:shadow-md"
         >
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-xl group-hover:scale-110 transition-transform">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rec-info-bg-strong text-xl group-hover:scale-110 transition-transform">
               H
             </div>
             <div>
-              <h2 className="font-semibold text-slate-900 group-hover:text-blue-700 transition">
+              <h2 className="font-semibold text-rec-text-primary group-hover:text-rec-info-text transition">
                 Horario de recuperacion
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="mt-0.5 text-xs text-rec-text-subtle">
                 Sube y actualiza el archivo oficial del horario. Docentes y estudiantes pueden descargarlo desde sus vistas.
               </p>
             </div>

@@ -41,6 +41,45 @@ export type PromoteGradePayload = {
   mappings: PromoteGradeMapping[];
 };
 
+/** Campos extra en GET /academic/offerings/:offeringId (política institucional). */
+export type OfferingGradingPolicyFields = {
+  gradingMode: string;
+  competencyWeights: Record<string, number>;
+};
+
+export type GradingPolicyResponse = {
+  gradingMode: string;
+  competencyWeights: Record<string, number>;
+};
+
+export type AcademicEvaluationApi = {
+  id: number;
+  titulo: string;
+  tipo: string;
+  orden: number;
+  porcentaje: number | null;
+  termSlot: number | null;
+  competencyCategory: string | null;
+};
+
+export type GroupOfferingRow = {
+  id: number;
+  groupId: number;
+  subjectId: number;
+  gradingMode?: string;
+  competencyWeights?: Record<string, number>;
+  subject: { id: number; nombre: string; codigo?: string | null };
+  academicEvaluations: AcademicEvaluationApi[];
+};
+
+export type CreateEvaluationPayload = {
+  titulo: string;
+  tipo?: string;
+  porcentaje?: number;
+  orden?: number;
+  competencyCategory?: string;
+};
+
 export type PromotionSummary = {
   sourceGroupId: number;
   targetGroupId: number;
@@ -163,6 +202,38 @@ export const academicApi = {
   },
   async promoteGradePreview(dto: PromoteGradePayload): Promise<{ summary: PromotionSummary[] }> {
     const res = await api.post<{ summary: PromotionSummary[] }>(`/academic/promotions/grade/preview`, dto);
+    return res.data;
+  },
+
+  async getGradingPolicy(): Promise<GradingPolicyResponse> {
+    const res = await api.get<GradingPolicyResponse>("/academic/grading-policy");
+    return res.data;
+  },
+
+  async updateGradingPolicy(payload: {
+    gradingMode: string;
+    competencyWeights?: Record<string, number>;
+  }): Promise<void> {
+    await api.put("/academic/grading-policy", payload);
+  },
+
+  async listGroupOfferings(groupId: number, periodId?: number): Promise<GroupOfferingRow[]> {
+    const res = await api.get<GroupOfferingRow[]>(`/academic/groups/${groupId}/offerings`, {
+      params: periodId != null ? { periodId } : undefined,
+    });
+    return res.data;
+  },
+
+  async getOfferingDetail(offeringId: number): Promise<GroupOfferingRow> {
+    const res = await api.get<GroupOfferingRow>(`/academic/offerings/${offeringId}`);
+    return res.data;
+  },
+
+  async createEvaluation(offeringId: number, payload: CreateEvaluationPayload): Promise<AcademicEvaluationApi> {
+    const res = await api.post<AcademicEvaluationApi>(
+      `/academic/offerings/${offeringId}/evaluations`,
+      payload,
+    );
     return res.data;
   },
 };

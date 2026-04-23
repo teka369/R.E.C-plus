@@ -4,6 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef, useState, useEffect } from "react";
 import Image from "next/image";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import { REC_WHATSAPP_URL } from "@/lib/siteContact";
+import { FaWhatsapp } from "react-icons/fa";
 
 export default function Navbar() {
   const { user, token, logout } = useAuth();
@@ -76,12 +79,21 @@ export default function Navbar() {
   const initial: string = (firstName || "U").charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
-      <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full">
+      {/* El blur solo en la barra: si envuelve el drawer móvil, WebKit pinta el panel transparente. */}
+      <div className="rec-nav-glass w-full border-b border-rec-border-default backdrop-blur-md">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between px-4 py-2">
         {/* Brand */}
         <div className="flex items-center gap-2">
           <Link href="/" prefetch={false} className="flex items-center gap-3" aria-label="Ir a inicio">
-            <Image src="/logo.png" alt="Logo R.E.C" width={96} height={96} className="h-12 w-12 object-contain" priority />
+            <Image
+              src="/logo.webp"
+              alt="Logo R.E.C"
+              width={160}
+              height={160}
+              className="rec-logo-on-dark h-14 w-14 object-contain sm:h-16 sm:w-16"
+              priority
+            />
             <span className="text-lg font-bold text-[color:var(--rec-primary)]">R.E.C</span>
           </Link>
         </div>
@@ -91,20 +103,20 @@ export default function Navbar() {
           <Link
             href="/"
             prefetch={false}
-            className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive("/") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-slate-700 hover:bg-slate-100"}`}
+            className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive("/") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
           >
             Inicio
           </Link>
 
-          {/* Más opciones: Portafolio + Certificados */}
+          {/* Más opciones */}
           <div className="relative"
             onMouseLeave={() => { if (!dropdownLocked) setOpenDropdown(null); }}
           >
             <button
               className={`px-3 py-2 rounded-md text-sm transition ease-out ${
-                openDropdown === "mas" || isActive("/portafolio") || isActive("/certificados")
+                openDropdown === "mas" || isActive("/portafolio")
                   ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]"
-                  : "text-slate-700 hover:bg-slate-100"
+                  : "text-rec-text-secondary hover:bg-rec-bg-muted"
               }`}
               onMouseEnter={() => setOpenDropdown("mas")}
               onClick={() => {
@@ -126,68 +138,52 @@ export default function Navbar() {
                 </svg>
               </span>
             </button>
-            {/* Dropdown */}
+            {/* Dropdown: top-full + pt-2 = puente bajo el botón (el margen mt-* no recibe el puntero y cerraba el menú) */}
             <div
-              className={`absolute left-0 mt-2 w-56 rounded-lg border border-slate-200 bg-white shadow-lg transition-all duration-200 ease-out origin-top-left ${openDropdown === "mas" ? "scale-100 translate-y-1 opacity-100" : "scale-95 translate-y-0 opacity-0 pointer-events-none"}`}
-              onMouseEnter={() => setOpenDropdown("mas")}
-              onMouseLeave={() => { if (!dropdownLocked) setOpenDropdown(null); }}
+              className={`absolute left-0 top-full z-10 w-56 origin-top-left pt-2 transition-opacity duration-200 ease-out ${openDropdown === "mas" ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
             >
-              <ul className="py-1">
-                <li>
-                  <Link
-                    href="/portafolio"
-                    prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/portafolio") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Portafolio
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/certificados"
-                    prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/certificados") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Certificados
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/tutorial"
-                    prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/tutorial") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Tutorial
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/Informacion"
-                    prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Informacion") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Información
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/Contacto"
-                    prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Contacto") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Contacto
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/Reportes"
-                    prefetch={false}
-                    className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Reportes") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                  >
-                    Reportes
-                  </Link>
-                </li>
-              </ul>
+              <div
+                className={`origin-top-left rounded-lg border border-rec-border-default bg-rec-bg-elevated shadow-lg transition-all duration-200 ease-out ${openDropdown === "mas" ? "translate-y-0 scale-100" : "-translate-y-0.5 scale-95"}`}
+              >
+                <ul className="py-1">
+                  <li>
+                    <Link
+                      href="/portafolio"
+                      prefetch={false}
+                      className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/portafolio") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
+                    >
+                      Portafolio
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/tutorial"
+                      prefetch={false}
+                      className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/tutorial") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
+                    >
+                      Tutorial
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/Informacion"
+                      prefetch={false}
+                      className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Informacion") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
+                    >
+                      Información
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/Contacto"
+                      prefetch={false}
+                      className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive("/Contacto") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
+                    >
+                      Contacto
+                    </Link>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
 
@@ -196,14 +192,14 @@ export default function Navbar() {
               <Link
                 href={role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas"}
                 prefetch={false}
-                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
               >
                 Ligas
               </Link>
               <Link
                 href={role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback"}
                 prefetch={false}
-                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`px-3 py-2 rounded-md text-sm transition ease-out ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)] ring-1 ring-[color:var(--rec-soft)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
               >
                 Feedback
               </Link>
@@ -211,15 +207,17 @@ export default function Navbar() {
           )}
 
           {token && (
-            <div className="relative" ref={academicoRef}
+            <div
+              className="relative"
+              ref={academicoRef}
+              onMouseLeave={() => {
+                if (!dropdownLocked) setOpenDropdown(null);
+              }}
             >
               <button
-                className={`px-3 py-2 rounded-md text-sm transition ease-out ${openDropdown === "academico" ? "bg-slate-100" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`px-3 py-2 rounded-md text-sm transition ease-out ${openDropdown === "academico" ? "bg-rec-bg-muted" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
                 onMouseEnter={() => {
                   setOpenDropdown("academico");
-                }}
-                onMouseLeave={() => {
-                  if (!dropdownLocked) setOpenDropdown(null);
                 }}
                 onClick={() => {
                   setDropdownLocked((prev) => !prev);
@@ -242,27 +240,25 @@ export default function Navbar() {
               </button>
               {/* Dropdown */}
               <div
-                className={`absolute left-0 mt-2 w-56 rounded-lg border border-slate-200 bg-white shadow-lg transition-all duration-200 ease-out origin-top-left ${openDropdown === "academico" ? "scale-100 translate-y-1 opacity-100" : "scale-95 translate-y-0 opacity-0 pointer-events-none"}`}
-                onMouseEnter={() => {
-                  setOpenDropdown("academico");
-                }}
-                onMouseLeave={() => {
-                  if (!dropdownLocked) setOpenDropdown(null);
-                }}
+                className={`absolute left-0 top-full z-10 w-56 origin-top-left pt-2 transition-opacity duration-200 ease-out ${openDropdown === "academico" ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
               >
-                <ul className="py-1">
-                  {academicItems.map((item) => (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        prefetch={false}
-                        className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive(item.href) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <div
+                  className={`origin-top-left rounded-lg border border-rec-border-default bg-rec-bg-elevated shadow-lg transition-all duration-200 ease-out ${openDropdown === "academico" ? "translate-y-0 scale-100" : "-translate-y-0.5 scale-95"}`}
+                >
+                  <ul className="py-1">
+                    {academicItems.map((item) => (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          prefetch={false}
+                          className={`block px-3 py-2 text-sm rounded-md transition ease-out ${isActive(item.href) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           )}
@@ -271,19 +267,29 @@ export default function Navbar() {
             <Link
               href={dashHref}
               prefetch={false}
-              className={`px-3 py-2 rounded-md text-sm transition ${isActive(dashHref) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`}
+              className={`px-3 py-2 rounded-md text-sm transition ${isActive(dashHref) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
             >
               Panel
             </Link>
           )}
         </nav>
 
-        {/* Right side: auth/profile */}
+        {/* Right side: tema + auth/profile */}
         <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
+          <a
+            href={REC_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rec-border-default bg-rec-bg-elevated text-[#25D366] hover:bg-rec-bg-muted"
+            aria-label="WhatsApp"
+          >
+            <FaWhatsapp className="h-5 w-5" aria-hidden />
+          </a>
           {!token ? (
             <>
               <Link href="/login" prefetch={false} className="px-3 py-2 rounded-full border border-[color:var(--rec-primary)] text-[color:var(--rec-primary)] text-sm hover:bg-[color:var(--rec-soft)]">Ingresar</Link>
-              <Link href="/acceso-secretaria" prefetch={false} className="px-3 py-2 rounded-full bg-[color:var(--rec-primary)] text-white text-sm hover:bg-[color:var(--rec-primary-strong)]">Acceso Secretaría</Link>
+              <Link href="/acceso-secretaria" prefetch={false} className="px-3 py-2 rounded-full bg-[color:var(--rec-primary)] text-rec-text-on-media text-sm hover:bg-[color:var(--rec-primary-strong)]">Acceso Secretaría</Link>
             </>
           ) : (
             <div
@@ -293,40 +299,55 @@ export default function Navbar() {
               onMouseLeave={() => { if (!profileLocked) setProfileOpen(false); }}
               onClick={() => { setProfileLocked((v) => !v); setProfileOpen(true); }}
             >
-              <div className="w-8 h-8 rounded-full bg-[color:var(--rec-primary)] text-white flex items-center justify-center font-semibold">
+              <div className="w-8 h-8 rounded-full bg-[color:var(--rec-primary)] text-rec-text-on-media flex items-center justify-center font-semibold">
                 {initial}
               </div>
               <div className="leading-tight">
-                <span className="block text-sm font-medium text-slate-900">{firstName}</span>
-                <span className="block text-xs text-slate-600">{role || "Rol"}</span>
+                <span className="block text-sm font-medium text-rec-text-primary">{firstName}</span>
+                <span className="block text-xs text-rec-text-muted">{role || "Rol"}</span>
               </div>
-              {/* Dropdown perfil: Perfil + Cerrar sesión */}
+              {/* Dropdown perfil: Perfil + Cerrar sesión (pt-2 = puente de hover bajo el trigger) */}
               <div
-                className={`absolute right-0 top-full mt-2 w-44 rounded-lg border border-slate-200 bg-white shadow-lg transition-all duration-200 ease-out ${profileOpen ? "opacity-100 scale-100 translate-y-1" : "opacity-0 scale-95 translate-y-0 pointer-events-none"}`}
+                className={`absolute right-0 top-full z-10 w-44 origin-top-right pt-2 transition-opacity duration-200 ease-out ${profileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
               >
-                {role !== "SECRETARIA" && (
-                  <Link
-                    href={role === "PROFESOR" ? "/docente/perfil" : "/estudiante/perfil"}
-                    prefetch={false}
-                    className="block w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
-                  >
-                    Perfil
-                  </Link>
-                )}
-                <button
-                  onClick={logout}
-                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                <div
+                  className={`rounded-lg border border-rec-border-default bg-rec-bg-elevated shadow-lg transition-all duration-200 ease-out ${profileOpen ? "translate-y-0 scale-100" : "-translate-y-0.5 scale-95"}`}
                 >
-                  Cerrar sesión
-                </button>
+                  {role !== "SECRETARIA" && (
+                    <Link
+                      href={role === "PROFESOR" ? "/docente/perfil" : "/estudiante/perfil"}
+                      prefetch={false}
+                      className="block w-full px-3 py-2 text-sm text-rec-text-secondary hover:bg-rec-bg-muted"
+                    >
+                      Perfil
+                    </Link>
+                  )}
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-3 py-2 text-sm text-rec-danger-text hover:bg-rec-danger-bg"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
 
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <a
+            href={REC_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-rec-border-strong text-[#25D366]"
+            aria-label="WhatsApp"
+          >
+            <FaWhatsapp className="h-5 w-5" aria-hidden />
+          </a>
         {/* Mobile hamburger */}
         <button
-          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-md border border-slate-300 text-slate-700"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-md border border-rec-border-strong text-rec-text-secondary"
           onClick={() => setMobileOpen(true)}
           aria-label="Abrir menú"
         >
@@ -337,38 +358,63 @@ export default function Navbar() {
             <span className="block w-5 h-[2px] bg-current"></span>
           </div>
         </button>
+        </div>
+        </div>
       </div>
 
-      {/* Mobile drawer */}
-      <div className={`fixed inset-0 z-[60] md:hidden ${mobileOpen ? "" : "pointer-events-none"}`} aria-hidden={!mobileOpen}>
-        <div className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setMobileOpen(false)} />
-        <aside className={`absolute top-0 left-0 h-full w-72 bg-white shadow-lg transition-transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <div className="p-4 border-b flex items-center justify-between">
+      {/* Mobile drawer: fuera del nodo con backdrop-filter para fondo opaco en iOS/Safari */}
+      <div
+        className={`fixed inset-0 z-[100] md:hidden ${mobileOpen ? "" : "pointer-events-none"}`}
+        aria-hidden={!mobileOpen}
+      >
+        <div
+          className={`absolute inset-0 z-0 bg-rec-text-primary/50 backdrop-blur-sm transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+        <aside
+          className={`absolute left-0 top-0 z-[1] flex h-full w-[min(20rem,88vw)] max-w-[85vw] flex-col border-r border-rec-border-default bg-rec-bg-elevated shadow-2xl transition-transform duration-300 ease-out ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+          style={{ backgroundColor: "var(--rec-bg-elevated)" }}
+        >
+          <div
+            className="flex shrink-0 items-center justify-between gap-2 border-b border-rec-border-default bg-rec-bg-elevated p-4"
+            style={{ backgroundColor: "var(--rec-bg-elevated)" }}
+          >
             <Link href="/" prefetch={false} className="flex items-center gap-2 text-[color:var(--rec-primary)]" onClick={() => setMobileOpen(false)} aria-label="Ir a inicio">
-              <Image src="/logo.png" alt="Logo R.E.C" width={44} height={44} className="h-11 w-11 object-contain" />
+              <Image
+                src="/logo.webp"
+                alt="Logo R.E.C"
+                width={128}
+                height={128}
+                className="rec-logo-on-dark h-14 w-14 object-contain"
+              />
               <span className="text-lg font-bold">R.E.C</span>
             </Link>
-            <button className="w-9 h-9 rounded-md border border-slate-300" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú">✕</button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button className="w-9 h-9 rounded-md border border-rec-border-strong" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú">✕</button>
+            </div>
           </div>
-          <nav className="p-2 space-y-1">
-            <Link href="/" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Inicio</Link>
+          <nav
+            className="min-h-0 flex-1 space-y-1 overflow-y-auto bg-rec-bg-elevated p-2"
+            style={{ backgroundColor: "var(--rec-bg-elevated)" }}
+          >
+            <Link href="/" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Inicio</Link>
             <details className="group">
-              <summary className="px-3 py-2 rounded-md text-sm text-slate-700 cursor-pointer hover:bg-slate-100">Más opciones</summary>
+              <summary className="px-3 py-2 rounded-md text-sm text-rec-text-secondary cursor-pointer hover:bg-rec-bg-muted">Más opciones</summary>
               <div className="mt-1 pl-3 space-y-1">
-                <Link href="/portafolio" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/portafolio") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Portafolio</Link>
-                <Link href="/certificados" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/certificados") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Certificados</Link>
-                <Link href="/tutorial" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/tutorial") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Tutorial</Link>
-                <Link href="/Informacion" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Informacion") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Información</Link>
-                <Link href="/Contacto" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Contacto") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Contacto</Link>
-                <Link href="/Reportes" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Reportes") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Reportes</Link>
+                <Link href="/portafolio" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/portafolio") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Portafolio</Link>
+                <Link href="/tutorial" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/tutorial") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Tutorial</Link>
+                <Link href="/Informacion" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Informacion") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Información</Link>
+                <Link href="/Contacto" prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive("/Contacto") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Contacto</Link>
               </div>
             </details>
             {token && (
               <details className="group">
-                <summary className="px-3 py-2 rounded-md text-sm text-slate-700 cursor-pointer hover:bg-slate-100">Académico</summary>
+                <summary className="px-3 py-2 rounded-md text-sm text-rec-text-secondary cursor-pointer hover:bg-rec-bg-muted">Académico</summary>
                 <div className="mt-1 pl-3 space-y-1">
                   {academicItems.map((item) => (
-                    <Link key={item.href} href={item.href} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(item.href) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>
+                    <Link key={item.href} href={item.href} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(item.href) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>
                       {item.label}
                     </Link>
                   ))}
@@ -377,22 +423,22 @@ export default function Navbar() {
             )}
             {token && role !== "SECRETARIA" && (
               <>
-                <Link href={role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Ligas</Link>
-                <Link href={role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Feedback</Link>
+                <Link href={role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/ligas" : "/estudiante/ligas") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Ligas</Link>
+                <Link href={role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback"} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(role === "PROFESOR" ? "/docente/feedback" : "/estudiante/feedback") ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Feedback</Link>
               </>
             )}
             {token && (
-              <Link href={dashHref} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(dashHref) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setMobileOpen(false)}>Panel</Link>
+              <Link href={dashHref} prefetch={false} className={`block px-3 py-2 rounded-md text-sm ${isActive(dashHref) ? "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary)]" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`} onClick={() => setMobileOpen(false)}>Panel</Link>
             )}
 
             <div className="mt-3 border-t pt-3">
               {!token ? (
                 <div className="flex gap-2">
                   <Link href="/login" prefetch={false} className="flex-1 px-3 py-2 rounded-md border border-[color:var(--rec-primary)] text-[color:var(--rec-primary)] text-sm hover:bg-[color:var(--rec-soft)]" onClick={() => setMobileOpen(false)}>Ingresar</Link>
-                  <Link href="/acceso-secretaria" prefetch={false} className="flex-1 px-3 py-2 rounded-md bg-[color:var(--rec-primary)] text-white text-sm hover:bg-[color:var(--rec-primary-strong)]" onClick={() => setMobileOpen(false)}>Acceso Secretaría</Link>
+                  <Link href="/acceso-secretaria" prefetch={false} className="flex-1 px-3 py-2 rounded-md bg-[color:var(--rec-primary)] text-rec-text-on-media text-sm hover:bg-[color:var(--rec-primary-strong)]" onClick={() => setMobileOpen(false)}>Acceso Secretaría</Link>
                 </div>
               ) : (
-                <button className="w-full px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50" onClick={logout}>Salir</button>
+                <button className="w-full px-3 py-2 rounded-md text-sm text-rec-danger-text hover:bg-rec-danger-bg" onClick={logout}>Salir</button>
               )}
             </div>
           </nav>

@@ -309,6 +309,44 @@ export class RecoveryService extends TenantScopedService {
     return buildPaginatedResult(data, total, page, limit);
   }
 
+  async getPendingCount(actor: Actor): Promise<{ pending: number }> {
+    if (
+      actor.role !== UserRole.ESTUDIANTE &&
+      actor.role !== UserRole.PROFESOR &&
+      actor.role !== UserRole.SECRETARIA
+    ) {
+      return { pending: 0 };
+    }
+
+    const pendingWhere = {
+      status: RecoveryRequestStatus.PENDING,
+      deletedAt: null,
+    } as const;
+
+    if (actor.role === UserRole.ESTUDIANTE) {
+      const pending = await this.prisma.recoveryRequest.count({
+        where: { ...pendingWhere, studentId: actor.userId },
+      });
+      return { pending };
+    }
+
+    if (actor.role === UserRole.PROFESOR) {
+      const pending = await this.prisma.recoveryRequest.count({
+        where: { ...pendingWhere, teacherId: actor.userId },
+      });
+      return { pending };
+    }
+
+    const institutionId = this.getActorInstitutionId(actor);
+    const pending = await this.prisma.recoveryRequest.count({
+      where: {
+        ...pendingWhere,
+        group: { institutionId },
+      },
+    });
+    return { pending };
+  }
+
   async updateRequestStatus(
     actor: Actor,
     id: number,
@@ -352,7 +390,8 @@ export class RecoveryService extends TenantScopedService {
         finalScore: dto.finalScore,
         respondedAt:
           dto.status === RecoveryRequestStatus.APPROVED ||
-          dto.status === RecoveryRequestStatus.REJECTED
+          dto.status === RecoveryRequestStatus.REJECTED ||
+          dto.status === RecoveryRequestStatus.COMPLETED
             ? new Date()
             : request.respondedAt,
       },

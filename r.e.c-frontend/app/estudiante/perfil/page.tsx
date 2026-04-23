@@ -60,7 +60,7 @@ export default function EstudiantePerfilPage() {
       {/* Cabecera */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-5">
         <div
-          className="flex h-20 w-20 items-center justify-center rounded-2xl text-2xl font-extrabold text-white flex-shrink-0 shadow-sm"
+          className="flex h-20 w-20 items-center justify-center rounded-2xl text-2xl font-extrabold text-rec-text-on-media flex-shrink-0 shadow-sm"
           style={{ background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))" }}
         >
           {loading ? "…" : initials}
@@ -71,13 +71,13 @@ export default function EstudiantePerfilPage() {
           </h1>
           <p className="text-sm font-medium mt-0.5" style={{ color: "var(--rec-primary)" }}>Estudiante</p>
           {!loading && (
-            <p className="text-sm text-slate-500 mt-1">{profile?.email || user?.email || ""}</p>
+            <p className="text-sm text-rec-text-subtle mt-1">{profile?.email || user?.email || ""}</p>
           )}
         </div>
         <div className="sm:ml-auto">
           <Link
             href="/estudiante/cambiar-contrasena"
-            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-rec-text-on-media transition hover:opacity-90"
             style={{ background: "var(--rec-primary)" }}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
@@ -87,7 +87,7 @@ export default function EstudiantePerfilPage() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-xl px-5 py-4 text-sm font-medium" style={{ background: "#fdecea", color: "var(--rec-cta)" }}>
+        <div className="mb-6 rounded-xl px-5 py-4 text-sm font-medium" style={{ background: "var(--rec-alert-soft-bg)", color: "var(--rec-cta)" }}>
           {error}
         </div>
       )}
@@ -96,7 +96,7 @@ export default function EstudiantePerfilPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Datos personales */}
         <div
-          className="md:col-span-2 rounded-2xl bg-white p-7 shadow-sm"
+          className="md:col-span-2 rounded-2xl bg-rec-bg-elevated p-7 shadow-sm"
           style={{ border: "1px solid var(--rec-soft)" }}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -122,7 +122,7 @@ export default function EstudiantePerfilPage() {
                   className="rounded-xl px-4 py-3"
                   style={{ background: "var(--rec-soft)" }}
                 >
-                  <p className="text-xs font-semibold text-slate-500 mb-0.5">{item.label}</p>
+                  <p className="text-xs font-semibold text-rec-text-subtle mb-0.5">{item.label}</p>
                   <p className="text-sm font-medium" style={{ color: "var(--rec-title)" }}>{item.value}</p>
                 </div>
               ))}
@@ -132,7 +132,7 @@ export default function EstudiantePerfilPage() {
 
         {/* Resumen académico */}
         <div
-          className="rounded-2xl bg-white p-7 shadow-sm"
+          className="rounded-2xl bg-rec-bg-elevated p-7 shadow-sm"
           style={{ border: "1px solid var(--rec-soft)" }}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -147,7 +147,7 @@ export default function EstudiantePerfilPage() {
               { label: "Grupo asignado", value: loading ? "…" : (studentGroup?.group ? "Sí" : "No") },
             ].map((stat) => (
               <div key={stat.label} className="flex items-center justify-between py-2 border-b last:border-0" style={{ borderColor: "var(--rec-soft)" }}>
-                <span className="text-sm text-slate-500">{stat.label}</span>
+                <span className="text-sm text-rec-text-subtle">{stat.label}</span>
                 <span className="text-sm font-bold" style={{ color: "var(--rec-primary)" }}>{stat.value}</span>
               </div>
             ))}
@@ -156,7 +156,7 @@ export default function EstudiantePerfilPage() {
 
         {/* Materias */}
         <div
-          className="md:col-span-3 rounded-2xl bg-white p-7 shadow-sm"
+          className="md:col-span-3 rounded-2xl bg-rec-bg-elevated p-7 shadow-sm"
           style={{ border: "1px solid var(--rec-soft)" }}
         >
           <div className="flex items-center gap-3 mb-5">
@@ -176,7 +176,7 @@ export default function EstudiantePerfilPage() {
             </div>
           ) : subjects.length === 0 ? (
             <div className="rounded-xl px-5 py-8 text-center" style={{ background: "var(--rec-soft)" }}>
-              <p className="text-sm text-slate-500">No hay materias asignadas para este período.</p>
+              <p className="text-sm text-rec-text-subtle">No hay materias asignadas para este período.</p>
             </div>
           ) : (
             <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -187,7 +187,7 @@ export default function EstudiantePerfilPage() {
                   style={{ background: "var(--rec-soft)", color: "var(--rec-title)" }}
                 >
                   <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-white text-xs flex-shrink-0"
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-rec-text-on-media text-xs flex-shrink-0"
                     style={{ background: "var(--rec-primary)" }}
                   >✓</span>
                   {item.subject.nombre}
@@ -209,7 +209,7 @@ export default function EstudiantePerfilPage() {
           <Link
             key={link.label}
             href={link.href}
-            className="flex flex-col items-center gap-2 rounded-2xl py-5 px-3 text-center text-sm font-semibold bg-white shadow-sm transition hover:shadow-md"
+            className="flex flex-col items-center gap-2 rounded-2xl py-5 px-3 text-center text-sm font-semibold bg-rec-bg-elevated shadow-sm transition hover:shadow-md"
             style={{ border: "1px solid var(--rec-soft)", color: "var(--rec-title)" }}
           >
             <span className="text-2xl">{link.icon}</span>

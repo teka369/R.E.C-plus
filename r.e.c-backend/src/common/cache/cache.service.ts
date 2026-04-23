@@ -18,6 +18,10 @@ export class RedisCacheService {
     await this.cache.del(key);
   }
 
+  /**
+   * Solo funciona con store Redis (`cache-manager-ioredis-yet`: expone `keys`).
+   * Con caché en memoria no hay `keys` → no borra nada; por eso en producción conviene REDIS_URL + Redis en marcha.
+   */
   async delByPattern(pattern: string): Promise<void> {
     const stores = this.cache.stores as unknown as {
       keys?: (pattern: string) => Promise<string[]>;

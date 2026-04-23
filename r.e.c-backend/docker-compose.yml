@@ -1,21 +1,47 @@
+# PostgreSQL solo para recedu.co — escucha en localhost (no expone a Internet).
+# Postgres con contraseña fuerte: copia .env.docker.example → .env.docker y:
+#   docker compose --env-file .env.docker up -d
+# Solo Redis (sin .env.docker): docker compose up -d redis
+#   (Compose interpola todo el archivo; POSTGRES_PASSWORD tiene valor por defecto solo para eso.)
+#
+# El backend Nest (PM2) usa DATABASE_URL apuntando a 127.0.0.1:5432
+# Redis: rate limit (throttler) + caché Nest (invalidación por patrón). En .env: REDIS_URL=redis://127.0.0.1:6379
+
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis_rec
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-rec-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: postgres_rec
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: rec_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      # Valor por defecto permite `docker compose up -d redis` sin .env.docker; en prod usa --env-file .env.docker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_set_in_env_docker}
+      POSTGRES_DB: ${POSTGRES_DB:-rec_db}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-rec-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-rec_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  postgres-data:
+  postgres-rec-data:
+  redis-rec-data:

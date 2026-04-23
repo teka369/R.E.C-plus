@@ -125,6 +125,7 @@ describe('AcademicService (unit)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.studentGroup.updateMany.mockResolvedValue({ count: 0 });
     service = new AcademicService(prisma as never, cache as never);
   });
 
@@ -483,6 +484,7 @@ describe('AcademicService (unit)', () => {
       });
       prisma.academicPeriod.findFirst.mockResolvedValue({ id: 5 });
       prisma.studentGroup.findFirst.mockResolvedValue(null);
+      prisma.studentGroup.updateMany.mockResolvedValue({ count: 0 });
       prisma.studentGroup.create.mockResolvedValue({
         studentId: 20,
         groupId: 10,
@@ -495,6 +497,43 @@ describe('AcademicService (unit)', () => {
       });
 
       expect(result.groupId).toBe(10);
+      expect(prisma.studentGroup.updateMany).toHaveBeenCalled();
+    });
+
+    it('restaura asignación soft-deleted al mismo grupo sin create (evita P2002)', async () => {
+      prisma.user.findUnique.mockResolvedValue(studentUser);
+      prisma.group.findUnique.mockResolvedValue({
+        id: 10,
+        institutionId: 100,
+      });
+      prisma.academicPeriod.findFirst.mockResolvedValue({ id: 5 });
+      prisma.studentGroup.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 77,
+          studentId: 20,
+          groupId: 10,
+          academicPeriodId: 5,
+        });
+      prisma.studentGroup.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.assignStudentToGroup(secretariaActor, {
+        studentId: 20,
+        groupId: 10,
+      });
+
+      expect(result.id).toBe(77);
+      expect(prisma.studentGroup.create).not.toHaveBeenCalled();
+      expect(prisma.studentGroup.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            studentId: 20,
+            groupId: 10,
+            academicPeriodId: 5,
+            deletedAt: { not: null },
+          }),
+        }),
+      );
     });
 
     it('retorna asignación existente si el estudiante ya está en el mismo grupo', async () => {
@@ -742,6 +781,7 @@ describe('AcademicService (unit)', () => {
       const result = await service.assignGroupDirector(secretariaActor, 10, 5);
 
       expect(result.directorId).toBe(5);
+      expect(cache.delByPattern).toHaveBeenCalledWith('groups:*');
     });
 
     it('rechaza si el usuario no es PROFESOR', async () => {

@@ -230,25 +230,25 @@ function EstudianteMaterialesContent() {
     return null;
   };
   const badgePalette = [
-    "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    "bg-indigo-50 text-indigo-700 border border-indigo-200",
-    "bg-amber-50 text-amber-700 border border-amber-200",
-    "bg-rose-50 text-rose-700 border border-rose-200",
-    "bg-sky-50 text-sky-700 border border-sky-200",
-    "bg-violet-50 text-violet-700 border border-violet-200",
-    "bg-teal-50 text-teal-700 border border-teal-200",
-    "bg-lime-50 text-lime-700 border border-lime-200",
+    "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
+    "bg-[color:var(--rec-soft)] text-[color:var(--rec-primary-strong)] border border-[color:var(--rec-soft)]",
+    "bg-rec-warning-bg text-rec-warning-text border border-rec-warning-border",
+    "bg-rec-bg-muted text-rec-text-secondary border border-rec-border-default",
+    "bg-rec-info-bg text-rec-info-text border border-rec-info-border",
+    "bg-rec-bg-muted text-rec-text-secondary border border-rec-border-default",
+    "bg-rec-bg-muted text-rec-text-secondary border border-rec-border-default",
+    "bg-rec-bg-muted text-rec-text-secondary border border-rec-border-default",
   ];
   const badgeClasses = (key: number) => badgePalette[key % badgePalette.length];
   const cardPalette = [
-    "bg-emerald-50 border border-emerald-200",
-    "bg-indigo-50 border border-indigo-200",
-    "bg-amber-50 border border-amber-200",
-    "bg-rose-50 border border-rose-200",
-    "bg-sky-50 border border-sky-200",
-    "bg-violet-50 border border-violet-200",
-    "bg-teal-50 border border-teal-200",
-    "bg-lime-50 border border-lime-200",
+    "bg-[color:var(--rec-soft)] border border-[color:var(--rec-soft)]",
+    "bg-[color:var(--rec-soft)] border border-[color:var(--rec-soft)]",
+    "bg-rec-warning-bg border border-rec-warning-border",
+    "bg-rec-bg-muted border border-rec-border-default",
+    "bg-rec-info-bg border border-rec-info-border",
+    "bg-rec-bg-muted border border-rec-border-default",
+    "bg-rec-bg-muted border border-rec-border-default",
+    "bg-rec-bg-muted border border-rec-border-default",
   ];
   const cardClasses = (key: number) => cardPalette[key % cardPalette.length];
   const groupLabelForId = (id: number) => {
@@ -325,7 +325,8 @@ function EstudianteMaterialesContent() {
   return (
     <section className="space-y-4">
       <div
-        className="rounded-2xl border p-4 sm:p-6 text-white"
+        id="tour-est-mat-header"
+        className="rounded-2xl border p-4 sm:p-6 text-rec-text-on-media"
         style={{
           borderColor: "var(--rec-soft)",
           background: "linear-gradient(135deg, var(--rec-primary-strong), var(--rec-primary))",
@@ -334,14 +335,14 @@ function EstudianteMaterialesContent() {
         <h2 className="text-2xl font-bold tracking-tight">Materiales del curso</h2>
         {studentGroup && (
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm text-white/90">Mi grado–grupo:</span>
+            <span className="text-sm text-rec-text-on-media/90">Mi grado–grupo:</span>
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${badgeClasses(studentGroup.groupId)}`}>
               {studentGroup.label}
             </span>
           </div>
         )}
         {!loading && !error && (
-          <div className="mt-2 text-xs text-white/90">
+          <div className="mt-2 text-xs text-rec-text-on-media/90">
             Mostrando {countsFiltered.total} de {countsAll.total} materiales (Grupo: {countsFiltered.group}, Grado: {countsFiltered.grade})
             {" "}· Página {page} de {totalPages}
           </div>
@@ -350,11 +351,11 @@ function EstudianteMaterialesContent() {
 
       {/* Filtros */}
       {!loading && !error && (
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <div id="tour-est-mat-filtros" className="rounded-2xl border border-rec-border-default/80 bg-rec-bg-elevated p-3 shadow-sm space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rec-border-default bg-rec-bg-base px-3 py-2">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-slate-800">Filtros de materiales</p>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-white text-slate-700 border border-slate-200">
+              <p className="text-sm font-medium text-rec-text-primary">Filtros de materiales</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-rec-bg-elevated text-rec-text-secondary border border-rec-border-default">
                 {activeFiltersCount} activo(s)
               </span>
             </div>
@@ -362,7 +363,7 @@ function EstudianteMaterialesContent() {
               <button
                 type="button"
                 onClick={() => setFiltersExpanded((prev) => !prev)}
-                className="inline-flex items-center gap-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+                className="inline-flex items-center gap-1 border border-rec-border-strong rounded-lg px-2.5 py-1.5 text-sm text-rec-text-secondary hover:bg-rec-bg-muted"
                 aria-expanded={filtersExpanded}
                 aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
               >
@@ -384,7 +385,7 @@ function EstudianteMaterialesContent() {
                 type="button"
                 onClick={handleResetFilters}
                 disabled={!hasActiveFilters}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm border border-rec-border-strong rounded hover:bg-rec-bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Limpiar filtros
               </button>
@@ -393,23 +394,23 @@ function EstudianteMaterialesContent() {
 
           {filtersExpanded && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              <label className="text-xs text-gray-700 space-y-1 sm:col-span-2 xl:col-span-1">
+              <label className="text-xs text-rec-text-secondary space-y-1 sm:col-span-2 xl:col-span-1">
                 <span className="block">Búsqueda rápida</span>
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Título o descripción"
-                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                  className="w-full border border-rec-border-strong rounded px-2 py-2 text-sm focus:outline-none focus:border-rec-primary focus:ring-2 focus:ring-rec-success-border"
                 />
               </label>
 
-              <label className="text-xs text-gray-700 space-y-1">
+              <label className="text-xs text-rec-text-secondary space-y-1">
                 <span className="block">Tipo</span>
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value as StudyMaterial["type"] | "ALL")}
-                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                  className="w-full border border-rec-border-strong rounded px-2 py-2 text-sm focus:outline-none focus:border-rec-primary focus:ring-2 focus:ring-rec-success-border"
                 >
                   <option value="ALL">Todos</option>
                   <option value="PDF">PDF</option>
@@ -420,12 +421,12 @@ function EstudianteMaterialesContent() {
                 </select>
               </label>
 
-              <label className="text-xs text-gray-700 space-y-1">
+              <label className="text-xs text-rec-text-secondary space-y-1">
                 <span className="block">Visibilidad</span>
                 <select
                   value={visibilityFilter}
                   onChange={(e) => setVisibilityFilter(e.target.value as StudyMaterial["visibility"] | "ALL")}
-                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                  className="w-full border border-rec-border-strong rounded px-2 py-2 text-sm focus:outline-none focus:border-rec-primary focus:ring-2 focus:ring-rec-success-border"
                 >
                   <option value="ALL">Todas</option>
                   <option value="GROUP">Grupo</option>
@@ -433,12 +434,12 @@ function EstudianteMaterialesContent() {
                 </select>
               </label>
 
-              <label className="text-xs text-gray-700 space-y-1">
+              <label className="text-xs text-rec-text-secondary space-y-1">
                 <span className="block">Materia</span>
                 <select
                   value={subjectFilter}
                   onChange={(e) => setSubjectFilter(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
-                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                  className="w-full border border-rec-border-strong rounded px-2 py-2 text-sm focus:outline-none focus:border-rec-primary focus:ring-2 focus:ring-rec-success-border"
                 >
                   <option value="ALL">Todas</option>
                   {studentSubjects.map((s) => (
@@ -447,12 +448,12 @@ function EstudianteMaterialesContent() {
                 </select>
               </label>
 
-              <label className="text-xs text-gray-700 space-y-1">
+              <label className="text-xs text-rec-text-secondary space-y-1">
                 <span className="block">Por página</span>
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="w-full border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                  className="w-full border border-rec-border-strong rounded px-2 py-2 text-sm focus:outline-none focus:border-rec-primary focus:ring-2 focus:ring-rec-success-border"
                 >
                   <option value={6}>6</option>
                   <option value={12}>12</option>
@@ -463,29 +464,29 @@ function EstudianteMaterialesContent() {
           )}
 
           <div className="w-full sm:w-auto sm:ml-auto flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg border border-slate-300 bg-white/90 p-1 shadow-sm">
+            <div className="inline-flex rounded-lg border border-rec-border-strong bg-rec-bg-elevated/90 p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
-                className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "list" ? "mode-active" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "list" ? "mode-active" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
               >
                 Lista
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
-                className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "grid" ? "mode-active" : "text-slate-700 hover:bg-slate-100"}`}
+                className={`mode-button px-3 py-1.5 text-xs rounded ${viewMode === "grid" ? "mode-active" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
               >
                 Cuadro
               </button>
             </div>
             {countsAll.total > 0 && (
-              <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-700 border border-gray-200">
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] rounded bg-rec-bg-muted text-rec-text-secondary border border-rec-border-default">
                 Resultados: {countsFiltered.total}
               </span>
             )}
             {hasActiveFilters && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-rec-warning-bg text-rec-warning-text border border-rec-warning-border">
                 Filtros activos
               </span>
             )}
@@ -493,23 +494,23 @@ function EstudianteMaterialesContent() {
         </div>
       )}
 
-      {loading && <p className="text-sm text-gray-600">Cargando…</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-rec-text-muted">Cargando…</p>}
+      {error && <p className="text-sm text-rec-danger-text">{error}</p>}
 
       {!loading && !error && (
-        <div className="space-y-3">
+        <div id="tour-est-mat-list" className="space-y-3">
           {countsAll.total === 0 && (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-rec-text-muted">
               {studentGroup
                 ? "No hay materiales disponibles de tu grupo ni de tu grado."
                 : "No tienes grado–grupo asignado. Comunícate con secretaría para tu asignación."}
             </div>
           )}
           {countsAll.total > 0 && countsFiltered.total === 0 && (
-            <div className="text-sm text-gray-600">No hay materiales que coincidan con tu búsqueda y filtros.</div>
+            <div className="text-sm text-rec-text-muted">No hay materiales que coincidan con tu búsqueda y filtros.</div>
           )}
           {countsFiltered.total > 0 && (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-rec-text-muted">
               {countsFiltered.group === 0 && <div>• No hay materiales de tu grupo con los filtros aplicados.</div>}
               {countsFiltered.grade === 0 && <div>• No hay materiales de tu grado con los filtros aplicados.</div>}
             </div>
@@ -517,19 +518,19 @@ function EstudianteMaterialesContent() {
           {/* Controles de paginación */}
           {countsFiltered.total > 0 && (
             <div className="flex items-center justify-between gap-2">
-              <div className="text-xs text-gray-700">
+              <div className="text-xs text-rec-text-secondary">
                 Mostrando {Math.min((page - 1) * pageSize + 1, totalFiltered)}–{Math.min(page * pageSize, totalFiltered)} de {totalFiltered}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="px-2 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
+                  className="px-2 py-1 text-sm border border-rec-border-strong rounded disabled:opacity-50"
                 >Anterior</button>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="px-2 py-1 text-sm border border-gray-300 rounded disabled:opacity-50"
+                  className="px-2 py-1 text-sm border border-rec-border-strong rounded disabled:opacity-50"
                 >Siguiente</button>
               </div>
             </div>
@@ -543,11 +544,11 @@ function EstudianteMaterialesContent() {
                 return (
                   <article key={m.id} className={`material-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition ${cardClasses(m.id)}`}>
                     <div className="flex flex-col sm:flex-row">
-                      <div className="media-shell sm:w-52 shrink-0 relative bg-slate-100 max-h-[200px] sm:max-h-none overflow-hidden">
+                      <div className="media-shell sm:w-52 shrink-0 relative bg-rec-bg-muted max-h-[200px] sm:max-h-none overflow-hidden">
                         {thumb ? (
                           <img src={thumb} alt={`Miniatura de ${m.title}`} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="h-full min-h-[120px] w-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">Sin miniatura</div>
+                          <div className="h-full min-h-[120px] w-full flex items-center justify-center text-rec-text-subtle text-sm p-4 text-center">Sin miniatura</div>
                         )}
                         <span className={`absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium backdrop-blur ${badgeClasses(m.groupId)}`}>
                           {groupLabelForId(m.groupId)}
@@ -556,31 +557,31 @@ function EstudianteMaterialesContent() {
 
                       <div className="flex-1 p-5 flex flex-col gap-3">
                         <div>
-                          <h3 className="text-base font-semibold text-slate-900 leading-tight">{m.title}</h3>
-                          {m.description ? <p className="mt-1.5 text-sm text-slate-600 line-clamp-3">{m.description}</p> : null}
+                          <h3 className="text-base font-semibold text-rec-text-primary leading-tight">{m.title}</h3>
+                          {m.description ? <p className="mt-1.5 text-sm text-rec-text-muted line-clamp-3">{m.description}</p> : null}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 border-t border-rec-text-primary/5 pt-3">
                           <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
-                            <p className="mt-0.5 text-xs font-medium text-slate-700">{subjectName(m.subjectId)}</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Materia</p>
+                            <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{subjectName(m.subjectId)}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tipo</p>
-                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.type}</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Tipo</p>
+                            <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{m.type}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Acceso</p>
-                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"}</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Acceso</p>
+                            <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vistas</p>
-                            <p className="mt-0.5 text-xs font-medium text-slate-700">{m.views ?? 0}</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Vistas</p>
+                            <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{m.views ?? 0}</p>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2 mt-auto">
-                          <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
+                          <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-rec-border-strong text-rec-text-secondary hover:bg-rec-bg-muted">Ver</Link>
                           {resourceHref ? (
                             <a
                               href={resourceHref}
@@ -589,7 +590,7 @@ function EstudianteMaterialesContent() {
                               onClick={() => {
                                 void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
                               }}
-                              className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                              className="px-3 py-1.5 rounded-md text-sm bg-rec-primary text-rec-text-on-media hover:bg-rec-primary-strong"
                             >
                               Abrir recurso
                             </a>
@@ -608,11 +609,11 @@ function EstudianteMaterialesContent() {
                 const resourceHref = m.resourceUrl || (m.filePath ? materialsApi.getStudyFileUrl(m.id) : null);
                 return (
                   <article key={m.id} className={`material-card rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition ${cardClasses(m.id)}`}>
-                    <div className="media-shell h-52 bg-slate-100 relative">
+                    <div className="media-shell h-52 bg-rec-bg-muted relative">
                       {thumb ? (
                         <img src={thumb} alt={`Miniatura de ${m.title}`} className="h-full w-full object-cover" />
                       ) : (
-                        <div className="h-full w-full flex items-center justify-center text-slate-500 text-sm p-4 text-center">Sin miniatura</div>
+                        <div className="h-full w-full flex items-center justify-center text-rec-text-subtle text-sm p-4 text-center">Sin miniatura</div>
                       )}
                       <span className={`absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium backdrop-blur ${badgeClasses(m.groupId)}`}>
                         {groupLabelForId(m.groupId)}
@@ -621,31 +622,31 @@ function EstudianteMaterialesContent() {
 
                     <div className="p-4 flex flex-col gap-3">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-900 line-clamp-2">{m.title}</h3>
-                        {m.description ? <p className="mt-1.5 text-xs text-slate-600 line-clamp-3">{m.description}</p> : null}
+                        <h3 className="text-sm font-semibold text-rec-text-primary line-clamp-2">{m.title}</h3>
+                        {m.description ? <p className="mt-1.5 text-xs text-rec-text-muted line-clamp-3">{m.description}</p> : null}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-black/5 pt-3">
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-rec-text-primary/5 pt-3">
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Materia</p>
-                          <p className="mt-0.5 text-xs font-medium text-slate-700 truncate">{subjectName(m.subjectId)}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Materia</p>
+                          <p className="mt-0.5 text-xs font-medium text-rec-text-secondary truncate">{subjectName(m.subjectId)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Tipo</p>
-                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.type}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Tipo</p>
+                          <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{m.type}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Acceso</p>
-                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Acceso</p>
+                          <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{m.visibility === "GROUP" ? "Tu grupo" : "Tu grado"}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vistas</p>
-                          <p className="mt-0.5 text-xs font-medium text-slate-700">{m.views ?? 0}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-rec-text-subtle">Vistas</p>
+                          <p className="mt-0.5 text-xs font-medium text-rec-text-secondary">{m.views ?? 0}</p>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2 mt-auto">
-                        <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">Ver</Link>
+                        <Link href={`/materiales/${m.id}`} prefetch={false} className="px-3 py-1.5 rounded-md text-sm border border-rec-border-strong text-rec-text-secondary hover:bg-rec-bg-muted">Ver</Link>
                         {resourceHref ? (
                           <a
                             href={resourceHref}
@@ -654,7 +655,7 @@ function EstudianteMaterialesContent() {
                             onClick={() => {
                               void materialsApi.trackStudyDownload(m.id).catch(() => undefined);
                             }}
-                            className="px-3 py-1.5 rounded-md text-sm bg-emerald-600 text-white hover:bg-emerald-700"
+                            className="px-3 py-1.5 rounded-md text-sm bg-rec-primary text-rec-text-on-media hover:bg-rec-primary-strong"
                           >
                             Abrir recurso
                           </a>
@@ -669,8 +670,8 @@ function EstudianteMaterialesContent() {
           </div>
           {process.env.NODE_ENV !== "production" && (
             <details className="mt-4">
-              <summary className="cursor-pointer text-xs text-gray-700">Depuración (solo desarrollo)</summary>
-              <pre className="mt-2 text-[11px] bg-gray-50 p-2 rounded border border-gray-200 overflow-auto">
+              <summary className="cursor-pointer text-xs text-rec-text-secondary">Depuración (solo desarrollo)</summary>
+              <pre className="mt-2 text-[11px] bg-rec-bg-base p-2 rounded border border-rec-border-default overflow-auto">
 {JSON.stringify({
   userId: user?.id,
   studentGroup,
@@ -695,9 +696,9 @@ function EstudianteMaterialesContent() {
         }
 
         .mode-active {
-          background: #059669;
-          color: white;
-          box-shadow: 0 6px 14px -10px rgba(5, 150, 105, 0.75);
+          background: var(--rec-primary-strong);
+          color: var(--rec-text-on-primary);
+          box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--rec-primary-strong) 72%, transparent);
         }
 
         .view-mode-switch {
@@ -721,7 +722,7 @@ function EstudianteMaterialesContent() {
 
         .material-card:hover {
           transform: translateY(-3px) scale(1.01);
-          box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.7);
+          box-shadow: 0 14px 30px -24px color-mix(in srgb, var(--rec-ink) 70%, transparent);
         }
 
         .media-shell {

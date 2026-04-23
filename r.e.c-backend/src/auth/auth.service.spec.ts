@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { LoginAttemptsService } from './login-attempts.service';
 
 const HASHED_PASSWORD = bcrypt.hashSync('secret123', 10);
 
@@ -48,14 +49,23 @@ function makeJwt() {
   };
 }
 
+const loginAttemptsMock = () => ({
+  getCount: jest.fn().mockResolvedValue({ count: 0, ttl: 0 }),
+  increment: jest.fn().mockResolvedValue({ count: 1, ttl: 900 }),
+  reset: jest.fn().mockResolvedValue(undefined),
+});
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: ReturnType<typeof makePrisma>;
   let jwt: ReturnType<typeof makeJwt>;
+  let loginAttempts: ReturnType<typeof loginAttemptsMock>;
+  const tracker = 'ip:test';
 
   beforeEach(async () => {
     prisma = makePrisma();
     jwt = makeJwt();
+    loginAttempts = loginAttemptsMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -63,6 +73,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwt },
         { provide: MailService, useValue: { sendPasswordReset: jest.fn() } },
+        { provide: LoginAttemptsService, useValue: loginAttempts },
       ],
     }).compile();
 
@@ -134,7 +145,7 @@ describe('AuthService', () => {
     });
 
     it('devuelve access_token, refresh_token y user', async () => {
-      const result = await service.login('ana@test.edu', 'secret123');
+      const result = await service.login('ana@test.edu', 'secret123', tracker);
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
       expect(result.user.id).toBe('uuid-user-1');
@@ -142,7 +153,7 @@ describe('AuthService', () => {
     });
 
     it('crea una AuthSession en la BD', async () => {
-      await service.login('ana@test.edu', 'secret123');
+      await service.login('ana@test.edu', 'secret123', tracker);
       expect(prisma.authSession.create).toHaveBeenCalledTimes(1);
       expect(prisma.authSession.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -153,7 +164,7 @@ describe('AuthService', () => {
 
     it('propaga UnauthorizedException si las credenciales son inválidas', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.login('x@test.edu', 'bad')).rejects.toThrow(
+      await expect(service.login('x@test.edu', 'bad', tracker)).rejects.toThrow(
         UnauthorizedException,
       );
     });

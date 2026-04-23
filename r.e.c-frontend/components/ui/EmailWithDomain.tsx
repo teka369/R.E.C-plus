@@ -57,13 +57,13 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
 
   return (
     <div className="flex flex-col gap-1">
-      {label ? <label className="text-sm text-gray-700">{label}</label> : null}
+      {label ? <label className="text-sm text-rec-text-secondary">{label}</label> : null}
       <div className="flex items-stretch gap-2">
         <input
           type="text"
           inputMode="email"
           placeholder="usuario"
-          className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black flex-1"
+          className="rounded border border-rec-border-strong bg-rec-bg-elevated px-3 py-2 text-sm text-rec-text-primary focus:outline-none focus:ring-2 focus:ring-rec-primary flex-1"
           value={localPart}
           onChange={(e) => {
             const nextLocal = e.target.value;
@@ -77,11 +77,11 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
           }}
         />
         <div className="flex items-center">
-          <span className="text-sm text-gray-700 px-2">@</span>
+          <span className="text-sm text-rec-text-secondary px-2">@</span>
           <input
             type="text"
             placeholder="dominio"
-            className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+            className="rounded border border-rec-border-strong bg-rec-bg-elevated px-3 py-2 text-sm text-rec-text-primary focus:outline-none focus:ring-2 focus:ring-rec-primary"
             value={domain.replace(/^@+/, "")}
             onChange={(e) => {
               const next = e.target.value.replace(/^@+/, "");
@@ -90,8 +90,8 @@ export default function EmailWithDomain({ label = "Correo", email, onEmailChange
           />
         </div>
       </div>
-      <p className="text-xs text-gray-600">Se guardará como: <span className="font-mono">{localPart.replace(/\s+/g, "").replace(/@+/g, "")}{domainDisplay}</span></p>
-      <p className="text-xs text-gray-500">El dominio se guarda y reutiliza automáticamente en esta sección.</p>
+      <p className="text-xs text-rec-text-muted">Se guardará como: <span className="font-mono">{localPart.replace(/\s+/g, "").replace(/@+/g, "")}{domainDisplay}</span></p>
+      <p className="text-xs text-rec-text-subtle">El dominio se guarda y reutiliza automáticamente en esta sección.</p>
     </div>
   );
 }
