@@ -112,6 +112,7 @@ import {
   buildPaginatedResult,
 } from '../common/dto/pagination.dto';
 import { RedisCacheService } from '../common/cache/cache.service';
+import { TeacherLoadSummaryDto } from './dto/teacher-load-summary.dto';
 
 @Injectable()
 export class AcademicService extends TenantScopedService {
@@ -808,6 +809,61 @@ export class AcademicService extends TenantScopedService {
       where: { teacherId },
       include: { group: { include: { grade: true } }, subject: true },
     });
+  }
+
+  async getTeacherLoadSummary(actor: Actor): Promise<TeacherLoadSummaryDto[]> {
+    const whereByActor =
+      actor.role === UserRole.SUPER_ADMIN
+        ? {}
+        : { group: { institutionId: this.getActorInstitutionId(actor) } };
+
+    type AssignmentGroupBy = { teacherId: number; _count: { teacherId: number } };
+    let grouped: AssignmentGroupBy[] = [];
+
+    try {
+      grouped = await this.prisma.teacherAssignment.groupBy({
+        by: ['teacherId'],
+        where: whereByActor,
+        _count: { teacherId: true },
+      });
+    } catch {
+      const rows = await this.prisma.teacherAssignment.findMany({
+        where: whereByActor,
+        select: { teacherId: true },
+      });
+      const inMemory = rows.reduce<Record<number, number>>((acc, row) => {
+        acc[row.teacherId] = (acc[row.teacherId] ?? 0) + 1;
+        return acc;
+      }, {});
+      grouped = Object.entries(inMemory).map(([teacherId, count]) => ({
+        teacherId: Number(teacherId),
+        _count: { teacherId: count },
+      }));
+    }
+
+    const withAssignments = grouped.filter((item) => item._count.teacherId > 0);
+    if (withAssignments.length === 0) return [];
+
+    const teacherIds = withAssignments.map((item) => item.teacherId);
+    const teachers = await this.prisma.user.findMany({
+      where: { id: { in: teacherIds }, role: UserRole.PROFESOR },
+      select: { id: true, nombres: true, apellidos: true },
+    });
+
+    const teacherById = new Map(
+      teachers.map((teacher) => [
+        teacher.id,
+        `${teacher.nombres} ${teacher.apellidos}`.trim(),
+      ]),
+    );
+
+    return withAssignments
+      .map((item) => ({
+        teacherId: item.teacherId,
+        teacherName: teacherById.get(item.teacherId) ?? `Docente ${item.teacherId}`,
+        assignmentCount: item._count.teacherId,
+      }))
+      .sort((a, b) => b.assignmentCount - a.assignmentCount);
   }
 
   async deleteTeacherAssignment(actor: Actor, id: number) {

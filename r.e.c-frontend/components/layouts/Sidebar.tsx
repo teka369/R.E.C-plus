@@ -14,6 +14,7 @@ type NavItem = {
   label: string;
   description: string;
   icon: JSX.Element;
+  section?: string;
   /** id HTML para tours / pruebas (p. ej. Driver.js) */
   domId?: string;
 };
@@ -112,6 +113,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/estudiantes",
           label: "Estudiantes",
           description: "Gestión de estudiantes",
+          section: "Gestión académica",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -124,6 +126,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/docentes",
           label: "Docentes",
           description: "Gestión de docentes",
+          section: "Gestión académica",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <circle cx="12" cy="7" r="4" />
@@ -135,6 +138,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/secretaria",
           label: "Secretaría",
           description: "Panel de Secretaría",
+          section: "Administración",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M3 22V8l9-5 9 5v14H3z" />
@@ -146,6 +150,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/notificaciones",
           label: "Notificaciones",
           description: "Alertas y mensajes",
+          section: "Administración",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M6 8a6 6 0 0112 0v5l2 2v1H4v-1l2-2V8z" />
@@ -157,6 +162,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/recuperaciones",
           label: "Recuperaciones",
           description: "Periodo y horario oficial",
+          section: "Operación",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M3 6h18" />
@@ -171,6 +177,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/academico",
           label: "Académico",
           description: "Estructura académica",
+          section: "Gestión académica",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M3 6l9-4 9 4-9 4-9-4z" />
@@ -183,6 +190,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/promociones",
           label: "Promociones",
           description: "Promover y simular grado",
+          section: "Operación",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M12 3v18" />
@@ -195,6 +203,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/registro-masivo",
           label: "Registro Masivo",
           description: "Importación de usuarios",
+          section: "Administración",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -207,6 +216,7 @@ export default function Sidebar({ role }: { role: Role }) {
           href: "/secretaria/usuarios",
           label: "Usuarios",
           description: "Vista global por roles",
+          section: "Administración",
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -491,7 +501,12 @@ export default function Sidebar({ role }: { role: Role }) {
                     : undefined
               }
             >
-              {items.map((item) => {
+              {items.map((item, index) => {
+                const previous = items[index - 1];
+                const shouldRenderSectionLabel =
+                  !isCollapsedDesktop &&
+                  item.section &&
+                  previous?.section !== item.section;
                 const isRecuperaciones = item.href.endsWith("/recuperaciones");
                 const showRecoveryBadge =
                   isRecuperaciones && !pendingRecoveriesLoading && pendingRecoveries > 0;
@@ -504,6 +519,11 @@ export default function Sidebar({ role }: { role: Role }) {
                     onMouseEnter={(event) => showTooltip(event, item)}
                     onMouseLeave={hideTooltip}
                   >
+                    {shouldRenderSectionLabel ? (
+                      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-rec-text-subtle">
+                        {item.section}
+                      </div>
+                    ) : null}
                     <Link
                       href={item.href}
                       prefetch={false}

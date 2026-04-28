@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
+  HttpCode,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -21,6 +24,7 @@ import {
   CreateNotificationDto,
   ReadNotificationDto,
 } from './dto/notification.dto';
+import { ActivityFeedItemDto } from './dto/activity-feed-item.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -140,6 +144,17 @@ export class CommunicationController {
   }
 
   // Notificaciones
+  @UseGuards(JwtAuthGuard)
+  @Get('activity-feed')
+  @HttpCode(200)
+  async getActivityFeed(
+    @Request() req: AuthenticatedRequest,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ): Promise<ActivityFeedItemDto[]> {
+    const safeLimit = Math.min(limit, 20);
+    return this.service.getActivityFeed(req.user, safeLimit);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('notifications')
   async listNotifications(

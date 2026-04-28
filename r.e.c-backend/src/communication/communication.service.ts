@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateFeedbackDto, UpdateFeedbackDto } from './dto/feedback.dto';
 import { SendMessageDto } from './dto/message.dto';
 import { CreateNotificationDto } from './dto/notification.dto';
+import { ActivityFeedItemDto } from './dto/activity-feed-item.dto';
 import { UserRole } from '../users/dto/user-role.enum';
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
@@ -498,6 +499,86 @@ export class CommunicationService extends TenantScopedService {
   }
 
   // Notificaciones
+  async getActivityFeed(
+    actor: Actor,
+    limit: number,
+  ): Promise<ActivityFeedItemDto[]> {
+    const institutionId = this.getActorInstitutionId(actor);
+
+    const [students, teacherAssignments, groups, recoveries] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { institutionId, role: UserRole.ESTUDIANTE },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: { id: true, nombres: true, apellidos: true, createdAt: true },
+      }),
+      this.prisma.teacherAssignment.findMany({
+        where: { group: { institutionId } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+          teacher: { select: { nombres: true, apellidos: true } },
+          group: { select: { nombre: true } },
+          subject: { select: { nombre: true } },
+        },
+      }),
+      this.prisma.group.findMany({
+        where: { institutionId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: { id: true, nombre: true, createdAt: true },
+      }),
+      this.prisma.recoveryRequest.findMany({
+        where: { group: { institutionId } },
+        orderBy: { requestedAt: 'desc' },
+        take: limit,
+        include: {
+          student: { select: { nombres: true, apellidos: true } },
+          subject: { select: { nombre: true } },
+        },
+      }),
+    ]);
+
+    const studentItems: ActivityFeedItemDto[] = students.map((student) => ({
+      type: 'STUDENT_ENROLLED',
+      description: `Estudiante ${student.nombres} ${student.apellidos} matriculado`,
+      date: student.createdAt.toISOString(),
+      href: `/secretaria/estudiantes/${student.id}`,
+    }));
+
+    const teacherAssignmentItems: ActivityFeedItemDto[] = teacherAssignments.map(
+      (assignment) => ({
+        type: 'TEACHER_ASSIGNED',
+        description: `${assignment.teacher.nombres} ${assignment.teacher.apellidos} asignado a ${assignment.group.nombre} — ${assignment.subject.nombre}`,
+        date: assignment.createdAt.toISOString(),
+        href: '/secretaria/docentes',
+      }),
+    );
+
+    const groupItems: ActivityFeedItemDto[] = groups.map((group) => ({
+      type: 'GROUP_CREATED',
+      description: `Grupo ${group.nombre} creado`,
+      date: group.createdAt.toISOString(),
+      href: '/secretaria/academico?tab=resumen',
+    }));
+
+    const recoveryItems: ActivityFeedItemDto[] = recoveries.map((recovery) => ({
+      type: 'RECOVERY_REQUESTED',
+      description: `Recuperación de ${recovery.student.nombres} ${recovery.student.apellidos} en ${recovery.subject.nombre}`,
+      date: recovery.requestedAt.toISOString(),
+      href: '/secretaria/recuperaciones',
+    }));
+
+    return [
+      ...studentItems,
+      ...teacherAssignmentItems,
+      ...groupItems,
+      ...recoveryItems,
+    ]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit);
+  }
+
   async listNotifications(
     actor: Actor,
     pagination?: PaginationQuery,
