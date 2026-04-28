@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   Header,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -23,6 +24,7 @@ import { AssignGroupDirectorDto } from './dto/assign-group-director.dto';
 import type { PromoteGradeDto } from './dto/promote-grade.dto';
 import { PaginationQuery } from '../common/dto/pagination.dto';
 import { UpdateGradingPolicyDto } from './dto/update-grading-policy.dto';
+import { TeacherLoadSummaryDto } from './dto/teacher-load-summary.dto';
 
 type AuthenticatedRequest = {
   user: {
@@ -341,6 +343,16 @@ export class AcademicController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.academic.listTeacherAssignments(req.user, teacherId);
+  }
+
+  @Get('teachers/load-summary')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SECRETARIA, UserRole.SUPER_ADMIN)
+  async getTeacherLoadSummary(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<TeacherLoadSummaryDto[]> {
+    return this.academic.getTeacherLoadSummary(req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

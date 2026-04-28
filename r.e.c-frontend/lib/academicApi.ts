@@ -93,6 +93,12 @@ export type PromotionSummary = {
   repeatStudentIds?: number[];
 };
 
+export type TeacherLoadSummary = {
+  teacherId: number;
+  teacherName: string;
+  assignmentCount: number;
+};
+
 export const academicApi = {
   // Grados
   async listGrades(): Promise<Grade[]> {
@@ -154,6 +160,10 @@ export const academicApi = {
 
   async listTeacherAssignments(teacherId: number): Promise<TeacherAssignment[]> {
     const res = await api.get<TeacherAssignment[]>(`/academic/teachers/${teacherId}/assignments`);
+    return res.data;
+  },
+  async getTeacherLoadSummary(): Promise<TeacherLoadSummary[]> {
+    const res = await api.get<TeacherLoadSummary[]>(`/academic/teachers/load-summary`);
     return res.data;
   },
   async getStudentGroup(studentId: number): Promise<StudentGroup | null> {

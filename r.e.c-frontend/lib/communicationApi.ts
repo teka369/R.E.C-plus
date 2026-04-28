@@ -42,6 +42,13 @@ export type UpdateFeedbackInput = {
   improvements?: FeedbackPointList;
 };
 
+export type ActivityFeedItem = {
+  type: string;
+  description: string;
+  date: string;
+  href: string;
+};
+
 type PaginatedResult<T> = {
   data: T[];
   meta?: unknown;
@@ -74,5 +81,11 @@ export const communicationApi = {
   },
   async deleteFeedback(id: number): Promise<void> {
     await api.delete(`/communication/feedback/${id}`);
+  },
+  async getActivityFeed(limit = 10): Promise<ActivityFeedItem[]> {
+    const res = await api.get<ActivityFeedItem[]>(`/communication/activity-feed`, {
+      params: { limit },
+    });
+    return res.data;
   },
 };

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
@@ -19,9 +20,13 @@ type BulkOperationStatus = {
   message?: string;
   tone?: "ok" | "error";
 };
+type AcademicoTab = "estructura" | "asignaciones" | "resumen";
 
 export default function SecretariaAcademicoPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const canConfigureGrading =
     user?.role === "SECRETARIA" || user?.role === "SUPER_ADMIN";
 
@@ -64,6 +69,17 @@ export default function SecretariaAcademicoPage() {
   const [selectedGroupIdsDirector, setSelectedGroupIdsDirector] = useState<Record<number, boolean>>({});
   const [bulkDirectorId, setBulkDirectorId] = useState<string>("");
   const [bulkDirectorStatus, setBulkDirectorStatus] = useState<BulkOperationStatus>({ loading: false });
+
+  const activeTab = useMemo<AcademicoTab>(() => {
+    const tab = searchParams.get("tab");
+    return tab === "estructura" || tab === "asignaciones" || tab === "resumen" ? tab : "estructura";
+  }, [searchParams]);
+
+  function handleTabChange(tab: AcademicoTab): void {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   useEffect(() => {
     academicApi.listGrades().then((gs) => setGrades(gs.map((g) => ({ id: g.id, nombre: g.nombre }))));
@@ -265,20 +281,41 @@ export default function SecretariaAcademicoPage() {
 
       <div className="sec-toolbar">
         <div className="sec-flow-nav">
-          <a className="sec-flow-link" href="#sec-modelo-calificacion">0. Modelo</a>
-          <a className="sec-flow-link" href="#sec-creacion">1. Creación</a>
-          <a className="sec-flow-link" href="#sec-asignacion">2. Asignación</a>
-          <a className="sec-flow-link" href="#sec-resumen">3. Resumen</a>
+          <button
+            type="button"
+            className="sec-flow-link"
+            aria-pressed={activeTab === "estructura"}
+            onClick={() => handleTabChange("estructura")}
+          >
+            Estructura
+          </button>
+          <button
+            type="button"
+            className="sec-flow-link"
+            aria-pressed={activeTab === "asignaciones"}
+            onClick={() => handleTabChange("asignaciones")}
+          >
+            Asignaciones
+          </button>
+          <button
+            type="button"
+            className="sec-flow-link"
+            aria-pressed={activeTab === "resumen"}
+            onClick={() => handleTabChange("resumen")}
+          >
+            Resumen
+          </button>
         </div>
-        <span className="sec-muted">Flujo recomendado: crear estructura, asignar responsables y validar resumen</span>
+        <span className="sec-muted">Navega por bloques para reducir fricción y mantener foco por tarea.</span>
       </div>
 
-      {canConfigureGrading ? (
+      {canConfigureGrading && activeTab === "estructura" ? (
         <section id="sec-modelo-calificacion" className="space-y-3">
           <GradingPolicyConfig />
         </section>
       ) : null}
 
+      {activeTab === "estructura" && (
       <div id="sec-creacion" className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <form onSubmit={onCreateGrade} className="sec-card p-4 space-y-3">
           <h3 className="font-medium">Crear Grado</h3>
@@ -330,8 +367,11 @@ export default function SecretariaAcademicoPage() {
           ))}
         </div>
       </div>
-    </div>
+      </div>
+      )}
 
+    {activeTab === "asignaciones" && (
+    <>
     <form id="sec-asignacion" onSubmit={onAssignSubjectToGroup} className="sec-card p-4 space-y-3">
       <h3 className="font-medium">Asignar Materia a Grupo (individual)</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -364,8 +404,17 @@ export default function SecretariaAcademicoPage() {
         ))}
       </div>
     </div>
+    </>
+    )}
 
+      {activeTab === "resumen" && (
       <div id="sec-resumen" className="space-y-2">
+      {grades.length === 0 && groups.length === 0 && subjects.length === 0 && (
+        <div className="sec-card p-4">
+          <p className="text-sm font-semibold text-rec-text-primary">Aún no hay estructura académica registrada.</p>
+          <p className="sec-muted mt-1">Empieza en la pestaña "Estructura" creando al menos un grado, un grupo y una materia.</p>
+        </div>
+      )}
       <h3 className="font-medium">Resumen</h3>
       <div className="sec-grid-cards">
         <div className="sec-stat">
@@ -409,7 +458,7 @@ export default function SecretariaAcademicoPage() {
                     {editingGradeId === g.id ? (
                       <>
                         <button
-                          className="px-2 py-1 border rounded"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary"
                           onClick={async () => {
                             if (!editingGradeName.trim()) return;
                             const updated = await academicApi.updateGrade(g.id, editingGradeName.trim());
@@ -418,13 +467,13 @@ export default function SecretariaAcademicoPage() {
                             setEditingGradeName("");
                           }}
                         >Guardar</button>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingGradeId(null); setEditingGradeName(""); }}>Cancelar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingGradeId(null); setEditingGradeName(""); }}>Cancelar</button>
                       </>
                     ) : (
                       <>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingGradeId(g.id); setEditingGradeName(g.nombre); }}>Editar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingGradeId(g.id); setEditingGradeName(g.nombre); }}>Editar</button>
                         <button
-                          className="px-2 py-1 border rounded text-rec-danger-text"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary text-rec-danger-text hover:bg-rec-danger-bg"
                           onClick={async () => {
                             await academicApi.deleteGrade(g.id);
                             setGrades((prev) => prev.filter((x) => x.id !== g.id));
@@ -437,6 +486,13 @@ export default function SecretariaAcademicoPage() {
                   </td>
                 </tr>
               ))}
+              {grades.length === 0 && (
+                <tr>
+                  <td className="py-3 text-center text-rec-text-muted" colSpan={3}>
+                    Sin grados registrados. Crea el primero desde la pestaña "Estructura".
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           </div>
@@ -481,7 +537,7 @@ export default function SecretariaAcademicoPage() {
                       <div className="flex items-center gap-2">
                         <Select label="" options={[{ label: "Seleccione docente", value: "" }, ...teacherOptions]} value={editingDirectorId} onChange={(e) => setEditingDirectorId(e.target.value)} />
                         <button
-                          className="px-2 py-1 border rounded"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary"
                           onClick={async () => {
                             const tid = Number(editingDirectorId);
                             if (!tid) return;
@@ -491,7 +547,7 @@ export default function SecretariaAcademicoPage() {
                             setEditingDirectorId("");
                           }}
                         >Guardar</button>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingDirectorGroupId(null); setEditingDirectorId(""); }}>Cancelar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingDirectorGroupId(null); setEditingDirectorId(""); }}>Cancelar</button>
                       </div>
                     ) : (
                       teachers.find((t) => t.id === gr.directorId) ? `${teachers.find((t) => t.id === gr.directorId)?.nombres} ${teachers.find((t) => t.id === gr.directorId)?.apellidos}` : "—"
@@ -502,7 +558,7 @@ export default function SecretariaAcademicoPage() {
                     {editingGroupId === gr.id ? (
                       <>
                         <button
-                          className="px-2 py-1 border rounded"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary"
                           onClick={async () => {
                             if (!editingGroupName.trim()) return;
                             const updated = await academicApi.updateGroup(gr.id, { nombre: editingGroupName.trim() });
@@ -511,21 +567,21 @@ export default function SecretariaAcademicoPage() {
                             setEditingGroupName("");
                           }}
                         >Guardar</button>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingGroupId(null); setEditingGroupName(""); }}>Cancelar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingGroupId(null); setEditingGroupName(""); }}>Cancelar</button>
                       </>
                     ) : (
                       <>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingGroupId(gr.id); setEditingGroupName(gr.nombre); }}>Editar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingGroupId(gr.id); setEditingGroupName(gr.nombre); }}>Editar</button>
                         <button
-                          className="px-2 py-1 border rounded text-rec-danger-text"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary text-rec-danger-text hover:bg-rec-danger-bg"
                           onClick={async () => {
                             await academicApi.deleteGroup(gr.id);
                             setGroups((prev) => prev.filter((x) => x.id !== gr.id));
                           }}
                         >Eliminar</button>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingDirectorGroupId(gr.id); setEditingDirectorId(""); }}>Cambiar director</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingDirectorGroupId(gr.id); setEditingDirectorId(""); }}>Cambiar director</button>
                         <button
-                          className="px-2 py-1 border rounded"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary"
                           onClick={async () => {
                             const state = groupSubjectsByGroup[gr.id];
                             if (state?.loaded) {
@@ -546,7 +602,7 @@ export default function SecretariaAcademicoPage() {
                             <li key={gs.id} className="flex items-center justify-between">
                               <span>{gs.subject.nombre}</span>
                               <button
-                                className="px-2 py-1 border rounded text-rec-danger-text"
+                                className="px-2 py-1 rounded text-xs rec-btn-secondary text-rec-danger-text hover:bg-rec-danger-bg"
                                 onClick={async () => {
                                   await academicApi.deleteGroupSubject(gs.id);
                                   setGroupSubjectsByGroup((prev) => ({
@@ -563,6 +619,13 @@ export default function SecretariaAcademicoPage() {
                   </td>
                 </tr>
               ))}
+              {visibleGroups.length === 0 && (
+                <tr>
+                  <td className="py-3 text-center text-rec-text-muted" colSpan={5}>
+                    No hay grupos para la búsqueda actual.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           </div>
@@ -601,7 +664,7 @@ export default function SecretariaAcademicoPage() {
                     {editingSubjectId === s.id ? (
                       <>
                         <button
-                          className="px-2 py-1 border rounded"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary"
                           onClick={async () => {
                             const updated = await academicApi.updateSubject(s.id, { nombre: editingSubjectName.trim() || undefined, codigo: editingSubjectCode || undefined });
                             setSubjects((prev) => prev.map((x) => (x.id === s.id ? updated : x)));
@@ -610,13 +673,13 @@ export default function SecretariaAcademicoPage() {
                             setEditingSubjectCode("");
                           }}
                         >Guardar</button>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingSubjectId(null); setEditingSubjectName(""); setEditingSubjectCode(""); }}>Cancelar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingSubjectId(null); setEditingSubjectName(""); setEditingSubjectCode(""); }}>Cancelar</button>
                       </>
                     ) : (
                       <>
-                        <button className="px-2 py-1 border rounded" onClick={() => { setEditingSubjectId(s.id); setEditingSubjectName(s.nombre); setEditingSubjectCode(s.codigo ?? ""); }}>Editar</button>
+                        <button className="px-2 py-1 rounded text-xs rec-btn-secondary" onClick={() => { setEditingSubjectId(s.id); setEditingSubjectName(s.nombre); setEditingSubjectCode(s.codigo ?? ""); }}>Editar</button>
                         <button
-                          className="px-2 py-1 border rounded text-rec-danger-text"
+                          className="px-2 py-1 rounded text-xs rec-btn-secondary text-rec-danger-text hover:bg-rec-danger-bg"
                           onClick={async () => {
                             await academicApi.deleteSubject(s.id);
                             setSubjects((prev) => prev.filter((x) => x.id !== s.id));
@@ -627,11 +690,19 @@ export default function SecretariaAcademicoPage() {
                   </td>
                 </tr>
               ))}
+              {subjects.length === 0 && (
+                <tr>
+                  <td className="py-3 text-center text-rec-text-muted" colSpan={3}>
+                    Sin materias registradas. Crea materias para habilitar asignaciones.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           </div>
         </div>
       </div>
+      )}
     </section>
   );
 }
