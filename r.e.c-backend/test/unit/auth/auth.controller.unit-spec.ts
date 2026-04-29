@@ -40,7 +40,7 @@ describe('AuthController', () => {
       expect(service.login).toHaveBeenCalledWith(
         'a@b.com',
         '123',
-        'ip:203.0.113.10',
+        'login:203.0.113.10',
       );
       expect(result).toEqual({ access_token: 'at', refresh_token: 'rt' });
     });

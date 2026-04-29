@@ -1,37 +1,20 @@
 import type { Request } from 'express';
 
-/** Misma forma que `CustomThrottlerGuard` (UUID v4). */
-const VISITOR_UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 /**
- * Identificador estable para rate limit de login (sin JWT / user de Passport).
- * Prioridad: X-Visitor-Id (UUID) → X-Forwarded-For (primer IP) → req.ip → unknown
+ * Clave estable para el contador de intentos de login (AuthService / LoginAttemptsService).
+ * Basada solo en la IP del cliente: `login:<ip>`. `x-visitor-id` no participa en la clave
+ * para evitar bypass del límite cambiando ese header; el proxy debe usar trust proxy
+ * para que `X-Forwarded-For` sea fiable.
  */
 export function resolveLoginTrackerFromRequest(req: Request): string {
-  const rawVisitor = req.headers['x-visitor-id'];
-  const visitorId = Array.isArray(rawVisitor)
-    ? rawVisitor[0]?.trim() ?? ''
-    : typeof rawVisitor === 'string'
-      ? rawVisitor.trim()
-      : '';
-  if (visitorId && VISITOR_UUID_RE.test(visitorId)) {
-    return `visitor:${visitorId}`;
-  }
+  const xffHeader = req.headers['x-forwarded-for'];
+  const xffStr = Array.isArray(xffHeader) ? xffHeader.join(',') : xffHeader;
+  const firstHop =
+    typeof xffStr === 'string' && xffStr.length > 0
+      ? xffStr.split(',')[0]?.trim()
+      : undefined;
 
-  const xff = req.headers['x-forwarded-for'];
-  const xffStr = Array.isArray(xff) ? xff.join(',') : xff;
-  if (typeof xffStr === 'string' && xffStr.length > 0) {
-    const first = xffStr.split(',')[0]?.trim();
-    if (first) {
-      return `ip:${first}`;
-    }
-  }
+  const clientIp = firstHop ?? req.socket?.remoteAddress ?? 'unknown';
 
-  const ip =
-    req.ip ??
-    (Array.isArray(req.ips) && req.ips.length > 0 ? req.ips[0] : undefined) ??
-    req.socket?.remoteAddress ??
-    'unknown';
-  return `ip:${ip}`;
+  return `login:${clientIp}`;
 }

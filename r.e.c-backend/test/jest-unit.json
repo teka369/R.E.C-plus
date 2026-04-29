@@ -2,7 +2,10 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
   "testEnvironment": "node",
-  "testRegex": "test/unit/.*\\.unit-spec\\.ts$",
+  "testMatch": [
+    "<rootDir>/test/unit/**/*.unit-spec.ts",
+    "<rootDir>/test/unit/auth/login-tracker.util.spec.ts"
+  ],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
