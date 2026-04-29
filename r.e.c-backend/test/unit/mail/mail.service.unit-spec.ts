@@ -30,14 +30,20 @@ describe('MailService', () => {
     it('sends email with correct parameters', async () => {
       await service.sendPasswordReset(
         'user@test.co',
-        'https://app.co/reset?t=abc',
+        'https://app.co/reset-password',
+        'secret-token-hex',
       );
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           from: 'Test <test@recedu.co>',
           to: 'user@test.co',
           subject: expect.stringContaining('Restablecer contraseña'),
-          html: expect.stringContaining('https://app.co/reset?t=abc'),
+          html: expect.stringContaining('https://app.co/reset-password'),
+        }),
+      );
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringContaining('secret-token-hex'),
         }),
       );
     });
@@ -45,7 +51,11 @@ describe('MailService', () => {
     it('throws when send fails', async () => {
       mockSend.mockRejectedValueOnce(new Error('API error'));
       await expect(
-        service.sendPasswordReset('user@test.co', 'https://app.co/reset'),
+        service.sendPasswordReset(
+          'user@test.co',
+          'https://app.co/reset-password',
+          'tok',
+        ),
       ).rejects.toThrow('API error');
     });
   });

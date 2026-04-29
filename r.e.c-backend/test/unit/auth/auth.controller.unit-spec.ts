@@ -93,6 +93,7 @@ describe('AuthController', () => {
       const result = await controller.resetPassword({
         token: 't',
         password: 'p',
+        confirmPassword: 'p',
       });
       expect(service.resetPassword).toHaveBeenCalledWith('t', 'p');
       expect(result.message).toContain('Contraseña actualizada');

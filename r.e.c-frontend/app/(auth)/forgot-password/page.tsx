@@ -41,7 +41,8 @@ export default function ForgotPasswordPage() {
       });
       const token = res.data?.token;
       if (token) {
-        router.push(`/reset-password?token=${token}`);
+        sessionStorage.setItem("rec_password_reset_token", token);
+        router.push("/reset-password");
       } else {
         setError("No se pudo verificar el código. Revisa que sea correcto o contacta a tu secretaría.");
       }
@@ -64,7 +65,9 @@ export default function ForgotPasswordPage() {
               </div>
               <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Revisa tu correo</h1>
               <p className="mt-3 text-sm text-rec-text-muted leading-relaxed">
-                Si existe una cuenta con <strong>{email}</strong>, recibirás un enlace para restablecer tu contraseña. Revisa también la carpeta de spam.
+                Si existe una cuenta con <strong>{email}</strong>, recibirás un correo con un enlace a la página de
+                restablecimiento y un <strong>token de recuperación</strong> que debes copiar y pegar allí (no va en la
+                barra de direcciones). Revisa también la carpeta de spam.
               </p>
               <button
                 type="button"
@@ -84,7 +87,8 @@ export default function ForgotPasswordPage() {
             <>
               <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Restablecer contraseña</h1>
               <p className="mt-2 text-sm text-rec-text-muted">
-                Ingresa tu correo institucional y te enviaremos un enlace para crear una nueva contraseña.
+                Ingresa tu correo institucional. Te enviaremos un enlace a la página de restablecimiento y un token que
+                deberás pegar en el formulario (más seguro que llevarlo en la URL).
               </p>
 
               <form onSubmit={onSubmitEmail} className="mt-6 flex flex-col gap-4" noValidate>
@@ -112,7 +116,7 @@ export default function ForgotPasswordPage() {
                   disabled={loading}
                   className="mt-1 rounded-xl bg-[color:var(--rec-primary)] px-4 py-3 text-sm font-semibold text-rec-text-on-media transition hover:bg-[color:var(--rec-primary-strong)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {loading ? "Enviando..." : "Enviar enlace"}
+                  {loading ? "Enviando..." : "Enviar instrucciones"}
                 </button>
               </form>
 

@@ -39,7 +39,7 @@ export class AuthController {
     await this.auth.forgotPassword(dto.email);
     return {
       message:
-        'Si el correo existe, recibirás un enlace para restablecer tu contraseña.',
+        'Si el correo existe, recibirás instrucciones y un token para restablecer tu contraseña en la página indicada.',
     };
   }
 
