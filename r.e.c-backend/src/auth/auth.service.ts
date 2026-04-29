@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from '../mail/mail.service';
@@ -80,6 +81,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly mail: MailService,
     private readonly loginAttempts: LoginAttemptsService,
+    private readonly configService: ConfigService,
   ) {}
 
   private throwLoginTooManyAttempts(ttlSeconds: number): never {
@@ -106,7 +108,14 @@ export class AuthService {
   }
 
   private async issueAccessToken(payload: TokenPayload): Promise<string> {
-    return this.jwt.signAsync(payload);
+    return this.jwt.signAsync(payload, {
+      issuer: this.configService.get<string>('JWT_ISSUER'),
+      audience: this.configService.get<string>('JWT_AUDIENCE'),
+      expiresIn: this.configService.get<string>(
+        'JWT_EXPIRES',
+        '15m',
+      ) as StringValue,
+    });
   }
 
   private async createRefreshSession(userId: number): Promise<{
@@ -428,10 +437,10 @@ export class AuthService {
       return;
     }
 
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    const resetPageUrl = `${frontendUrl}/reset-password`;
 
     try {
-      await this.mail.sendPasswordReset(user.email, resetUrl);
+      await this.mail.sendPasswordReset(user.email, resetPageUrl, token);
     } catch (err) {
       // Loguear el error del servicio de correo pero NO devolver 500
       // al usuario — por seguridad no debemos revelar si el envío falló

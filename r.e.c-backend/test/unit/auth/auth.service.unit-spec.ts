@@ -44,6 +44,18 @@ describe('AuthService (unit)', () => {
     reset: jest.fn<Promise<void>, [string]>(),
   };
 
+  const configService = {
+    get: jest.fn((key: string, defaultValue?: string) => {
+      const map: Record<string, string> = {
+        JWT_ISSUER: 'unit-issuer',
+        JWT_AUDIENCE: 'unit-audience',
+        JWT_EXPIRES: '15m',
+      };
+      if (key in map) return map[key];
+      return defaultValue;
+    }),
+  };
+
   const tr = 'ip:unit';
 
   let service: AuthService;
@@ -73,8 +85,8 @@ describe('AuthService (unit)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.JWT_SECRET = 'unit-secret';
-    process.env.JWT_REFRESH_SECRET = 'unit-refresh-secret';
+    process.env.JWT_SECRET = 'unit-secret-32-characters-minimum!';
+    process.env.JWT_REFRESH_SECRET = 'unit-refresh-secret-32-chars-minimum!';
     process.env.JWT_REFRESH_EXPIRES = '30d';
     prisma.authSession.create.mockResolvedValue({ id: 999 });
     loginAttempts.getCount.mockResolvedValue({ count: 0, ttl: 0 });
@@ -84,6 +96,7 @@ describe('AuthService (unit)', () => {
       jwt as never,
       mail as never,
       loginAttempts as never,
+      configService as never,
     );
   });
 
@@ -453,7 +466,8 @@ describe('AuthService (unit)', () => {
 
       expect(mail.sendPasswordReset).toHaveBeenCalledWith(
         'ana@test.dev',
-        expect.stringContaining('https://app.recedu.co/reset-password?token='),
+        'https://app.recedu.co/reset-password',
+        expect.any(String),
       );
     });
 
@@ -478,7 +492,8 @@ describe('AuthService (unit)', () => {
 
       expect(mail.sendPasswordReset).toHaveBeenCalledWith(
         'ana@test.dev',
-        expect.stringContaining('http://localhost:3000/reset-password?token='),
+        'http://localhost:3000/reset-password',
+        expect.any(String),
       );
     });
   });

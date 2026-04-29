@@ -18,7 +18,11 @@ export class MailService {
     this.from = process.env.RESEND_FROM ?? 'R.E.C <noreply@recedu.co>';
   }
 
-  async sendPasswordReset(to: string, resetUrl: string): Promise<void> {
+  async sendPasswordReset(
+    to: string,
+    resetPageUrl: string,
+    token: string,
+  ): Promise<void> {
     try {
       await this.resend.emails.send({
         from: this.from,
@@ -31,13 +35,19 @@ export class MailService {
               Recibimos una solicitud para restablecer la contraseña de tu cuenta en R.E.C.
               Si no fuiste tú, puedes ignorar este correo.
             </p>
-            <a href="${resetUrl}" style="display: inline-block; margin: 24px 0; padding: 12px 28px; background-color: #2f8a57; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
-              Restablecer contraseña
+            <p style="color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+              Abre la página de restablecimiento y pega el <strong>token de recuperación</strong> que aparece abajo (no lo compartas con nadie).
+            </p>
+            <a href="${resetPageUrl}" style="display: inline-block; margin: 24px 0; padding: 12px 28px; background-color: #2f8a57; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
+              Ir a restablecer contraseña
             </a>
             <p style="color: #888; font-size: 12px; line-height: 1.5;">
-              Este enlace expira en 1 hora. Si el botón no funciona, copia y pega esta URL en tu navegador:
+              Este token expira en 1 hora. Cópialo completo en el campo «Token de recuperación»:
             </p>
-            <p style="color: #888; font-size: 12px; word-break: break-all;">${resetUrl}</p>
+            <p style="color: #1a1a1a; font-size: 13px; font-family: ui-monospace, monospace; word-break: break-all; background: #f4f4f4; padding: 12px; border-radius: 8px;">${token}</p>
+            <p style="color: #888; font-size: 12px; line-height: 1.5;">
+              Si el botón no funciona, abre manualmente: <span style="word-break: break-all;">${resetPageUrl}</span>
+            </p>
           </div>
         `,
       });
