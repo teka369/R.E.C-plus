@@ -6,7 +6,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RecoverByCodeDto } from './dto/recover-by-code.dto';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import { resolveLoginTrackerFromRequest } from './login-tracker.util';
 
@@ -16,7 +16,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('login')
-  @SkipThrottle()
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const tracker = resolveLoginTrackerFromRequest(req);
     return this.auth.login(dto.email, dto.password, tracker);
