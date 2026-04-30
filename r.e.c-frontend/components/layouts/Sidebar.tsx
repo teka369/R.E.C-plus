@@ -623,8 +623,13 @@ export default function Sidebar({
                   {initials}
                 </span>
                 {!isCollapsedDesktop && (
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-rec-text-primary">{displayName}</span>
+                  <span className="min-w-0 flex-1 overflow-hidden">
+                    <span
+                      className="block w-full truncate break-all font-medium text-rec-text-primary"
+                      title={displayName}
+                    >
+                      {displayName}
+                    </span>
                     <span className="text-xs text-rec-success-text">Ver perfil</span>
                   </span>
                 )}
