@@ -25,6 +25,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
 import { AuditContextMiddleware } from './common/audit-context.middleware';
 import { RestoreModule } from './admin/restore/restore.module';
+import { GatewayModule } from './gateway/gateway.module';
 
 const throttlerRedisLog = new Logger('ThrottlerRedis');
 
@@ -104,6 +105,7 @@ async function redisThrottlerStorageOrUndefined(
     HealthModule,
     CustomLoggerModule,
     RestoreModule,
+    GatewayModule,
   ],
   controllers: [AppController],
   providers: [
