@@ -2,6 +2,7 @@
 
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useRecoveryChat } from "@/hooks/useRecoveryChat";
 import { academicApi, type GroupSubject } from "@/lib/academicApi";
 import {
   recoveryApi,
@@ -118,7 +119,7 @@ export default function EstudianteRecuperacionesPage() {
   const [requests, setRequests] = useState<RecoveryRequest[]>([]);
   const [subjects, setSubjects] = useState<GroupSubject[]>([]);
   const [activities, setActivities] = useState<RecoveryActivity[]>([]);
-  const [messages, setMessages] = useState<RecoveryMessage[]>([]);
+  const [initialMessages, setInitialMessages] = useState<RecoveryMessage[]>([]);
 
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<RecoveryRequestStatus | "ALL">("ALL");
@@ -141,6 +142,7 @@ export default function EstudianteRecuperacionesPage() {
 
   // Message form
   const [messageBody, setMessageBody] = useState("");
+  const { messages, sendMessage, isConnected } = useRecoveryChat(selectedRequestId, initialMessages);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
   const filteredRequests = useMemo(() => {
@@ -195,15 +197,10 @@ export default function EstudianteRecuperacionesPage() {
   const loadDetail = useCallback(async (requestId: number) => {
     setDetailLoading(true);
     try {
-      const [activityList, messageList] = await Promise.all([
-        recoveryApi.listActivities(requestId),
-        recoveryApi.listMessages(requestId),
-      ]);
+      const activityList = await recoveryApi.listActivities(requestId);
       setActivities(activityList);
-      setMessages(messageList);
     } catch {
       setActivities([]);
-      setMessages([]);
     } finally {
       setDetailLoading(false);
     }
@@ -240,10 +237,14 @@ export default function EstudianteRecuperacionesPage() {
   useEffect(() => {
     if (!selectedRequestId) {
       setActivities([]);
-      setMessages([]);
+      setInitialMessages([]);
       return;
     }
     loadDetail(selectedRequestId);
+    recoveryApi
+      .listMessages(selectedRequestId)
+      .then((data) => setInitialMessages(data))
+      .catch(() => setInitialMessages([]));
   }, [selectedRequestId, loadDetail]);
 
   // Auto-scroll messages to bottom
@@ -304,7 +305,7 @@ export default function EstudianteRecuperacionesPage() {
     try {
       await recoveryApi.deleteRequest(selectedRequestId);
       setActivities([]);
-      setMessages([]);
+      setInitialMessages([]);
       showSuccess("Solicitud eliminada.");
       await loadMain();
     } catch (err: unknown) {
@@ -321,9 +322,8 @@ export default function EstudianteRecuperacionesPage() {
     }
 
     try {
-      await recoveryApi.createMessage(selectedRequestId, { body: messageBody.trim() });
+      sendMessage(messageBody);
       setMessageBody("");
-      await loadDetail(selectedRequestId);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "No se pudo enviar el mensaje"));
     }
@@ -699,6 +699,12 @@ export default function EstudianteRecuperacionesPage() {
                 {/* MESSAGES TAB */}
                 {activeTab === "messages" && (
                   <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs text-rec-text-subtle">
+                      <span
+                        className={`inline-block h-2.5 w-2.5 rounded-full ${isConnected ? "bg-rec-success-text" : "bg-rec-text-subtle"}`}
+                      />
+                      {isConnected ? "Conectado en tiempo real" : "Sin conexión en tiempo real"}
+                    </div>
                     {detailLoading && <p className="text-sm text-rec-text-subtle">Cargando mensajes...</p>}
                     <div className="max-h-80 overflow-y-auto space-y-2 rounded-lg border border-rec-border-default bg-rec-bg-base p-3">
                       {messages.length === 0 && !detailLoading && (

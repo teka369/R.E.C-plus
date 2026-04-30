@@ -46,7 +46,13 @@ function userInitials(name: string, email: string): string {
   return "?";
 }
 
-export default function Sidebar({ role }: { role: Role }) {
+export default function Sidebar({
+  role,
+  notificationUnreadCount = 0,
+}: {
+  role: Role;
+  notificationUnreadCount?: number;
+}) {
   const { user, logout } = useAuth();
   const { pending: pendingRecoveries, loading: pendingRecoveriesLoading } = usePendingRecoveries();
   const pathname = usePathname();
@@ -511,6 +517,10 @@ export default function Sidebar({ role }: { role: Role }) {
                 const showRecoveryBadge =
                   isRecuperaciones && !pendingRecoveriesLoading && pendingRecoveries > 0;
                 const recoveryBadgeLabel = pendingRecoveries >= 10 ? "9+" : String(pendingRecoveries);
+                const isNotifications = item.href.endsWith("/notificaciones");
+                const showNotificationBadge = isNotifications && notificationUnreadCount > 0;
+                const notificationBadgeLabel =
+                  notificationUnreadCount >= 10 ? "9+" : String(notificationUnreadCount);
 
                 return (
                   <div
@@ -533,8 +543,10 @@ export default function Sidebar({ role }: { role: Role }) {
                         hideTooltip();
                       }}
                       aria-label={
-                        showRecoveryBadge && isCollapsedDesktop
-                          ? `${item.label}, ${recoveryBadgeLabel} pendientes`
+                        (showRecoveryBadge || showNotificationBadge) && isCollapsedDesktop
+                          ? `${item.label}, ${
+                              showRecoveryBadge ? recoveryBadgeLabel : notificationBadgeLabel
+                            } pendientes`
                           : undefined
                       }
                       className={`flex items-center ${isCollapsedDesktop ? "justify-center" : "justify-start"} gap-2 px-3 py-2 rounded-md text-sm transition ease-out ${showRecoveryBadge && !isCollapsedDesktop ? "w-full" : ""} ${isActive(item.href, { strict: item.label === "Panel" }) ? "bg-rec-success-bg text-rec-success-text ring-1 ring-rec-success-border" : "text-rec-text-secondary hover:bg-rec-bg-muted"}`}
@@ -547,6 +559,12 @@ export default function Sidebar({ role }: { role: Role }) {
                             aria-hidden
                           />
                         ) : null}
+                        {showNotificationBadge && isCollapsedDesktop ? (
+                          <span
+                            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-rec-danger-solid ring-2 ring-rec-bg-elevated"
+                            aria-hidden
+                          />
+                        ) : null}
                       </span>
                       {!isCollapsedDesktop && (
                         <>
@@ -554,6 +572,11 @@ export default function Sidebar({ role }: { role: Role }) {
                           {showRecoveryBadge ? (
                             <span className="ml-auto shrink-0 rounded-full bg-rec-danger-solid px-2 py-0.5 text-[11px] font-semibold leading-none text-rec-text-on-media">
                               {recoveryBadgeLabel}
+                            </span>
+                          ) : null}
+                          {!showRecoveryBadge && showNotificationBadge ? (
+                            <span className="ml-auto shrink-0 rounded-full bg-rec-danger-solid px-2 py-0.5 text-[11px] font-semibold leading-none text-rec-text-on-media">
+                              {notificationBadgeLabel}
                             </span>
                           ) : null}
                         </>

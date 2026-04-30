@@ -184,6 +184,14 @@ export class RecoveryService extends TenantScopedService {
     throw new ForbiddenException('No autorizado para esta solicitud');
   }
 
+  async assertRequestAccess(actor: Actor, requestId: number) {
+    return this.ensureRequestAccess(actor, requestId);
+  }
+
+  buildRecoveryRoom(tenantId: number | null | undefined, requestId: number) {
+    return `recovery-${tenantId ?? 'global'}-${requestId}`;
+  }
+
   private async getActivityOrThrow(id: number) {
     const activity = await this.prisma.recoveryActivity.findUnique({
       where: { id },
