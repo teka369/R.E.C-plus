@@ -15,6 +15,7 @@ import { ActivityFeedItemDto } from './dto/activity-feed-item.dto';
 import { UserRole } from '../users/dto/user-role.enum';
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
+import { AppGatewayService } from '../gateway/app-gateway.service';
 import {
   PaginationQuery,
   paginateParams,
@@ -24,7 +25,10 @@ import {
 
 @Injectable()
 export class CommunicationService extends TenantScopedService {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private readonly appGatewayService: AppGatewayService,
+  ) {
     super();
   }
 
@@ -627,7 +631,7 @@ export class CommunicationService extends TenantScopedService {
       );
     }
 
-    return this.prisma.notification.create({
+    const saved = await this.prisma.notification.create({
       data: {
         userId: dto.userId,
         title: dto.title,
@@ -635,6 +639,16 @@ export class CommunicationService extends TenantScopedService {
         type: dto.type ?? undefined,
       },
     });
+    if (saved.userId) {
+      this.appGatewayService.emitToUser(saved.userId, 'notification:new', saved);
+    } else {
+      this.appGatewayService.emitToTenant(
+        this.getActorInstitutionId(actor),
+        'notification:new',
+        saved,
+      );
+    }
+    return saved;
   }
 
   async markNotificationRead(notificationId: number, actor: Actor) {
