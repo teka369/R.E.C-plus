@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -12,21 +13,27 @@ import type { StringValue } from 'ms';
 import { LOGIN_ATTEMPTS_REDIS } from './login-attempts.constants';
 import { LoginAttemptsMemoryStore } from './login-attempts-memory.store';
 import { LoginAttemptsService } from './login-attempts.service';
-// ConfigModule no usado para evitar conflictos de versiones
-
 @Module({
   imports: [
     PrismaModule,
     MailModule,
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: (() => {
-        const s = process.env.JWT_SECRET;
-        if (!s) throw new Error('JWT_SECRET no está definido');
-        return s;
-      })(),
-      signOptions: {
-        expiresIn: (process.env.JWT_EXPIRES ?? '7d') as StringValue,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET no está definido');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: configService.get<string>(
+              'JWT_EXPIRES',
+              '15m',
+            ) as StringValue,
+          },
+        };
       },
     }),
   ],

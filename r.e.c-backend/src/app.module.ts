@@ -1,4 +1,6 @@
 import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import * as Joi from 'joi';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
@@ -54,6 +56,15 @@ async function redisThrottlerStorageOrUndefined(
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: Joi.object({
+        JWT_SECRET: Joi.string().min(32).required(),
+        JWT_ISSUER: Joi.string().required(),
+        JWT_AUDIENCE: Joi.string().required(),
+        JWT_EXPIRES: Joi.string().default('15m'),
+      }).unknown(true),
+    }),
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
