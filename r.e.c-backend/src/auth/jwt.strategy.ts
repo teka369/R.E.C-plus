@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 import { extractAccessTokenFromRequest } from './jwt-from-request.util';
 import { UserRole } from '../users/dto/user-role.enum';
-// ConfigService no usado para evitar conflictos de versiones
 
 type JwtPayload = {
   sub: number;
@@ -15,8 +15,8 @@ type JwtPayload = {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
-    const secret = process.env.JWT_SECRET;
+  constructor(configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
     if (!secret) {
       throw new Error('JWT_SECRET no está definido');
     }
@@ -28,6 +28,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: jwtExtractor,
       ignoreExpiration: false,
       secretOrKey: secret,
+      algorithms: ['HS256'],
+      issuer: configService.get<string>('JWT_ISSUER'),
+      audience: configService.get<string>('JWT_AUDIENCE'),
     });
   }
 

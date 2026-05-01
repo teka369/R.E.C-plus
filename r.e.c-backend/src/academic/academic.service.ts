@@ -817,31 +817,22 @@ export class AcademicService extends TenantScopedService {
         ? {}
         : { group: { institutionId: this.getActorInstitutionId(actor) } };
 
-    type AssignmentGroupBy = { teacherId: number; _count: { teacherId: number } };
-    let grouped: AssignmentGroupBy[] = [];
+    const assignments = await this.prisma.teacherAssignment.findMany({
+      where: whereByActor,
+      select: { teacherId: true },
+    });
 
-    try {
-      grouped = await this.prisma.teacherAssignment.groupBy({
-        by: ['teacherId'],
-        where: whereByActor,
-        _count: { teacherId: true },
-      });
-    } catch {
-      const rows = await this.prisma.teacherAssignment.findMany({
-        where: whereByActor,
-        select: { teacherId: true },
-      });
-      const inMemory = rows.reduce<Record<number, number>>((acc, row) => {
-        acc[row.teacherId] = (acc[row.teacherId] ?? 0) + 1;
-        return acc;
-      }, {});
-      grouped = Object.entries(inMemory).map(([teacherId, count]) => ({
+    const countMap = assignments.reduce<Record<number, number>>((acc, item) => {
+      acc[item.teacherId] = (acc[item.teacherId] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    const withAssignments = Object.entries(countMap)
+      .map(([teacherId, count]) => ({
         teacherId: Number(teacherId),
         _count: { teacherId: count },
-      }));
-    }
-
-    const withAssignments = grouped.filter((item) => item._count.teacherId > 0);
+      }))
+      .filter((item) => item._count.teacherId > 0);
     if (withAssignments.length === 0) return [];
 
     const teacherIds = withAssignments.map((item) => item.teacherId);

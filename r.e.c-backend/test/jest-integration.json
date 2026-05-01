@@ -9,7 +9,10 @@
   "transformIgnorePatterns": [
     "node_modules/(?!(@paralleldrive/cuid2|@noble/hashes)/)"
   ],
-  "setupFilesAfterEnv": ["<rootDir>/test/integration/setup-integration.ts"],
+  "setupFilesAfterEnv": [
+    "<rootDir>/test/ensure-jwt-env-for-tests.ts",
+    "<rootDir>/test/integration/setup-integration.ts"
+  ],
   "testTimeout": 30000,
   "coverageDirectory": "coverage/integration"
 }

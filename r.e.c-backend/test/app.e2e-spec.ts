@@ -95,12 +95,19 @@ describe('AppController (e2e)', () => {
   let institutionId = 0;
 
   const tokenFor = (userId: number, role: UserRole) =>
-    jwtService.sign({
-      sub: userId,
-      role,
-      email: `${role.toLowerCase()}@e2e.test`,
-      institutionId,
-    });
+    jwtService.sign(
+      {
+        sub: userId,
+        role,
+        email: `${role.toLowerCase()}@e2e.test`,
+        institutionId,
+      },
+      {
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
+        expiresIn: process.env.JWT_EXPIRES ?? '15m',
+      },
+    );
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

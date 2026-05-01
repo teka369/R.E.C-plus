@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -22,7 +22,7 @@ type BulkOperationStatus = {
 };
 type AcademicoTab = "estructura" | "asignaciones" | "resumen";
 
-export default function SecretariaAcademicoPage() {
+function AcademicoContent() {
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -704,5 +704,13 @@ export default function SecretariaAcademicoPage() {
       </div>
       )}
     </section>
+  );
+}
+
+export default function AcademicoPage() {
+  return (
+    <Suspense fallback={<div className="sec-card p-4">Cargando...</div>}>
+      <AcademicoContent />
+    </Suspense>
   );
 }
