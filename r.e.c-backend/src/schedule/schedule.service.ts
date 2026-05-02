@@ -15,15 +15,66 @@ import {
   CreateScheduleEventDto,
   UpdateScheduleEventDto,
 } from './dto/event.dto';
-import { Prisma } from '@prisma/client';
+import { EnrollmentStatus, Prisma } from '@prisma/client';
 
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
+import { AppGatewayService } from '../gateway/app-gateway.service';
 
 @Injectable()
 export class ScheduleService extends TenantScopedService {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly appGatewayService: AppGatewayService,
+  ) {
     super();
+  }
+
+  private async notify(
+    userId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const n = await this.prisma.notification.create({
+        data: { userId, title, body, type },
+      });
+      this.appGatewayService.emitToUser(userId, 'notification:new', n);
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async notifyGroup(
+    groupId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const students = await this.prisma.studentGroup.findMany({
+        where: { groupId, status: EnrollmentStatus.ACTIVE },
+        select: { studentId: true },
+      });
+      await Promise.all(
+        students.map((s) => this.notify(s.studentId, title, body, type)),
+      );
+    } catch {
+      /* best-effort */
+    }
   }
 
   private async ensureGroupInScope(actor: Actor, groupId: number) {
@@ -125,7 +176,7 @@ export class ScheduleService extends TenantScopedService {
       if (!gs)
         throw new BadRequestException('La materia no pertenece al grupo');
     }
-    return this.prisma.weeklyScheduleEntry.create({
+    const created = await this.prisma.weeklyScheduleEntry.create({
       data: {
         groupId,
         teacherId: actor.userId,
@@ -137,6 +188,13 @@ export class ScheduleService extends TenantScopedService {
         location: dto.location ?? null,
       },
     });
+    await this.notifyGroup(
+      groupId,
+      '🗓️ Nueva clase en tu horario',
+      `Se agregó una nueva clase a tu horario semanal.`,
+      'SCHEDULE',
+    );
+    return created;
   }
 
   async updateEntry(actor: Actor, id: number, dto: UpdateScheduleEntryDto) {
@@ -164,7 +222,7 @@ export class ScheduleService extends TenantScopedService {
       if (!gs)
         throw new BadRequestException('La materia no pertenece al grupo');
     }
-    return this.prisma.weeklyScheduleEntry.update({
+    const updated = await this.prisma.weeklyScheduleEntry.update({
       where: { id },
       data: {
         dayOfWeek: dto.dayOfWeek ?? undefined,
@@ -175,6 +233,13 @@ export class ScheduleService extends TenantScopedService {
         location: dto.location ?? undefined,
       },
     });
+    await this.notifyGroup(
+      entry.groupId,
+      '🗓️ Horario actualizado',
+      `Una clase de tu horario fue modificada.`,
+      'SCHEDULE',
+    );
+    return updated;
   }
 
   async deleteEntry(actor: Actor, id: number) {
@@ -183,6 +248,12 @@ export class ScheduleService extends TenantScopedService {
     });
     if (!entry) throw new NotFoundException('Entrada no encontrada');
     await this.ensureManageAccess(actor, entry.groupId);
+    await this.notifyGroup(
+      entry.groupId,
+      '🗓️ Clase eliminada del horario',
+      `Una clase fue eliminada de tu horario semanal.`,
+      'SCHEDULE',
+    );
     await this.prisma.weeklyScheduleEntry.delete({ where: { id } });
     return { deleted: true };
   }
@@ -251,7 +322,7 @@ export class ScheduleService extends TenantScopedService {
     if (new Date(dto.endAt).getTime() <= new Date(dto.startAt).getTime()) {
       throw new BadRequestException('La fecha fin debe ser posterior a inicio');
     }
-    return this.prisma.scheduleEvent.create({
+    const created = await this.prisma.scheduleEvent.create({
       data: {
         groupId,
         teacherId: actor.userId,
@@ -262,6 +333,13 @@ export class ScheduleService extends TenantScopedService {
         location: dto.location ?? null,
       },
     });
+    await this.notifyGroup(
+      groupId,
+      '📅 Nuevo evento institucional',
+      `Nuevo evento: "${dto.title ?? 'Evento'}" fue agregado a tu calendario.`,
+      'SCHEDULE',
+    );
+    return created;
   }
 
   async updateEvent(actor: Actor, id: number, dto: UpdateScheduleEventDto) {
@@ -275,7 +353,7 @@ export class ScheduleService extends TenantScopedService {
         );
       }
     }
-    return this.prisma.scheduleEvent.update({
+    const updated = await this.prisma.scheduleEvent.update({
       where: { id },
       data: {
         title: dto.title ?? undefined,
@@ -285,12 +363,25 @@ export class ScheduleService extends TenantScopedService {
         location: dto.location ?? undefined,
       },
     });
+    await this.notifyGroup(
+      ev.groupId,
+      '📅 Evento actualizado',
+      `El evento "${updated.title}" fue modificado.`,
+      'SCHEDULE',
+    );
+    return updated;
   }
 
   async deleteEvent(actor: Actor, id: number) {
     const ev = await this.prisma.scheduleEvent.findUnique({ where: { id } });
     if (!ev) throw new NotFoundException('Evento no encontrado');
     await this.ensureManageAccess(actor, ev.groupId);
+    await this.notifyGroup(
+      ev.groupId,
+      '📅 Evento cancelado',
+      `El evento "${ev.title}" fue cancelado.`,
+      'SCHEDULE',
+    );
     await this.prisma.scheduleEvent.delete({ where: { id } });
     return { deleted: true };
   }

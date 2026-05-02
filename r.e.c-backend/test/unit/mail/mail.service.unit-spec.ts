@@ -32,6 +32,7 @@ describe('MailService', () => {
         'user@test.co',
         'https://app.co/reset-password',
         'secret-token-hex',
+        'recedu://reset?token=secret-token-hex',
       );
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -46,6 +47,21 @@ describe('MailService', () => {
           html: expect.stringContaining('secret-token-hex'),
         }),
       );
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringContaining('recedu://reset?token=secret-token-hex'),
+        }),
+      );
+    });
+
+    it('omite bloque de app si no hay deep link', async () => {
+      await service.sendPasswordReset(
+        'user@test.co',
+        'https://app.co/reset-password',
+        'tok-only',
+      );
+      const call = mockSend.mock.calls[0][0];
+      expect(call.html).not.toContain('App móvil R.E.C');
     });
 
     it('throws when send fails', async () => {
@@ -55,6 +71,7 @@ describe('MailService', () => {
           'user@test.co',
           'https://app.co/reset-password',
           'tok',
+          undefined,
         ),
       ).rejects.toThrow('API error');
     });

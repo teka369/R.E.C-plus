@@ -9,21 +9,10 @@ import {
   cookieMaxAgeSeconds,
   verifyAccessToken,
 } from "@/lib/server/verify-access-token";
-
-const isDev = process.env.NODE_ENV === "development";
-
-function cookieOpts(maxAge: number) {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: !isDev,
-    path: "/",
-    maxAge,
-  };
-}
+import { sessionCookieOpts } from "@/lib/server/session-cookie-opts";
 
 function clearAll(res: NextResponse) {
-  const cleared = { ...cookieOpts(0), maxAge: 0 };
+  const cleared = { ...sessionCookieOpts(0), maxAge: 0 };
   res.cookies.set("rec_token", "", cleared);
   res.cookies.set("rec_role", "", cleared);
   res.cookies.set("rec_uid", "", cleared);
@@ -126,12 +115,12 @@ export async function POST(req: NextRequest) {
   const maxAge = cookieMaxAgeSeconds(verified.exp);
   const res = NextResponse.json({ ok: true });
 
-  res.cookies.set("rec_token", newAccessToken, cookieOpts(maxAge));
-  res.cookies.set("rec_role", verified.role, cookieOpts(maxAge));
-  res.cookies.set("rec_uid", String(verified.userId), cookieOpts(maxAge));
+  res.cookies.set("rec_token", newAccessToken, sessionCookieOpts(maxAge));
+  res.cookies.set("rec_role", verified.role, sessionCookieOpts(maxAge));
+  res.cookies.set("rec_uid", String(verified.userId), sessionCookieOpts(maxAge));
 
   if (newRefreshToken) {
-    res.cookies.set("rec_refresh", newRefreshToken, cookieOpts(60 * 60 * 24 * 7));
+    res.cookies.set("rec_refresh", newRefreshToken, sessionCookieOpts(60 * 60 * 24 * 7));
   }
 
   applyRateLimitVisitorCookie(res, setVisitorCookie);

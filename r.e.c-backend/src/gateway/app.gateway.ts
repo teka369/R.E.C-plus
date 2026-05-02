@@ -7,12 +7,13 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { Inject, UsePipes, ValidationPipe, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Server, Socket } from 'socket.io';
 import { RecoveryService } from '../recovery/recovery.service';
 import { UserRole } from '../users/dto/user-role.enum';
 import { AppGatewayService } from './app-gateway.service';
+import { getRecTokenFromHandshakeCookie } from '../common/ws-handshake.util';
 
 type JwtPayload = {
   sub: number;
@@ -58,6 +59,7 @@ export class AppGateway
 
   constructor(
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => RecoveryService))
     private readonly recoveryService: RecoveryService,
     private readonly appGatewayService: AppGatewayService,
   ) {}
@@ -78,7 +80,9 @@ export class AppGateway
       typeof client.handshake.query?.token === 'string'
         ? client.handshake.query.token
         : null;
-    return queryToken;
+    if (queryToken) return queryToken;
+
+    return getRecTokenFromHandshakeCookie(client.handshake.headers.cookie);
   }
 
   private getRecoveryRoom(actor: WsUser, requestId: number) {

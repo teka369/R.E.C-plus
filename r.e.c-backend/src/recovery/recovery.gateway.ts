@@ -13,6 +13,7 @@ import type { Server, Socket } from 'socket.io';
 import { RecoveryService } from './recovery.service';
 import { CreateRecoveryMessageDto } from './dto';
 import { UserRole } from '../users/dto/user-role.enum';
+import { getRecTokenFromHandshakeCookie } from '../common/ws-handshake.util';
 
 type JwtPayload = {
   sub: number;
@@ -80,7 +81,9 @@ export class RecoveryGateway
       typeof client.handshake.query?.token === 'string'
         ? client.handshake.query.token
         : null;
-    return queryToken;
+    if (queryToken) return queryToken;
+
+    return getRecTokenFromHandshakeCookie(client.handshake.headers.cookie);
   }
 
   private getRequestId(client: RecoverySocket): number | null {

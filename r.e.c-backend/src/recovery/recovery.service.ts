@@ -1,13 +1,19 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../users/dto/user-role.enum';
-import { RecoveryActivityStatus, RecoveryRequestStatus } from '@prisma/client';
+import {
+  EnrollmentStatus,
+  RecoveryActivityStatus,
+  RecoveryRequestStatus,
+} from '@prisma/client';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -41,6 +47,7 @@ const ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES = new Set([
 
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
+import { AppGatewayService } from '../gateway/app-gateway.service';
 
 @Injectable()
 export class RecoveryService extends TenantScopedService {
@@ -51,8 +58,59 @@ export class RecoveryService extends TenantScopedService {
     'recovery',
   );
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => AppGatewayService))
+    private readonly appGatewayService: AppGatewayService,
+  ) {
     super();
+  }
+
+  private async notify(
+    userId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const n = await this.prisma.notification.create({
+        data: { userId, title, body, type },
+      });
+      this.appGatewayService.emitToUser(userId, 'notification:new', n);
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async notifyGroup(
+    groupId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const students = await this.prisma.studentGroup.findMany({
+        where: { groupId, status: EnrollmentStatus.ACTIVE },
+        select: { studentId: true },
+      });
+      await Promise.all(
+        students.map((s) => this.notify(s.studentId, title, body, type)),
+      );
+    } catch {
+      /* best-effort */
+    }
   }
 
   private async isRecoveryPeriodActive(actor: Actor) {
@@ -242,7 +300,7 @@ export class RecoveryService extends TenantScopedService {
       );
     }
 
-    return this.prisma.recoveryRequest.create({
+    const created = await this.prisma.recoveryRequest.create({
       data: {
         studentId: actor.userId,
         teacherId: assignment.teacherId,
@@ -256,6 +314,15 @@ export class RecoveryService extends TenantScopedService {
         group: { select: { id: true, nombre: true } },
       },
     });
+
+    await this.notify(
+      assignment.teacherId,
+      '🩺 Nueva solicitud de recuperación',
+      `Un estudiante solicitó recuperación en ${dto.subjectId ? 'la materia asignada' : 'tu grupo'}.`,
+      'GENERAL',
+    );
+
+    return created;
   }
 
   async listMyRequests(
@@ -389,7 +456,7 @@ export class RecoveryService extends TenantScopedService {
       );
     }
 
-    return this.prisma.recoveryRequest.update({
+    const updated = await this.prisma.recoveryRequest.update({
       where: { id },
       data: {
         status: dto.status,
@@ -404,6 +471,31 @@ export class RecoveryService extends TenantScopedService {
             : request.respondedAt,
       },
     });
+
+    const statusMessages: Record<string, { title: string; body: string }> = {
+      APPROVED: {
+        title: '✅ Recuperación aprobada',
+        body: 'Tu solicitud de recuperación fue aprobada por tu profesor.',
+      },
+      REJECTED: {
+        title: '❌ Recuperación rechazada',
+        body: 'Tu solicitud de recuperación fue rechazada.',
+      },
+      COMPLETED: {
+        title: '🎓 Recuperación completada',
+        body: 'Tu proceso de recuperación fue marcado como completado.',
+      },
+      PENDING: {
+        title: '⏳ Recuperación en revisión',
+        body: 'Tu solicitud de recuperación está siendo revisada.',
+      },
+    };
+    const msg = statusMessages[dto.status];
+    if (msg) {
+      await this.notify(request.studentId, msg.title, msg.body, 'GENERAL');
+    }
+
+    return updated;
   }
 
   async listActivities(actor: Actor, requestId: number) {
@@ -467,7 +559,7 @@ export class RecoveryService extends TenantScopedService {
       );
     }
 
-    return this.prisma.recoveryActivity.create({
+    const created = await this.prisma.recoveryActivity.create({
       data: {
         requestId,
         teacherId: actor.userId,
@@ -479,6 +571,15 @@ export class RecoveryService extends TenantScopedService {
         attachmentUrl: dto.attachmentUrl ?? null,
       },
     });
+
+    await this.notify(
+      request.studentId,
+      '📝 Nueva actividad de recuperación',
+      `Tu profesor asignó una nueva actividad: "${dto.title ?? 'Actividad'}" para tu recuperación.`,
+      'GENERAL',
+    );
+
+    return created;
   }
 
   async updateActivity(
@@ -504,7 +605,7 @@ export class RecoveryService extends TenantScopedService {
       );
     }
 
-    return this.prisma.recoveryActivity.update({
+    const updated = await this.prisma.recoveryActivity.update({
       where: { id },
       data: {
         status: dto.status,
@@ -513,6 +614,15 @@ export class RecoveryService extends TenantScopedService {
         attachmentUrl: dto.attachmentUrl,
       },
     });
+
+    await this.notify(
+      activity.request.studentId,
+      '📝 Actividad actualizada',
+      `La actividad de tu recuperación fue actualizada por tu profesor.`,
+      'GENERAL',
+    );
+
+    return updated;
   }
 
   async deleteRequest(actor: Actor, id: number) {
@@ -538,6 +648,12 @@ export class RecoveryService extends TenantScopedService {
       request.studentId === actor.userId &&
       request.status === RecoveryRequestStatus.PENDING
     ) {
+      await this.notify(
+        request.teacherId,
+        '🗑️ Solicitud cancelada',
+        `Un estudiante canceló su solicitud de recuperación.`,
+        'GENERAL',
+      );
       await this.prisma.recoveryRequest.delete({ where: { id } });
       return { id, deleted: true };
     }
@@ -563,6 +679,13 @@ export class RecoveryService extends TenantScopedService {
         'No autorizado para eliminar esta actividad',
       );
     }
+
+    await this.notify(
+      request.studentId,
+      '🗑️ Actividad eliminada',
+      `Una actividad de tu recuperación fue eliminada por tu profesor.`,
+      'GENERAL',
+    );
 
     await this.prisma.recoveryActivity.delete({ where: { id } });
     return { id, deleted: true };
@@ -700,7 +823,7 @@ export class RecoveryService extends TenantScopedService {
 
     await this.ensureRequestAccess(actor, requestId);
 
-    return this.prisma.recoveryMessage.create({
+    const message = await this.prisma.recoveryMessage.create({
       data: {
         requestId,
         authorId: actor.userId,
@@ -712,6 +835,25 @@ export class RecoveryService extends TenantScopedService {
         },
       },
     });
+
+    const req = await this.prisma.recoveryRequest.findUnique({
+      where: { id: requestId },
+      select: { studentId: true, teacherId: true },
+    });
+    if (req) {
+      const recipientId =
+        actor.userId === req.studentId ? req.teacherId : req.studentId;
+      const bodyShort =
+        dto.body.length > 80 ? `${dto.body.slice(0, 77)}...` : dto.body;
+      await this.notify(
+        recipientId,
+        '💬 Nuevo mensaje en recuperación',
+        bodyShort,
+        'MESSAGE',
+      );
+    }
+
+    return message;
   }
 
   async statsByGroup(actor: Actor, groupId: number) {

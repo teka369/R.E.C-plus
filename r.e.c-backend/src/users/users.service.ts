@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRole } from './dto/user-role.enum';
 import * as bcrypt from 'bcryptjs';
-import { createId } from '@paralleldrive/cuid2';
+import { randomBytes } from 'crypto';
 import {
   PaginationQuery,
   paginateParams,
@@ -14,6 +14,10 @@ import {
 
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
+
+function createId(): string {
+  return 'c' + randomBytes(16).toString('hex');
+}
 
 @Injectable()
 export class UsersService extends TenantScopedService {

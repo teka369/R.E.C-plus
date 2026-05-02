@@ -9,6 +9,7 @@ import { json, urlencoded } from 'express';
 import { SanitizeInputPipe } from './common/pipes/sanitize-input.pipe';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { Logger } from 'nestjs-pino';
+import { RecSocketIoAdapter } from './common/socket-io.adapter';
 
 /** Express/proxy-addr: "1"/"true" → 1 salto (Nginx delante); número → N saltos; false → sin confiar */
 function resolveTrustProxy(): boolean | number | string {
@@ -63,6 +64,7 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useWebSocketAdapter(new RecSocketIoAdapter(app));
   app.useLogger(app.get(Logger));
   // Confiar en la IP del proxy (Nginx): TRUST_PROXY=1 → un salto; sin definir → solo loopback (dev)
   const expressApp = app.getHttpAdapter().getInstance();

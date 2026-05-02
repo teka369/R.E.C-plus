@@ -438,9 +438,18 @@ export class AuthService {
     }
 
     const resetPageUrl = `${frontendUrl}/reset-password`;
+    const rawScheme = process.env.MOBILE_PASSWORD_RESET_SCHEME?.trim();
+    const mobileScheme =
+      rawScheme && /^[a-z][a-z0-9+.-]*$/i.test(rawScheme) ? rawScheme : 'recedu';
+    const appResetDeepLink = `${mobileScheme}://reset?token=${encodeURIComponent(token)}`;
 
     try {
-      await this.mail.sendPasswordReset(user.email, resetPageUrl, token);
+      await this.mail.sendPasswordReset(
+        user.email,
+        resetPageUrl,
+        token,
+        appResetDeepLink,
+      );
     } catch (err) {
       // Loguear el error del servicio de correo pero NO devolver 500
       // al usuario — por seguridad no debemos revelar si el envío falló

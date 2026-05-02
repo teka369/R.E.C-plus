@@ -32,6 +32,28 @@ export class CommunicationService extends TenantScopedService {
     super();
   }
 
+  private async notify(
+    userId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const n = await this.prisma.notification.create({
+        data: { userId, title, body, type },
+      });
+      this.appGatewayService.emitToUser(userId, 'notification:new', n);
+    } catch {
+      /* best-effort */
+    }
+  }
+
   // Feedback
   async createFeedback(dto: CreateFeedbackDto, actor: Actor) {
     if (actor.role !== UserRole.PROFESOR) {
@@ -130,6 +152,12 @@ export class CommunicationService extends TenantScopedService {
         feedbackImprovements: { orderBy: { orden: 'asc' } },
       },
     });
+    await this.notify(
+      dto.studentId,
+      '⭐ Nuevo feedback de tu profesor',
+      `Tu profesor dejó feedback: "${dto.title}".`,
+      'FEEDBACK',
+    );
     return {
       ...feedback,
       strengths: {
@@ -207,6 +235,12 @@ export class CommunicationService extends TenantScopedService {
         feedbackImprovements: { orderBy: { orden: 'asc' } },
       },
     });
+    await this.notify(
+      existing.studentId,
+      '⭐ Feedback actualizado',
+      `Tu profesor actualizó el feedback "${existing.title}".`,
+      'FEEDBACK',
+    );
     return {
       ...updated,
       strengths: {
@@ -436,6 +470,12 @@ export class CommunicationService extends TenantScopedService {
         content: dto.content,
       },
     });
+    await this.notify(
+      dto.recipientId,
+      '💬 Nuevo mensaje',
+      `Tienes un nuevo mensaje en Recedu.`,
+      'MESSAGE',
+    );
     return message;
   }
 

@@ -468,6 +468,7 @@ describe('AuthService (unit)', () => {
         'ana@test.dev',
         'https://app.recedu.co/reset-password',
         expect.any(String),
+        expect.stringMatching(/^recedu:\/\/reset\?token=/),
       );
     });
 
@@ -494,6 +495,7 @@ describe('AuthService (unit)', () => {
         'ana@test.dev',
         'http://localhost:3000/reset-password',
         expect.any(String),
+        expect.stringMatching(/^recedu:\/\/reset\?token=/),
       );
     });
   });

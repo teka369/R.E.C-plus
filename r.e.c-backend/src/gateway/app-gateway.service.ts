@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { RecoveryService } from '../recovery/recovery.service';
 import type { Server } from 'socket.io';
 
@@ -6,7 +6,10 @@ import type { Server } from 'socket.io';
 export class AppGatewayService {
   private server: Server | null = null;
 
-  constructor(private readonly recoveryService: RecoveryService) {}
+  constructor(
+    @Inject(forwardRef(() => RecoveryService))
+    private readonly recoveryService: RecoveryService,
+  ) {}
 
   setServer(server: Server) {
     this.server = server;
@@ -18,7 +21,14 @@ export class AppGatewayService {
   }
 
   emitToTenant(institutionId: number | null | undefined, event: string, data: unknown) {
-    if (!this.server || !Number.isInteger(institutionId) || institutionId <= 0) return;
+    if (
+      !this.server ||
+      institutionId == null ||
+      !Number.isInteger(institutionId) ||
+      institutionId <= 0
+    ) {
+      return;
+    }
     this.server.to(`tenant-${institutionId}`).emit(event, data);
   }
 
@@ -30,6 +40,7 @@ export class AppGatewayService {
   ) {
     if (
       !this.server ||
+      institutionId == null ||
       !Number.isInteger(institutionId) ||
       institutionId <= 0 ||
       !Number.isInteger(requestId) ||
