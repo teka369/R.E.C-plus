@@ -4,6 +4,7 @@ import {
   MinLength,
   MaxLength,
   ValidateBy,
+  ValidationArguments,
 } from 'class-validator';
 
 export class ResetPasswordDto {
@@ -24,8 +25,9 @@ export class ResetPasswordDto {
   @ValidateBy({
     name: 'matchPassword',
     validator: {
-      validate: (value: unknown, args): boolean =>
+      validate: (value: unknown, args?: ValidationArguments): boolean =>
         typeof value === 'string' &&
+        args != null &&
         value === (args.object as ResetPasswordDto).password,
       defaultMessage: () => 'confirmPassword debe coincidir con password',
     },

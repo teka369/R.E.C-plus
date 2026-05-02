@@ -63,6 +63,8 @@ interface CreateGroupDto {
 interface CreateSubjectDto {
   nombre: string;
   codigo?: string;
+  /** Si se envía, notifica a estudiantes activos de ese grupo al crear la materia. */
+  groupId?: number;
 }
 
 interface AssignGroupSubjectDto {
@@ -113,14 +115,63 @@ import {
 } from '../common/dto/pagination.dto';
 import { RedisCacheService } from '../common/cache/cache.service';
 import { TeacherLoadSummaryDto } from './dto/teacher-load-summary.dto';
+import { AppGatewayService } from '../gateway/app-gateway.service';
 
 @Injectable()
 export class AcademicService extends TenantScopedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: RedisCacheService,
+    private readonly appGatewayService: AppGatewayService,
   ) {
     super();
+  }
+
+  private async notify(
+    userId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const n = await this.prisma.notification.create({
+        data: { userId, title, body, type },
+      });
+      this.appGatewayService.emitToUser(userId, 'notification:new', n);
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async notifyGroup(
+    groupId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const students = await this.prisma.studentGroup.findMany({
+        where: { groupId, status: EnrollmentStatus.ACTIVE },
+        select: { studentId: true },
+      });
+      await Promise.all(
+        students.map((s) => this.notify(s.studentId, title, body, type)),
+      );
+    } catch {
+      /* best-effort */
+    }
   }
 
   /** Misma lógica de fallback que PerformanceService.upsertStudentAcademic. */
@@ -218,6 +269,15 @@ export class AcademicService extends TenantScopedService {
       },
     });
     await this.cache.delByPattern('grades:*');
+    const r = result as { studentId?: number | null };
+    if (r.studentId != null) {
+      await this.notify(
+        r.studentId,
+        '📊 Nueva nota registrada',
+        `Tu profesor registró una nueva nota.`,
+        'PERFORMANCE',
+      );
+    }
     return result;
   }
 
@@ -257,16 +317,34 @@ export class AcademicService extends TenantScopedService {
 
   async updateGrade(actor: Actor, id: number, dto: { nombre: string }) {
     await this.getGrade(actor, id);
-    const result = await this.prisma.grade.update({
+    const updated = await this.prisma.grade.update({
       where: { id },
       data: { nombre: dto.nombre },
     });
     await this.cache.delByPattern('grades:*');
-    return result;
+    const u = updated as { studentId?: number | null };
+    if (u.studentId != null) {
+      await this.notify(
+        u.studentId,
+        '📊 Nota actualizada',
+        `Una de tus notas fue actualizada por tu profesor.`,
+        'PERFORMANCE',
+      );
+    }
+    return updated;
   }
 
   async deleteGrade(actor: Actor, id: number) {
-    await this.getGrade(actor, id);
+    const grade = await this.getGrade(actor, id);
+    const g = grade as { studentId?: number | null };
+    if (g.studentId != null) {
+      await this.notify(
+        g.studentId,
+        '📊 Nota eliminada',
+        `Una nota fue eliminada de tu registro académico.`,
+        'PERFORMANCE',
+      );
+    }
     const result = await this.prisma.grade.delete({ where: { id } });
     await this.cache.delByPattern('grades:*');
     return result;
@@ -288,6 +366,14 @@ export class AcademicService extends TenantScopedService {
       },
     });
     await this.cache.delByPattern('groups:*');
+    try {
+      this.appGatewayService.emitToTenant(grade.institutionId, 'notification:new', {
+        title: '🏫 Nuevo grupo creado',
+        body: `El grupo "${dto.nombre}" fue creado en tu institución.`,
+      });
+    } catch {
+      /* best-effort */
+    }
     return result;
   }
 
@@ -348,11 +434,23 @@ export class AcademicService extends TenantScopedService {
       },
     });
     await this.cache.delByPattern('groups:*');
+    await this.notifyGroup(
+      id,
+      '🏫 Grupo actualizado',
+      `La información de tu grupo fue actualizada.`,
+      'GENERAL',
+    );
     return result;
   }
 
   async deleteGroup(actor: Actor, id: number) {
-    await this.getGroup(actor, id);
+    const group = await this.getGroup(actor, id);
+    await this.notifyGroup(
+      id,
+      '🏫 Grupo eliminado',
+      `Tu grupo "${group.nombre}" fue eliminado.`,
+      'GENERAL',
+    );
     const result = await this.prisma.group.delete({ where: { id } });
     await this.cache.delByPattern('groups:*');
     return result;
@@ -368,6 +466,14 @@ export class AcademicService extends TenantScopedService {
       },
     });
     await this.cache.delByPattern('subjects:*');
+    if (dto.groupId != null) {
+      await this.notifyGroup(
+        dto.groupId,
+        '📖 Nueva materia agregada',
+        `La materia "${dto.nombre}" fue agregada a tu grupo.`,
+        'GENERAL',
+      );
+    }
     return result;
   }
 
@@ -413,6 +519,21 @@ export class AcademicService extends TenantScopedService {
       },
     });
     await this.cache.delByPattern('subjects:*');
+    const links = await this.prisma.groupSubject.findMany({
+      where: { subjectId: id },
+      select: { groupId: true },
+    });
+    const seen = new Set<number>();
+    for (const { groupId } of links) {
+      if (seen.has(groupId)) continue;
+      seen.add(groupId);
+      await this.notifyGroup(
+        groupId,
+        '📖 Materia actualizada',
+        `La materia "${result.nombre}" fue actualizada.`,
+        'GENERAL',
+      );
+    }
     return result;
   }
 
@@ -679,6 +800,13 @@ export class AcademicService extends TenantScopedService {
         );
       }
     }
+
+    await this.notify(
+      studentId,
+      '🎓 Removido de grupo',
+      `Fuiste removido de un grupo académico.`,
+      'GENERAL',
+    );
 
     const res = await this.prisma.studentGroup.deleteMany({
       where: { studentId },
@@ -1040,7 +1168,7 @@ export class AcademicService extends TenantScopedService {
   // ─── Períodos Académicos ────────────────────────────────────────────────────
 
   async createAcademicPeriod(actor: Actor, dto: CreateAcademicPeriodDto) {
-    return this.prisma.academicPeriod.create({
+    const created = await this.prisma.academicPeriod.create({
       data: {
         institutionId: this.getActorInstitutionId(actor),
         nombre: dto.nombre,
@@ -1052,6 +1180,19 @@ export class AcademicService extends TenantScopedService {
         fechaCierre: dto.fechaCierre ? new Date(dto.fechaCierre) : null,
       },
     });
+    try {
+      this.appGatewayService.emitToTenant(
+        actor.institutionId ?? null,
+        'notification:new',
+        {
+          title: '📅 Nuevo período académico',
+          body: `El período "${dto.nombre}" fue creado.`,
+        },
+      );
+    } catch {
+      /* best-effort */
+    }
+    return created;
   }
 
   async listAcademicPeriods(actor: Actor, pagination: PaginationQuery = {}) {
@@ -1104,7 +1245,7 @@ export class AcademicService extends TenantScopedService {
     dto: UpdateAcademicPeriodDto,
   ) {
     await this.getAcademicPeriod(actor, id);
-    return this.prisma.academicPeriod.update({
+    const updated = await this.prisma.academicPeriod.update({
       where: { id },
       data: {
         ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
@@ -1119,6 +1260,19 @@ export class AcademicService extends TenantScopedService {
           : {}),
       },
     });
+    try {
+      this.appGatewayService.emitToTenant(
+        actor.institutionId ?? null,
+        'notification:new',
+        {
+          title: '📅 Período académico actualizado',
+          body: `El período académico fue modificado.`,
+        },
+      );
+    } catch {
+      /* best-effort */
+    }
+    return updated;
   }
 
   async activateAcademicPeriod(actor: Actor, id: number) {
@@ -1264,6 +1418,7 @@ export class AcademicService extends TenantScopedService {
           ? { group: { institutionId: this.getActorInstitutionId(actor) } }
           : {}),
       },
+      select: { id: true, groupId: true },
     });
     if (!offering)
       throw new NotFoundException('Oferta académica no encontrada');
@@ -1279,7 +1434,7 @@ export class AcademicService extends TenantScopedService {
       );
     }
 
-    return this.prisma.academicEvaluation.create({
+    const result = await this.prisma.academicEvaluation.create({
       data: {
         academicOfferingId: offeringId,
         titulo: dto.titulo,
@@ -1294,6 +1449,15 @@ export class AcademicService extends TenantScopedService {
           : {}),
       },
     });
+    if (offering.groupId) {
+      await this.notifyGroup(
+        offering.groupId,
+        '📝 Nueva evaluación programada',
+        `Tu profesor programó una nueva evaluación.`,
+        'PERFORMANCE',
+      );
+    }
+    return result;
   }
 
   async updateEvaluation(
@@ -1305,7 +1469,10 @@ export class AcademicService extends TenantScopedService {
       where: { id: evalId },
       include: {
         academicOffering: {
-          select: { group: { select: { institutionId: true } } },
+          select: {
+            groupId: true,
+            group: { select: { institutionId: true } },
+          },
         },
       },
     });
@@ -1331,7 +1498,7 @@ export class AcademicService extends TenantScopedService {
       }
     }
 
-    return this.prisma.academicEvaluation.update({
+    const updated = await this.prisma.academicEvaluation.update({
       where: { id: evalId },
       data: {
         ...(dto.titulo !== undefined ? { titulo: dto.titulo } : {}),
@@ -1340,6 +1507,15 @@ export class AcademicService extends TenantScopedService {
         ...(dto.orden !== undefined ? { orden: dto.orden } : {}),
       },
     });
+    if (ev.academicOffering.groupId) {
+      await this.notifyGroup(
+        ev.academicOffering.groupId,
+        '📝 Evaluación actualizada',
+        `Una evaluación fue modificada por tu profesor.`,
+        'PERFORMANCE',
+      );
+    }
+    return updated;
   }
 
   async deleteEvaluation(actor: Actor, evalId: number) {
@@ -1347,7 +1523,10 @@ export class AcademicService extends TenantScopedService {
       where: { id: evalId },
       include: {
         academicOffering: {
-          select: { group: { select: { institutionId: true } } },
+          select: {
+            groupId: true,
+            group: { select: { institutionId: true } },
+          },
         },
       },
     });
@@ -1359,6 +1538,14 @@ export class AcademicService extends TenantScopedService {
     ) {
       throw new BadRequestException(
         'Evaluacion fuera del alcance de su institucion',
+      );
+    }
+    if (ev.academicOffering.groupId) {
+      await this.notifyGroup(
+        ev.academicOffering.groupId,
+        '📝 Evaluación cancelada',
+        `Una evaluación fue cancelada por tu profesor.`,
+        'PERFORMANCE',
       );
     }
     await this.prisma.academicEvaluation.delete({ where: { id: evalId } });

@@ -10,8 +10,12 @@ import { UpdateInstitutionDto } from './dto/update-institution.dto';
 import { ProvisionInstitutionDto } from './dto/provision-institution.dto';
 import { UserRole } from '../users/dto/user-role.enum';
 import * as bcrypt from 'bcryptjs';
-import { createId } from '@paralleldrive/cuid2';
+import { randomBytes } from 'crypto';
 import { AcademicPeriodStatus } from '@prisma/client';
+
+function createId(): string {
+  return 'c' + randomBytes(16).toString('hex');
+}
 
 @Injectable()
 export class InstitutionsService {

@@ -8,6 +8,19 @@ function generateNonce(): string {
   return btoa(String.fromCharCode(...array));
 }
 
+/** Orígenes ws/wss para Socket.io: mismo host que NEXT_PUBLIC_API_BASE_URL (URL http(s) completa). */
+function connectSrcWebSocketFromApiBase(): string {
+  const raw = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (!raw) return "";
+  try {
+    const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const { host } = new URL(href);
+    return ` ws://${host} wss://${host}`;
+  } catch {
+    return "";
+  }
+}
+
 /**
  * CSP compatible con el runtime de Next (App Router). Un `script-src` solo con `nonce-*`
  * bloquea scripts de arranque que Next no firma con ese nonce → hidratación rota y la UI
@@ -21,7 +34,7 @@ function setSecurityHeaders(response: NextResponse, nonce: string): NextResponse
     "img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com https://media2.giphy.com",
     "font-src 'self' data:",
     "frame-src 'self' https://www.google.com https://docs.google.com",
-    "connect-src 'self' https://*.sentry.io",
+    `connect-src 'self' https://*.sentry.io ws://localhost:4001 wss://localhost:4001 ws://localhost:3000 wss://localhost:3000${connectSrcWebSocketFromApiBase()}`,
     "base-uri 'self'",
     "form-action 'self'",
   ].join("; ");

@@ -22,7 +22,19 @@ export class MailService {
     to: string,
     resetPageUrl: string,
     token: string,
+    appResetDeepLink?: string,
   ): Promise<void> {
+    const appBlock =
+      appResetDeepLink && appResetDeepLink.trim()
+        ? `
+            <p style="color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+              <strong>App móvil R.E.C:</strong> si tienes la app instalada, puedes abrir el restablecimiento directamente:
+            </p>
+            <a href="${appResetDeepLink}" style="display: inline-block; margin: 16px 0 24px; padding: 12px 28px; background-color: #1e5c3a; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
+              Abrir en la app
+            </a>
+          `
+        : '';
     try {
       await this.resend.emails.send({
         from: this.from,
@@ -38,8 +50,9 @@ export class MailService {
             <p style="color: #4a4a4a; font-size: 14px; line-height: 1.6;">
               Abre la página de restablecimiento y pega el <strong>token de recuperación</strong> que aparece abajo (no lo compartas con nadie).
             </p>
+            ${appBlock}
             <a href="${resetPageUrl}" style="display: inline-block; margin: 24px 0; padding: 12px 28px; background-color: #2f8a57; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
-              Ir a restablecer contraseña
+              Ir a restablecer contraseña (web)
             </a>
             <p style="color: #888; font-size: 12px; line-height: 1.5;">
               Este token expira en 1 hora. Cópialo completo en el campo «Token de recuperación»:

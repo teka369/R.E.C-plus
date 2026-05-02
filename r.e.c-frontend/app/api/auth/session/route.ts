@@ -9,20 +9,11 @@ import {
   verifyAccessToken,
 } from "@/lib/server/verify-access-token";
 import { getUpstreamBaseUrl } from "@/lib/server/upstream";
+import { sessionCookieOpts } from "@/lib/server/session-cookie-opts";
 
 const isDev = process.env.NODE_ENV === "development";
 
 const jwtSecretEnvFile = isDev ? "r.e.c-frontend/.env.local" : "r.e.c-frontend/.env.production (en el servidor)";
-
-function sessionCookieOpts(maxAge: number) {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: !isDev,
-    path: "/",
-    maxAge,
-  };
-}
 
 function clearSessionCookies(res: NextResponse) {
   const cleared = { ...sessionCookieOpts(0), maxAge: 0 };
@@ -95,6 +86,7 @@ export async function DELETE() {
 }
 
 export async function GET(req: NextRequest) {
+  const forSocket = req.nextUrl.searchParams.get("socket") === "1";
   try {
     const store = await cookies();
     const token = store.get("rec_token")?.value ?? null;
@@ -102,19 +94,24 @@ export async function GET(req: NextRequest) {
       // Sin access token: intentar refresh silencioso si hay refresh token
       const refreshToken = store.get("rec_refresh")?.value ?? null;
       if (refreshToken) {
-        return attemptSilentRefresh(refreshToken, req);
+        return attemptSilentRefresh(refreshToken, req, forSocket);
       }
       return NextResponse.json({ ok: false, role: null, userId: null });
     }
 
     try {
       const { userId, role } = await verifyAccessToken(token);
-      return NextResponse.json({ ok: true, role, userId });
+      return NextResponse.json({
+        ok: true,
+        role,
+        userId,
+        ...(forSocket ? { accessToken: token } : {}),
+      });
     } catch {
       // Access token expirado/inválido: intentar refresh antes de limpiar sesión
       const refreshToken = store.get("rec_refresh")?.value ?? null;
       if (refreshToken) {
-        return attemptSilentRefresh(refreshToken, req);
+        return attemptSilentRefresh(refreshToken, req, forSocket);
       }
       const res = NextResponse.json({ ok: false, role: null, userId: null });
       clearSessionCookies(res);
@@ -128,6 +125,7 @@ export async function GET(req: NextRequest) {
 async function attemptSilentRefresh(
   refreshToken: string,
   req: NextRequest,
+  forSocket = false,
 ): Promise<NextResponse> {
   const cookieStore = await cookies();
   const { headers: rlHeaders, setVisitorCookie } = buildRateLimitForwardHeaders(req, cookieStore);
@@ -170,6 +168,7 @@ async function attemptSilentRefresh(
       ok: true,
       role: verified.role,
       userId: verified.userId,
+      ...(forSocket ? { accessToken: newAccess } : {}),
     });
     res.cookies.set("rec_token", newAccess, sessionCookieOpts(maxAge));
     res.cookies.set("rec_role", verified.role, sessionCookieOpts(maxAge));

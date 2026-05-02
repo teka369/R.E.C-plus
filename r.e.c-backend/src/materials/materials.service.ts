@@ -10,12 +10,14 @@ import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   AcademicPeriodStatus,
+  EnrollmentStatus,
   MaterialType,
   Prisma,
   SyllabusStatus,
   Visibility,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppGatewayService } from '../gateway/app-gateway.service';
 import { CreateStudyMaterialDto } from './dto/create-study-material.dto';
 import { UpdateStudyMaterialDto } from './dto/update-study-material.dto';
 import { CreateSyllabusDto } from './dto/create-syllabus.dto';
@@ -36,11 +38,61 @@ import { TenantScopedService } from '../common/tenant-scoped.service';
 export class MaterialsService extends TenantScopedService {
   private readonly logger = new Logger(MaterialsService.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly appGatewayService: AppGatewayService,
+  ) {
     super();
   }
 
   private readonly uploadsRoot = path.join(process.cwd(), 'uploads');
+
+  private async notify(
+    userId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const n = await this.prisma.notification.create({
+        data: { userId, title, body, type },
+      });
+      this.appGatewayService.emitToUser(userId, 'notification:new', n);
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async notifyGroup(
+    groupId: number,
+    title: string,
+    body: string,
+    type:
+      | 'GENERAL'
+      | 'MATERIAL'
+      | 'PERFORMANCE'
+      | 'SCHEDULE'
+      | 'MESSAGE'
+      | 'FEEDBACK',
+  ) {
+    try {
+      const students = await this.prisma.studentGroup.findMany({
+        where: { groupId, status: EnrollmentStatus.ACTIVE },
+        select: { studentId: true },
+      });
+      await Promise.all(
+        students.map((s) => this.notify(s.studentId, title, body, type)),
+      );
+    } catch {
+      /* best-effort */
+    }
+  }
 
   private toJsonValue(value: unknown): Prisma.InputJsonValue {
     return value as Prisma.InputJsonValue;
@@ -171,7 +223,7 @@ export class MaterialsService extends TenantScopedService {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
     await this.ensureTeacherAssignment(actor, dto.groupId, dto.subjectId);
-    const material = await this.prisma.studyMaterial.create({
+    let result = await this.prisma.studyMaterial.create({
       data: {
         subjectId: dto.subjectId,
         groupId: dto.groupId,
@@ -206,8 +258,8 @@ export class MaterialsService extends TenantScopedService {
           },
         });
         if (offering) {
-          return await this.prisma.studyMaterial.update({
-            where: { id: material.id },
+          result = await this.prisma.studyMaterial.update({
+            where: { id: result.id },
             data: { academicOfferingId: offering.id },
           });
         }
@@ -216,7 +268,14 @@ export class MaterialsService extends TenantScopedService {
       // No critico
     }
 
-    return material;
+    await this.notifyGroup(
+      dto.groupId,
+      '📚 Nuevo material disponible',
+      `Tu profesor publicó "${dto.title}" en ${result.type === 'PDF' ? 'PDF' : result.type === 'VIDEO' ? 'video' : 'enlace'}.`,
+      'MATERIAL',
+    );
+
+    return result;
   }
 
   async updateStudyMaterial(
@@ -234,7 +293,7 @@ export class MaterialsService extends TenantScopedService {
     ) {
       throw new ForbiddenException('Solo el autor puede editar');
     }
-    return this.prisma.studyMaterial.update({
+    const updated = await this.prisma.studyMaterial.update({
       where: { id },
       data: {
         title: dto.title,
@@ -246,6 +305,13 @@ export class MaterialsService extends TenantScopedService {
         visibility: (dto.visibility as Visibility | undefined) ?? undefined,
       },
     });
+    await this.notifyGroup(
+      material.groupId,
+      '📚 Material actualizado',
+      `El material "${material.title}" fue actualizado por tu profesor.`,
+      'MATERIAL',
+    );
+    return updated;
   }
 
   private async cleanupEmptyDirs(dirPath: string): Promise<void> {
@@ -311,6 +377,13 @@ export class MaterialsService extends TenantScopedService {
         }
       }
     }
+
+    await this.notifyGroup(
+      material.groupId,
+      '🗑️ Material eliminado',
+      `El material "${material.title}" fue eliminado.`,
+      'MATERIAL',
+    );
 
     await this.prisma.studyMaterial.delete({ where: { id } });
     return { deleted: true };
@@ -507,7 +580,7 @@ export class MaterialsService extends TenantScopedService {
     if (actor.role !== UserRole.PROFESOR)
       throw new ForbiddenException('Solo profesores');
     await this.ensureTeacherAssignment(actor, dto.groupId, dto.subjectId);
-    const syllabus = await this.prisma.syllabus.create({
+    let result = await this.prisma.syllabus.create({
       data: {
         subjectId: dto.subjectId,
         groupId: dto.groupId,
@@ -540,8 +613,8 @@ export class MaterialsService extends TenantScopedService {
           },
         });
         if (offering) {
-          return await this.prisma.syllabus.update({
-            where: { id: syllabus.id },
+          result = await this.prisma.syllabus.update({
+            where: { id: result.id },
             data: { academicOfferingId: offering.id },
           });
         }
@@ -550,7 +623,14 @@ export class MaterialsService extends TenantScopedService {
       // No critico
     }
 
-    return syllabus;
+    await this.notifyGroup(
+      dto.groupId,
+      '📋 Nuevo temario publicado',
+      `Tu profesor publicó el temario "${dto.title}".`,
+      'MATERIAL',
+    );
+
+    return result;
   }
 
   async updateSyllabus(actor: Actor, id: number, dto: UpdateSyllabusDto) {
@@ -559,7 +639,7 @@ export class MaterialsService extends TenantScopedService {
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede editar');
     }
-    return this.prisma.syllabus.update({
+    const updated = await this.prisma.syllabus.update({
       where: { id },
       data: {
         title: dto.title,
@@ -568,6 +648,13 @@ export class MaterialsService extends TenantScopedService {
         content: dto.content,
       },
     });
+    await this.notifyGroup(
+      syl.groupId,
+      '📋 Temario actualizado',
+      `El temario "${syl.title}" fue actualizado.`,
+      'MATERIAL',
+    );
+    return updated;
   }
 
   async deleteSyllabus(actor: Actor, id: number) {
@@ -576,6 +663,12 @@ export class MaterialsService extends TenantScopedService {
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede eliminar');
     }
+    await this.notifyGroup(
+      syl.groupId,
+      '🗑️ Temario eliminado',
+      `El temario "${syl.title}" fue eliminado.`,
+      'MATERIAL',
+    );
     await this.prisma.syllabus.delete({ where: { id } });
     return { deleted: true };
   }
