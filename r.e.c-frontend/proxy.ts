@@ -29,7 +29,7 @@ function connectSrcWebSocketFromApiBase(): string {
 function setSecurityHeaders(response: NextResponse, nonce: string): NextResponse {
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://images.pexels.com https://images.unsplash.com https://media2.giphy.com",
     "font-src 'self' data:",

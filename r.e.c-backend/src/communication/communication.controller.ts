@@ -14,6 +14,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { CommunicationService } from './communication.service';
+import { PublicIdResolver } from '../common/resolvers/public-id.resolver';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -36,7 +37,10 @@ type AuthenticatedRequest = {
 
 @Controller('communication')
 export class CommunicationController {
-  constructor(private readonly service: CommunicationService) {}
+  constructor(
+    private readonly service: CommunicationService,
+    private readonly resolver: PublicIdResolver,
+  ) {}
 
   // Feedback
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -57,7 +61,8 @@ export class CommunicationController {
     @Query('page') page: string | undefined,
     @Query('limit') limit: string | undefined,
   ) {
-    return this.service.listFeedbackByStudent(Number(studentId), req.user, {
+    const id = await this.resolver.resolveStudent(studentId, req.user);
+    return this.service.listFeedbackByStudent(id, req.user, {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
@@ -72,7 +77,8 @@ export class CommunicationController {
     @Query('page') page: string | undefined,
     @Query('limit') limit: string | undefined,
   ) {
-    return this.service.listFeedbackByGroup(Number(groupId), req.user, {
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.service.listFeedbackByGroup(id, req.user, {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
@@ -185,5 +191,15 @@ export class CommunicationController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.service.markNotificationRead(dto.notificationId, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('notifications/:id')
+  @HttpCode(204)
+  async deleteNotification(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<void> {
+    await this.service.deleteNotification(id, req.user);
   }
 }

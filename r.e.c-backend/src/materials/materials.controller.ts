@@ -19,6 +19,7 @@ import { ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { MaterialsService } from './materials.service';
+import { PublicIdResolver } from '../common/resolvers/public-id.resolver';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -39,13 +40,16 @@ type AuthenticatedRequest = {
 
 @Controller('materials')
 export class MaterialsController {
-  constructor(private readonly materials: MaterialsService) {}
+  constructor(
+    private readonly materials: MaterialsService,
+    private readonly resolver: PublicIdResolver,
+  ) {}
 
   // Study Materials
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('study')
-  createStudy(
+  async createStudy(
     @Body() dto: CreateStudyMaterialDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -59,14 +63,21 @@ export class MaterialsController {
   @UseInterceptors(
     FileInterceptor('archivo', { limits: { fileSize: 25 * 1024 * 1024 } }),
   )
-  uploadStudyFile(
+  async uploadStudyFile(
     @UploadedFile()
     file: { originalname: string; mimetype: string; buffer: Buffer },
-    @Body('groupId', ParseIntPipe) groupId: number,
-    @Body('subjectId', ParseIntPipe) subjectId: number,
+    @Body('groupId') groupId: string,
+    @Body('subjectId') subjectId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.materials.uploadStudyFile(req.user, groupId, subjectId, file);
+    const groupIdNum = await this.resolver.resolveGroup(groupId, req.user);
+    const subjectIdNum = await this.resolver.resolveSubject(subjectId, req.user);
+    return this.materials.uploadStudyFile(
+      req.user,
+      groupIdNum,
+      subjectIdNum,
+      file,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -100,7 +111,6 @@ export class MaterialsController {
   ) {
     const file = await this.materials.getStudyFile(req.user, id);
     res.setHeader('Content-Type', file.mimeType);
-    // Sanitizar originalName para prevenir HTTP header injection
     const safeFilename = (file.originalName ?? 'file')
       .replace(/[\r\n"\\]/g, '_')
       .slice(0, 200);
@@ -151,7 +161,7 @@ export class MaterialsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('syllabi')
-  createSyllabus(
+  async createSyllabus(
     @Body() dto: CreateSyllabusDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -197,30 +207,33 @@ export class MaterialsController {
   // Group Info (Leagues)
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/info')
-  getGroupInfo(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async getGroupInfo(
+    @Param('groupId') groupId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.materials.getGroupInfo(req.user, groupId);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.materials.getGroupInfo(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Put('groups/:groupId/info')
-  updateGroupInfo(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async updateGroupInfo(
+    @Param('groupId') groupId: string,
     @Body() dto: UpdateGroupInfoDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.materials.updateGroupInfo(req.user, groupId, dto);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.materials.updateGroupInfo(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:gradeId/leagues')
-  listLeagues(
-    @Param('gradeId', ParseIntPipe) gradeId: number,
+  async listLeagues(
+    @Param('gradeId') gradeId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.materials.listGradeLeagues(req.user, gradeId);
+    const id = await this.resolver.resolveGrade(gradeId, req.user);
+    return this.materials.listGradeLeagues(req.user, id);
   }
 }

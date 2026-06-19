@@ -20,12 +20,16 @@ import { EnrollmentStatus, Prisma } from '@prisma/client';
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
 import { AppGatewayService } from '../gateway/app-gateway.service';
+import { FirebaseAdminService } from '../services/firebase-admin.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ScheduleService extends TenantScopedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly appGatewayService: AppGatewayService,
+    private readonly firebaseAdmin: FirebaseAdminService,
+    private readonly usersService: UsersService,
   ) {
     super();
   }
@@ -47,6 +51,19 @@ export class ScheduleService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
+      // Push notification para cuando la app está cerrada
+      const tokens = await this.prisma.pushToken.findMany({
+        where: { userId },
+        select: { token: true },
+      });
+      if (tokens.length > 0) {
+        await this.firebaseAdmin.sendToTokens(
+          tokens.map((t) => t.token),
+          title,
+          body,
+          { type },
+        );
+      }
     } catch {
       /* best-effort */
     }

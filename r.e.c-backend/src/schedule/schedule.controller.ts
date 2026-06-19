@@ -16,6 +16,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/dto/user-role.enum';
 import { ScheduleService } from './schedule.service';
+import { PublicIdResolver } from '../common/resolvers/public-id.resolver';
 import {
   CreateScheduleEntryDto,
   UpdateScheduleEntryDto,
@@ -39,27 +40,32 @@ type AuthenticatedRequest = {
 @ApiTags('Schedule')
 @ApiBearerAuth()
 export class ScheduleController {
-  constructor(private readonly schedule: ScheduleService) {}
+  constructor(
+    private readonly schedule: ScheduleService,
+    private readonly resolver: PublicIdResolver,
+  ) {}
 
   // Weekly entries
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/entries')
-  listEntries(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async listEntries(
+    @Param('groupId') groupId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.schedule.listEntries(req.user, groupId);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.schedule.listEntries(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('groups/:groupId/entries')
-  createEntry(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async createEntry(
+    @Param('groupId') groupId: string,
     @Body() dto: CreateScheduleEntryDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.schedule.createEntry(req.user, groupId, dto);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.schedule.createEntry(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -86,22 +92,24 @@ export class ScheduleController {
   // Notes
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/notes')
-  listNotes(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async listNotes(
+    @Param('groupId') groupId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.schedule.listNotes(req.user, groupId);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.schedule.listNotes(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('groups/:groupId/notes')
-  createNote(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async createNote(
+    @Param('groupId') groupId: string,
     @Body() dto: CreateScheduleNoteDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.schedule.createNote(req.user, groupId, dto);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.schedule.createNote(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -128,24 +136,26 @@ export class ScheduleController {
   // Events
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId/events')
-  listEvents(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async listEvents(
+    @Param('groupId') groupId: string,
     @Req() req: AuthenticatedRequest,
     @Query('startAt') startAt?: string,
     @Query('endAt') endAt?: string,
   ) {
-    return this.schedule.listEvents(req.user, groupId, startAt, endAt);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.schedule.listEvents(req.user, id, startAt, endAt);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR)
   @Post('groups/:groupId/events')
-  createEvent(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async createEvent(
+    @Param('groupId') groupId: string,
     @Body() dto: CreateScheduleEventDto,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.schedule.createEvent(req.user, groupId, dto);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.schedule.createEvent(req.user, id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
