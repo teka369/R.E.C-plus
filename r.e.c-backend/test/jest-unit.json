@@ -12,6 +12,9 @@
   "transformIgnorePatterns": [
     "node_modules/(?!(@paralleldrive/cuid2|@noble/hashes)/)"
   ],
+  "moduleNameMapper": {
+    "^file-type$": "<rootDir>/test/__mocks__/file-type.mock.ts"
+  },
   "collectCoverageFrom": [
     "src/**/*.ts",
     "!src/main.ts",

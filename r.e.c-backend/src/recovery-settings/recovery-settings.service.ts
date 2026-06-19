@@ -9,6 +9,7 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
+import { validateMimeFromBuffer } from '../common/validators/file-mime.validator';
 import { isRecoveryWindowActive } from '../recovery/recovery.utils';
 
 type RecoveryPeriodView = {
@@ -202,6 +203,21 @@ export class RecoverySettingsService extends TenantScopedService {
       throw new BadRequestException('El archivo supera el límite de 10MB');
     }
 
+    const ALLOWED_SCHEDULE_MIME = new Set([
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+    ]);
+
+    const detectedMime = await validateMimeFromBuffer(
+      file.buffer,
+      ALLOWED_SCHEDULE_MIME,
+      'Horario de recuperación',
+    );
+
     const ext = path.extname(file.originalname) || '';
     const safeName = `${randomUUID()}${ext}`;
     const relDir = 'schedules';
@@ -222,7 +238,7 @@ export class RecoverySettingsService extends TenantScopedService {
           where: { academicPeriodId: activePeriodId },
           data: {
             originalName: file.originalname,
-            mimeType: file.mimetype,
+            mimeType: detectedMime,
             filePath: dbPath,
             uploadedById: actor.userId,
             uploadedAt: new Date(),
@@ -243,7 +259,7 @@ export class RecoverySettingsService extends TenantScopedService {
             data: {
               id: (lastSchedule?.id ?? 0) + 1,
               originalName: file.originalname,
-              mimeType: file.mimetype,
+              mimeType: detectedMime,
               filePath: dbPath,
               uploadedById: actor.userId,
               academicPeriodId: activePeriodId,

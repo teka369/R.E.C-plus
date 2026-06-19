@@ -23,6 +23,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/dto/user-role.enum';
 import { RecoveryService } from './recovery.service';
+import { PublicIdResolver } from '../common/resolvers/public-id.resolver';
 import {
   CreateRecoveryActivityDto,
   CreateRecoveryMessageDto,
@@ -43,7 +44,10 @@ type AuthenticatedRequest = {
 @ApiTags('Recovery')
 @ApiBearerAuth()
 export class RecoveryController {
-  constructor(private readonly recovery: RecoveryService) {}
+  constructor(
+    private readonly recovery: RecoveryService,
+    private readonly resolver: PublicIdResolver,
+  ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ESTUDIANTE)
@@ -78,13 +82,14 @@ export class RecoveryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
   @Get('groups/:groupId/requests')
-  listGroupRequests(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async listGroupRequests(
+    @Param('groupId') groupId: string,
     @Query('page') page: string | undefined,
     @Query('limit') limit: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.recovery.listGroupRequests(req.user, groupId, {
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.recovery.listGroupRequests(req.user, id, {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
@@ -209,19 +214,21 @@ export class RecoveryController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
   @Get('stats/groups/:groupId')
-  statsByGroup(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async statsByGroup(
+    @Param('groupId') groupId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.recovery.statsByGroup(req.user, groupId);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.recovery.statsByGroup(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('stats/students/:studentId')
-  statsByStudent(
-    @Param('studentId', ParseIntPipe) studentId: number,
+  async statsByStudent(
+    @Param('studentId') studentId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.recovery.statsByStudent(req.user, studentId);
+    const id = await this.resolver.resolveStudent(studentId, req.user);
+    return this.recovery.statsByStudent(req.user, id);
   }
 }

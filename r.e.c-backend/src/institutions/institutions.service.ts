@@ -210,7 +210,7 @@ export class InstitutionsService {
           }
 
           const codigo = createId();
-          const hashedPassword = await bcrypt.hash(sec.password, 10);
+          const hashedPassword = await bcrypt.hash(sec.password, 12);
 
           return tx.user.create({
             data: {

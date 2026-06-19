@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/dto/user-role.enum';
 import { PerformanceService } from './performance.service';
+import { PublicIdResolver } from '../common/resolvers/public-id.resolver';
 import { UpsertGradePerformanceDto } from './dto/performance.dto';
 import { UpsertStudentAcademicDto } from './dto/student-academic.dto';
 
@@ -30,7 +31,10 @@ type AuthenticatedRequest = {
 @ApiTags('Performance')
 @ApiBearerAuth()
 export class PerformanceController {
-  constructor(private readonly performance: PerformanceService) {}
+  constructor(
+    private readonly performance: PerformanceService,
+    private readonly resolver: PublicIdResolver,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:grade')
@@ -40,20 +44,22 @@ export class PerformanceController {
 
   @UseGuards(JwtAuthGuard)
   @Get('groups/:groupId')
-  getByGroup(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async getByGroup(
+    @Param('groupId') groupId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.performance.getByGroup(req.user, groupId);
+    const id = await this.resolver.resolveGroup(groupId, req.user);
+    return this.performance.getByGroup(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('grades/:gradeId/ranking')
-  getGradeRanking(
-    @Param('gradeId', ParseIntPipe) gradeId: number,
+  async getGradeRanking(
+    @Param('gradeId') gradeId: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.performance.getGradeRanking(req.user, gradeId);
+    const id = await this.resolver.resolveGrade(gradeId, req.user);
+    return this.performance.getGradeRanking(req.user, id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -69,42 +75,49 @@ export class PerformanceController {
 
   @UseGuards(JwtAuthGuard)
   @Get('students/:studentId/academic')
-  getStudentAcademic(
-    @Param('studentId', ParseIntPipe) studentId: number,
+  async getStudentAcademic(
+    @Param('studentId') studentId: string,
     @Query('v') v: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
+    const id = await this.resolver.resolveStudent(studentId, req.user);
     const version = v != null ? Number(v) : 1;
-    return this.performance.getStudentAcademic(req.user, studentId, version);
+    return this.performance.getStudentAcademic(req.user, id, version);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
   @Get('groups/:groupId/students-academic')
-  getGroupAcademicOverview(
-    @Param('groupId', ParseIntPipe) groupId: number,
+  async getGroupAcademicOverview(
+    @Param('groupId') groupId: string,
     @Query('v') v: string | undefined,
     @Req() req: AuthenticatedRequest,
   ) {
+    const id = await this.resolver.resolveGroup(groupId, req.user);
     const version = v != null ? Number(v) : 1;
-    return this.performance.getGroupAcademicOverview(req.user, groupId, version);
+    return this.performance.getGroupAcademicOverview(req.user, id, version);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROFESOR, UserRole.SECRETARIA)
   @Post('groups/:groupId/students/:studentId/subjects/:subjectId/academic')
-  upsertStudentAcademic(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('studentId', ParseIntPipe) studentId: number,
-    @Param('subjectId', ParseIntPipe) subjectId: number,
+  async upsertStudentAcademic(
+    @Param('groupId') groupId: string,
+    @Param('studentId') studentId: string,
+    @Param('subjectId') subjectId: string,
     @Body() dto: UpsertStudentAcademicDto,
     @Req() req: AuthenticatedRequest,
   ) {
+    const [gid, sid, subjId] = await Promise.all([
+      this.resolver.resolveGroup(groupId, req.user),
+      this.resolver.resolveStudent(studentId, req.user),
+      this.resolver.resolveSubject(subjectId, req.user),
+    ]);
     return this.performance.upsertStudentAcademic(
       req.user,
-      groupId,
-      studentId,
-      subjectId,
+      gid,
+      sid,
+      subjId,
       dto,
     );
   }

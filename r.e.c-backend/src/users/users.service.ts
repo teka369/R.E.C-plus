@@ -136,7 +136,7 @@ export class UsersService extends TenantScopedService {
     // Si no se provee contraseña, usar el código como contraseña inicial
     const codigo = createId();
     const password = data.password || codigo;
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     return this.prisma.user.create({
       data: {
@@ -349,7 +349,7 @@ export class UsersService extends TenantScopedService {
         // Si no se provee contraseña, usar el código como contraseña inicial
         const codigo = createId();
         const password = dto.password || codigo;
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         const created = await this.prisma.user.create({
           data: {
@@ -375,7 +375,7 @@ export class UsersService extends TenantScopedService {
 
   // Método para cambiar contraseña
   async changePassword(id: number, newPassword: string) {
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, 12);
     return this.prisma.user.update({
       where: { id },
       data: { password: hashed },
@@ -410,7 +410,7 @@ export class UsersService extends TenantScopedService {
     if (!valid)
       throw new BadRequestException('La contraseña actual no es correcta');
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, 12);
     return this.prisma.user.update({
       where: { id },
       data: { password: hashed },
@@ -439,5 +439,33 @@ export class UsersService extends TenantScopedService {
       currentPassword,
       newPassword,
     );
+  }
+
+  async savePushToken(
+    userId: number,
+    token: string,
+    platform: string,
+  ): Promise<void> {
+    await this.prisma.pushToken.upsert({
+      where: { userId_token: { userId, token } },
+      update: { platform },
+      create: { userId, token, platform },
+    });
+  }
+
+  async getPushTokensByUser(userId: number): Promise<string[]> {
+    const tokens = await this.prisma.pushToken.findMany({
+      where: { userId },
+      select: { token: true },
+    });
+    return tokens.map((t) => t.token);
+  }
+
+  async getPushTokensByInstitution(institutionId: number): Promise<string[]> {
+    const tokens = await this.prisma.pushToken.findMany({
+      where: { user: { institutionId } },
+      select: { token: true },
+    });
+    return tokens.map((t) => t.token);
   }
 }
