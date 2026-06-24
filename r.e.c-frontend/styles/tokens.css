@@ -1,0 +1,382 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   R.E.C — Tokens semánticos (claro / oscuro) + temas por rol
+   Una sola fuente de verdad para colores. El JSX usa utilidades mapeadas en
+   app/globals.css (@theme) como bg-rec-bg-elevated, text-rec-text-muted, etc.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+	color-scheme: light;
+
+	/* ── Marca (acentos; en oscuro se mantienen reconocibles) ── */
+	--rec-primary: #32a656;
+	--rec-primary-strong: #289a4e;
+	--rec-accent: #de4d3f;
+	--rec-earth: #5b3a31;
+	--rec-title: #5b3a31;
+	--rec-cta: #de4d3f;
+	--rec-leaf: #38ad44;
+
+	/* ── Superficies ── */
+	--rec-bg-base: #f5fcf6;
+	--rec-bg-elevated: #ffffff;
+	--rec-bg-muted: #e8f2eb;
+	--rec-bg-subtle: #dce8e0;
+	--rec-surface: #f5fcf6;
+	--rec-soft: #e6f4e8;
+
+	/* ── Texto ── */
+	--rec-ink: #18241b;
+	--rec-text-primary: var(--rec-ink);
+	--rec-text-secondary: color-mix(in srgb, var(--rec-ink) 78%, white 22%);
+	--rec-text-muted: color-mix(in srgb, var(--rec-ink) 55%, white 45%);
+	--rec-text-subtle: color-mix(in srgb, var(--rec-ink) 42%, white 58%);
+	--rec-text-on-primary: #ffffff;
+	--rec-text-on-media: #ffffff;
+	--rec-text-on-inverse: #ffffff;
+
+	/* ── Bordes ── */
+	--rec-border-default: color-mix(in srgb, var(--rec-primary) 14%, white 86%);
+	--rec-border-strong: color-mix(in srgb, var(--rec-primary) 22%, white 78%);
+	--rec-border-subtle: color-mix(in srgb, var(--rec-soft) 65%, white 35%);
+
+	/* ── Glass ── */
+	--rec-glass-bg: color-mix(in srgb, var(--rec-bg-elevated) 72%, transparent);
+	--rec-glass-border: rgba(255, 255, 255, 0.4);
+	--rec-glass-shadow: 0 12px 40px color-mix(in srgb, var(--rec-primary) 14%, transparent);
+	--rec-glass-blur: 16px;
+
+	/* ── Navbar / dropdowns ── */
+	--rec-nav-bg: color-mix(in srgb, var(--rec-bg-elevated) 82%, transparent);
+	--rec-nav-border: var(--rec-border-default);
+	--rec-dropdown-bg: var(--rec-bg-elevated);
+	--rec-dropdown-shadow: 0 18px 50px color-mix(in srgb, var(--rec-ink) 12%, transparent);
+
+	/* ── Hero / overlays ── */
+	--rec-hero-overlay: linear-gradient(
+		to right,
+		rgb(0 0 0 / 0.62),
+		rgb(0 0 0 / 0.44),
+		rgb(0 0 0 / 0.24)
+	);
+	--rec-scrim-mobile: rgb(0 0 0 / 0.4);
+
+	/* ── Auth / páginas de error (fondos) ── */
+	--rec-auth-bg-gradient: radial-gradient(
+		circle at top,
+		color-mix(in srgb, var(--rec-soft) 85%, white 15%) 0%,
+		color-mix(in srgb, var(--rec-surface) 92%, white 8%) 40%,
+		var(--rec-bg-elevated) 100%
+	);
+	--rec-auth-panel-border: var(--rec-border-default);
+	--rec-auth-secretaria-bg: linear-gradient(
+		145deg,
+		color-mix(in srgb, #eff6ff 100%, transparent) 0%,
+		color-mix(in srgb, #dceef8 100%, transparent) 100%
+	);
+	--rec-login-panel-bg: linear-gradient(
+		145deg,
+		color-mix(in srgb, #eef7f1 100%, transparent) 0%,
+		color-mix(in srgb, #dff0e7 100%, transparent) 100%
+	);
+	--rec-auth-secretaria-page-bg: radial-gradient(
+		circle at top,
+		color-mix(in srgb, #edf7ff 100%, transparent) 0%,
+		color-mix(in srgb, #f7fbff 100%, transparent) 42%,
+		var(--rec-bg-elevated) 100%
+	);
+
+	/* ── Footer ── */
+	--rec-footer-from: #26323d;
+	--rec-footer-to: #2f3e4b;
+	--rec-footer-fg: #ffffff;
+	--rec-footer-fg-muted: rgb(255 255 255 / 0.82);
+	--rec-footer-fg-subtle: rgb(255 255 255 / 0.7);
+	--rec-footer-border: rgb(255 255 255 / 0.15);
+	--rec-footer-link: rgb(255 255 255 / 0.88);
+	--rec-footer-icon-bg: rgb(255 255 255 / 0.1);
+	--rec-footer-icon-border: rgb(255 255 255 / 0.28);
+	--rec-footer-divider: rgb(255 255 255 / 0.28);
+	--rec-footer-vignette: radial-gradient(circle at 25% 15%, rgb(0 0 0 / 0.18), transparent 55%);
+
+	/* ── Estado: éxito / peligro / aviso / info ── */
+	--rec-success-bg: color-mix(in srgb, var(--rec-primary) 11%, white 89%);
+	--rec-success-bg-muted: color-mix(in srgb, var(--rec-primary) 16%, white 84%);
+	--rec-success-text: color-mix(in srgb, var(--rec-primary-strong) 88%, var(--rec-ink) 12%);
+	--rec-success-border: color-mix(in srgb, var(--rec-primary) 32%, white 68%);
+
+	--rec-danger-bg: color-mix(in srgb, var(--rec-accent) 10%, white 90%);
+	--rec-danger-bg-strong: color-mix(in srgb, var(--rec-accent) 18%, white 82%);
+	--rec-danger-text: color-mix(in srgb, var(--rec-accent) 88%, black 12%);
+	--rec-danger-border: color-mix(in srgb, var(--rec-accent) 35%, white 65%);
+	--rec-danger-solid: #c53d32;
+	--rec-danger-solid-hover: #a83229;
+
+	--rec-warning-bg: color-mix(in srgb, #d97706 12%, white 88%);
+	--rec-warning-text: color-mix(in srgb, #b45309 90%, black 10%);
+	--rec-warning-border: color-mix(in srgb, #f59e0b 35%, white 65%);
+
+	--rec-info-bg: color-mix(in srgb, #0ea5e9 11%, white 89%);
+	--rec-info-bg-strong: color-mix(in srgb, #0ea5e9 18%, white 82%);
+	--rec-info-text: color-mix(in srgb, #0369a1 90%, black 10%);
+	--rec-info-border: color-mix(in srgb, #38bdf8 35%, white 65%);
+	--rec-info-hover: color-mix(in srgb, #0ea5e9 22%, white 78%);
+
+	/* ── Botones genéricos (UI kit) ── */
+	--rec-btn-primary-bg: var(--rec-ink);
+	--rec-btn-primary-hover: color-mix(in srgb, var(--rec-ink) 88%, white 12%);
+	--rec-btn-secondary-bg: var(--rec-bg-muted);
+	--rec-btn-secondary-hover: var(--rec-bg-subtle);
+	--rec-btn-secondary-fg: var(--rec-text-primary);
+	--rec-btn-danger-bg: var(--rec-danger-solid);
+	--rec-btn-danger-hover: var(--rec-danger-solid-hover);
+
+	/* ── Modal ── */
+	--rec-modal-scrim: rgb(0 0 0 / 0.48);
+	--rec-modal-close-hover: var(--rec-bg-muted);
+	--rec-modal-close-fg: var(--rec-text-subtle);
+
+	/* ── Gráficos / anillos de progreso ── */
+	--rec-chart-emerald: #10b981;
+	--rec-chart-cyan: #06b6d4;
+	--rec-chart-amber: #f59e0b;
+	--rec-chart-rose: #f43f5e;
+	--rec-chart-track: #cbd5e1;
+
+	/* ── Banner / widget recuperación ── */
+	--rec-recovery-fab-bg: #047857;
+	--rec-recovery-fab-bg-hover: #065f46;
+	--rec-recovery-panel-bg: #047857;
+
+	/* ── Alertas perfil / bloques suaves ── */
+	--rec-alert-soft-bg: #fdecea;
+
+	/* ── Tutorial (tarjetas por índice vía estilo inline puede usar estas) ── */
+	--rec-tutorial-soft-a: #fdecea;
+	--rec-tutorial-soft-b: #f5ede9;
+
+	/* ── Stripe / franja home ── */
+	--rec-stripe-bg: color-mix(in srgb, var(--rec-bg-elevated) 58%, transparent);
+	--rec-pill-bg: var(--rec-bg-elevated);
+
+	/* ── Superficie tabla / filas ── */
+	--rec-table-header-bg: var(--rec-bg-muted);
+	--rec-table-row: var(--rec-bg-elevated);
+	--rec-table-row-error-bg: var(--rec-danger-bg);
+
+	/* ── Secretaría (dashboard) ── */
+	--sec-primary: #238f50;
+	--sec-primary-strong: #1d7a44;
+	--sec-surface: #eef7f1;
+	--sec-border: color-mix(in srgb, var(--sec-primary) 18%, white 82%);
+
+	/* ── Rol docente / estudiante (Sidebar y vistas) ── */
+	--role-primary: var(--rec-primary);
+	--role-primary-strong: var(--rec-primary-strong);
+	--role-surface: var(--rec-surface);
+	--role-border: var(--rec-border-default);
+}
+
+/* ── Docente (variante verde más profunda; sin azul para armonía con la marca) ── */
+.docente-theme {
+	--role-primary: #2a7d4f;
+	--role-primary-strong: #236b44;
+	--role-surface: #eef7f1;
+	--role-border: color-mix(in srgb, var(--role-primary) 18%, white 82%);
+}
+
+/* ── Estudiante (verde más luminoso / hoja; sin morado) ── */
+.estudiante-theme {
+	--role-primary: #2f9d5a;
+	--role-primary-strong: #288a4f;
+	--role-surface: #f0faf3;
+	--role-border: color-mix(in srgb, var(--role-primary) 18%, white 82%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Modo oscuro (clase en <html> vía next-themes)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Modo oscuro: “slate profundo” — base azul-gris neutra; verde de marca como acento */
+.dark {
+	color-scheme: dark;
+
+	--rec-primary: #34c98a;
+	--rec-primary-strong: #28b87a;
+	--rec-accent: #34c98a;
+	--rec-earth: #8892aa;
+	--rec-title: #f0f4ff;
+	--rec-cta: #34c98a;
+	--rec-leaf: #34c98a;
+
+	--rec-bg-base: #0f1117;
+	--rec-bg-elevated: #161b27;
+	--rec-bg-muted: #1e2535;
+	--rec-bg-subtle: #252d40;
+	--rec-surface: #1e2535;
+	--rec-soft: #2a3348;
+
+	--rec-ink: #f0f4ff;
+	--rec-text-primary: #f0f4ff;
+	--rec-text-secondary: #8892aa;
+	--rec-text-muted: #5a6480;
+	--rec-text-subtle: #3d4560;
+	--rec-text-on-primary: #0a1a12;
+	--rec-text-on-media: #f0f4ff;
+	--rec-text-on-inverse: #0f1117;
+
+	--rec-border-default: rgba(255, 255, 255, 0.08);
+	--rec-border-strong: rgba(255, 255, 255, 0.14);
+	--rec-border-subtle: rgba(255, 255, 255, 0.05);
+
+	--rec-glass-bg: rgba(22, 27, 39, 0.75);
+	--rec-glass-border: rgba(255, 255, 255, 0.08);
+	--rec-glass-shadow: 0 20px 50px rgb(0 0 0 / 0.45);
+	--rec-glass-blur: 16px;
+
+	--rec-nav-bg: rgba(15, 17, 23, 0.85);
+	--rec-nav-border: rgba(255, 255, 255, 0.08);
+	--rec-dropdown-bg: var(--rec-bg-elevated);
+	--rec-dropdown-shadow: 0 20px 48px rgb(0 0 0 / 0.5);
+
+	--rec-hero-overlay: linear-gradient(
+		to right,
+		rgb(15 17 23 / 0.88),
+		rgb(15 17 23 / 0.62),
+		rgb(15 17 23 / 0.38)
+	);
+	--rec-scrim-mobile: rgb(0 0 0 / 0.5);
+
+	--rec-auth-bg-gradient: linear-gradient(135deg, #0f1117 0%, #161b27 100%);
+	--rec-auth-panel-border: rgba(255, 255, 255, 0.08);
+	--rec-auth-secretaria-bg: linear-gradient(
+		160deg,
+		color-mix(in srgb, var(--sec-primary) 12%, var(--rec-bg-elevated) 88%) 0%,
+		var(--rec-bg-muted) 100%
+	);
+	--rec-login-panel-bg: linear-gradient(
+		160deg,
+		color-mix(in srgb, var(--rec-primary) 10%, var(--rec-bg-elevated) 90%) 0%,
+		var(--rec-bg-muted) 100%
+	);
+	--rec-auth-secretaria-page-bg: radial-gradient(
+		circle at top,
+		color-mix(in srgb, var(--sec-primary) 8%, var(--rec-bg-base) 92%) 0%,
+		var(--rec-bg-base) 50%,
+		var(--rec-bg-elevated) 100%
+	);
+
+	--rec-footer-bg: #0c0f1a;
+	--rec-footer-from: #0c0f1a;
+	--rec-footer-to: #0f1117;
+	--rec-footer-fg: #f0f4ff;
+	--rec-footer-fg-muted: rgb(240 244 255 / 0.8);
+	--rec-footer-fg-subtle: rgb(136 146 170 / 0.85);
+	--rec-footer-border: rgba(255, 255, 255, 0.08);
+	--rec-footer-link: rgb(240 244 255 / 0.88);
+	--rec-footer-icon-bg: rgba(255, 255, 255, 0.05);
+	--rec-footer-icon-border: rgba(255, 255, 255, 0.1);
+	--rec-footer-divider: rgba(255, 255, 255, 0.1);
+	--rec-footer-vignette: radial-gradient(circle at 25% 15%, rgb(0 0 0 / 0.35), transparent 55%);
+
+	--rec-success-bg: #0d2a1a;
+	--rec-success-bg-muted: color-mix(in srgb, var(--rec-primary) 18%, #0d2a1a 82%);
+	--rec-success-text: #34c98a;
+	--rec-success-border: rgba(52, 201, 138, 0.25);
+
+	--rec-danger-bg: #2a0d0d;
+	--rec-danger-bg-strong: color-mix(in srgb, #f87171 22%, #2a0d0d 78%);
+	--rec-danger-text: #f87171;
+	--rec-danger-border: rgba(248, 113, 113, 0.25);
+	--rec-danger-solid: #dc2626;
+	--rec-danger-solid-hover: #ef4444;
+
+	--rec-warning-bg: #2a1f0d;
+	--rec-warning-text: #fbbf24;
+	--rec-warning-border: rgba(251, 191, 36, 0.25);
+
+	--rec-info-bg: #0d1a2a;
+	--rec-info-bg-strong: color-mix(in srgb, #60a5fa 26%, #0d1a2a 74%);
+	--rec-info-text: #60a5fa;
+	--rec-info-border: rgba(96, 165, 250, 0.25);
+	--rec-info-hover: color-mix(in srgb, #60a5fa 22%, #0d1a2a 78%);
+
+	--rec-btn-primary-bg: var(--rec-primary);
+	--rec-btn-primary-hover: var(--rec-primary-strong);
+	--rec-btn-secondary-bg: var(--rec-bg-muted);
+	--rec-btn-secondary-hover: var(--rec-bg-subtle);
+	--rec-btn-secondary-fg: var(--rec-text-primary);
+
+	--rec-modal-scrim: rgba(0, 0, 0, 0.65);
+	--rec-modal-bg: #161b27;
+	--rec-modal-close-hover: var(--rec-bg-muted);
+	--rec-modal-close-fg: var(--rec-text-muted);
+
+	--rec-chart-emerald: #34c98a;
+	--rec-chart-cyan: #60a5fa;
+	--rec-chart-amber: #fbbf24;
+	--rec-chart-rose: #f87171;
+	--rec-chart-track: #252d40;
+
+	--rec-recovery-fab-bg: #145239;
+	--rec-recovery-fab-bg-hover: #104030;
+	--rec-recovery-panel-bg: #145239;
+
+	--rec-alert-soft-bg: color-mix(in srgb, var(--rec-accent) 14%, var(--rec-bg-elevated) 86%);
+
+	--rec-tutorial-soft-a: color-mix(in srgb, var(--rec-primary) 12%, var(--rec-bg-elevated) 88%);
+	--rec-tutorial-soft-b: color-mix(in srgb, var(--rec-bg-subtle) 55%, var(--rec-bg-elevated) 45%);
+
+	--rec-stripe-bg: color-mix(in srgb, var(--rec-bg-elevated) 55%, transparent);
+	--rec-pill-bg: var(--rec-bg-muted);
+
+	--rec-table-header-bg: #1e2535;
+	--rec-table-row: #1e2535;
+	--rec-table-row-alt: #161b27;
+	--rec-table-row-error-bg: var(--rec-danger-bg);
+	--rec-table-border: rgba(255, 255, 255, 0.06);
+
+	--sec-primary: #34c98a;
+	--sec-primary-strong: #28b87a;
+	--sec-surface: #161b27;
+	--sec-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Oscuro + rol: docente = menta marca; estudiante = azul suave (misma base slate) */
+.dark.docente-theme,
+.dark .docente-theme {
+	--role-primary: #34c98a;
+	--role-primary-strong: #28b87a;
+	--role-surface: #161b27;
+	--role-border: rgba(255, 255, 255, 0.08);
+}
+
+.dark.estudiante-theme,
+.dark .estudiante-theme {
+	--role-primary: #60a5fa;
+	--role-primary-strong: #3b82f6;
+	--role-surface: #161b27;
+	--role-border: rgba(96, 165, 250, 0.22);
+}
+
+/* Variables derivadas (color-mix sobre tokens actuales) */
+:root {
+	--rec-primary-12: color-mix(in srgb, var(--rec-primary) 12%, transparent);
+	--rec-primary-18: color-mix(in srgb, var(--rec-primary) 18%, white 82%);
+	--rec-primary-20: color-mix(in srgb, var(--rec-primary) 20%, white 80%);
+	--rec-primary-28: color-mix(in srgb, var(--rec-primary) 28%, white 72%);
+	--rec-primary-34: color-mix(in srgb, var(--rec-primary) 34%, white 66%);
+	--rec-primary-40: color-mix(in srgb, var(--rec-primary) 40%, white 60%);
+	--rec-accent-10: color-mix(in srgb, var(--rec-accent) 10%, transparent);
+	--rec-ink-58: color-mix(in srgb, var(--rec-ink) 58%, white 42%);
+	--rec-ink-74: color-mix(in srgb, var(--rec-ink) 74%, white 26%);
+	--rec-soft-55: color-mix(in srgb, var(--rec-soft) 55%, white 45%);
+	--rec-soft-65: color-mix(in srgb, var(--rec-soft) 65%, white 35%);
+	--rec-earth-85: color-mix(in srgb, var(--rec-earth) 85%, black 15%);
+}
+
+.secretaria-theme {
+	--role-primary: var(--sec-primary);
+	--role-primary-strong: var(--sec-primary-strong);
+	--role-surface: var(--sec-surface);
+	--role-border: var(--sec-border);
+}

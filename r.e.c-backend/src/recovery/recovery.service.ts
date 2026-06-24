@@ -45,12 +45,9 @@ const ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES = new Set([
   'application/x-zip-compressed',
 ]);
 
-import { validateMimeFromBuffer } from '../common/validators/file-mime.validator';
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
 import { AppGatewayService } from '../gateway/app-gateway.service';
-import { FirebaseAdminService } from '../services/firebase-admin.service';
-import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class RecoveryService extends TenantScopedService {
@@ -65,8 +62,6 @@ export class RecoveryService extends TenantScopedService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => AppGatewayService))
     private readonly appGatewayService: AppGatewayService,
-    private readonly firebaseAdmin: FirebaseAdminService,
-    private readonly usersService: UsersService,
   ) {
     super();
   }
@@ -88,19 +83,6 @@ export class RecoveryService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
-      // Push notification para cuando la app está cerrada
-      const tokens = await this.prisma.pushToken.findMany({
-        where: { userId },
-        select: { token: true },
-      });
-      if (tokens.length > 0) {
-        await this.firebaseAdmin.sendToTokens(
-          tokens.map((t) => t.token),
-          title,
-          body,
-          { type },
-        );
-      }
     } catch {
       /* best-effort */
     }
@@ -725,15 +707,13 @@ export class RecoveryService extends TenantScopedService {
       throw new BadRequestException('Archivo inválido');
     }
 
+    if (!ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES.has(file.mimetype)) {
+      throw new BadRequestException('Tipo de archivo no permitido');
+    }
+
     if (file.buffer.length > 10 * 1024 * 1024) {
       throw new BadRequestException('El archivo supera el límite de 10MB');
     }
-
-    const detectedMime = await validateMimeFromBuffer(
-      file.buffer,
-      ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES,
-      'Archivo de actividad',
-    );
 
     const activity = await this.getActivityOrThrow(activityId);
     if (
@@ -760,13 +740,13 @@ export class RecoveryService extends TenantScopedService {
       create: {
         activityId,
         originalName: file.originalname,
-        mimeType: detectedMime,
+        mimeType: file.mimetype,
         filePath: dbPath,
         uploadedById: actor.userId,
       },
       update: {
         originalName: file.originalname,
-        mimeType: detectedMime,
+        mimeType: file.mimetype,
         filePath: dbPath,
         uploadedById: actor.userId,
         uploadedAt: new Date(),

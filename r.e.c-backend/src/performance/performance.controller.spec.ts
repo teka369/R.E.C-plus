@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PerformanceController } from './performance.controller';
 import { PerformanceService } from './performance.service';
-import { PublicIdResolver } from '../common/resolvers/public-id.resolver';
 
 describe('PerformanceController', () => {
   let controller: PerformanceController;
@@ -15,20 +14,7 @@ describe('PerformanceController', () => {
           useValue: {
             getByGrade: jest.fn(),
             getByGroup: jest.fn(),
-            getGradeRanking: jest.fn(),
             upsertByGrade: jest.fn(),
-            getStudentAcademic: jest.fn(),
-            getGroupAcademicOverview: jest.fn(),
-            upsertStudentAcademic: jest.fn(),
-          },
-        },
-        {
-          provide: PublicIdResolver,
-          useValue: {
-            resolveGroup: jest.fn().mockResolvedValue(1),
-            resolveGrade: jest.fn().mockResolvedValue(1),
-            resolveStudent: jest.fn().mockResolvedValue(1),
-            resolveSubject: jest.fn().mockResolvedValue(1),
           },
         },
       ],

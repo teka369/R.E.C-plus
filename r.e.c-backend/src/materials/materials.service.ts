@@ -18,14 +18,11 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppGatewayService } from '../gateway/app-gateway.service';
-import { FirebaseAdminService } from '../services/firebase-admin.service';
-import { UsersService } from '../users/users.service';
 import { CreateStudyMaterialDto } from './dto/create-study-material.dto';
 import { UpdateStudyMaterialDto } from './dto/update-study-material.dto';
 import { CreateSyllabusDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { UpdateGroupInfoDto } from './dto/update-group-info.dto';
-import { validateMimeFromBuffer } from '../common/validators/file-mime.validator';
 import { UserRole } from '../users/dto/user-role.enum';
 import {
   PaginationQuery,
@@ -44,8 +41,6 @@ export class MaterialsService extends TenantScopedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly appGatewayService: AppGatewayService,
-    private readonly firebaseAdmin: FirebaseAdminService,
-    private readonly usersService: UsersService,
   ) {
     super();
   }
@@ -69,19 +64,6 @@ export class MaterialsService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
-      // Push notification para cuando la app está cerrada
-      const tokens = await this.prisma.pushToken.findMany({
-        where: { userId },
-        select: { token: true },
-      });
-      if (tokens.length > 0) {
-        await this.firebaseAdmin.sendToTokens(
-          tokens.map((t) => t.token),
-          title,
-          body,
-          { type },
-        );
-      }
     } catch {
       /* best-effort */
     }
@@ -202,11 +184,11 @@ export class MaterialsService extends TenantScopedService {
       'audio/ogg',
       'audio/wav',
     ]);
-    const detectedMime = await validateMimeFromBuffer(
-      file.buffer,
-      ALLOWED_MIME,
-      'Material de estudio',
-    );
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      throw new BadRequestException(
+        `Tipo de archivo no permitido: ${file.mimetype}`,
+      );
+    }
 
     const safeBaseName =
       path
@@ -232,7 +214,7 @@ export class MaterialsService extends TenantScopedService {
     return {
       filePath: relativePath.replace(/\\/g, '/'),
       originalName: file.originalname,
-      mimeType: detectedMime,
+      mimeType: file.mimetype,
       size: file.buffer.length,
     };
   }

@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  EnrollmentStatus,
   FeedbackEstado as PrismaFeedbackEstado,
   FeedbackTipo as PrismaFeedbackTipo,
 } from '@prisma/client';
@@ -17,8 +16,6 @@ import { UserRole } from '../users/dto/user-role.enum';
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
 import { AppGatewayService } from '../gateway/app-gateway.service';
-import { FirebaseAdminService } from '../services/firebase-admin.service';
-import { UsersService } from '../users/users.service';
 import {
   PaginationQuery,
   paginateParams,
@@ -31,45 +28,8 @@ export class CommunicationService extends TenantScopedService {
   constructor(
     private prisma: PrismaService,
     private readonly appGatewayService: AppGatewayService,
-    private readonly usersService: UsersService,
-    private readonly firebaseAdmin: FirebaseAdminService,
   ) {
     super();
-  }
-
-  private async pushToUser(
-    userId: number,
-    title: string,
-    body: string,
-    type: string,
-  ): Promise<void> {
-    try {
-      const tokens = await this.usersService.getPushTokensByUser(userId);
-      await this.firebaseAdmin.sendToTokens(tokens, title, body, { type });
-    } catch {
-      /* best-effort */
-    }
-  }
-
-  private async pushToGroup(
-    groupId: number,
-    title: string,
-    body: string,
-    type: string,
-  ): Promise<void> {
-    try {
-      const students = await this.prisma.studentGroup.findMany({
-        where: { groupId, status: EnrollmentStatus.ACTIVE },
-        select: { studentId: true },
-      });
-      await Promise.all(
-        students.map((s) =>
-          this.pushToUser(s.studentId, title, body, type),
-        ),
-      );
-    } catch {
-      /* best-effort */
-    }
   }
 
   private async notify(
@@ -89,7 +49,6 @@ export class CommunicationService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
-      await this.pushToUser(userId, title, body, type);
     } catch {
       /* best-effort */
     }
@@ -742,18 +701,6 @@ export class CommunicationService extends TenantScopedService {
     return this.prisma.notification.update({
       where: { id: notificationId },
       data: { readAt: new Date() },
-    });
-  }
-
-  async deleteNotification(notificationId: number, actor: Actor) {
-    const notif = await this.prisma.notification.findUnique({
-      where: { id: notificationId },
-    });
-    if (!notif) throw new NotFoundException('Notificación no encontrada');
-    if (notif.userId !== actor.userId)
-      throw new ForbiddenException('No autorizado');
-    await this.prisma.notification.delete({
-      where: { id: notificationId },
     });
   }
 }

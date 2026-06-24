@@ -1,13 +1,11 @@
 import { StreamableFile } from '@nestjs/common';
 import { RecoveryController } from '../../../src/recovery/recovery.controller';
 import { RecoveryService } from '../../../src/recovery/recovery.service';
-import { PublicIdResolver } from '../../../src/common/resolvers/public-id.resolver';
 import { UserRole } from '../../../src/users/dto/user-role.enum';
 
 describe('RecoveryController', () => {
   let controller: RecoveryController;
   let service: Record<string, jest.Mock>;
-  let resolver: Record<string, jest.Mock>;
 
   const actor = { userId: 1, role: UserRole.PROFESOR, institutionId: 1 };
   const req = { user: actor } as any;
@@ -17,7 +15,6 @@ describe('RecoveryController', () => {
     institutionId: 1,
   };
   const studentReq = { user: studentActor } as any;
-  const resolvedId = 42;
 
   beforeEach(() => {
     service = {
@@ -37,14 +34,7 @@ describe('RecoveryController', () => {
       statsByGroup: jest.fn(),
       statsByStudent: jest.fn(),
     };
-    resolver = {
-      resolveGroup: jest.fn().mockResolvedValue(resolvedId),
-      resolveStudent: jest.fn().mockResolvedValue(resolvedId),
-    };
-    controller = new RecoveryController(
-      service as unknown as RecoveryService,
-      resolver as unknown as PublicIdResolver,
-    );
+    controller = new RecoveryController(service as unknown as RecoveryService);
   });
 
   it('createRequest delegates', () => {
@@ -69,61 +59,64 @@ describe('RecoveryController', () => {
     });
   });
 
-  it('listGroupRequests resolves groupId and delegates', async () => {
-    await controller.listGroupRequests('uuid-group', '1', '5', req);
-    expect(resolver.resolveGroup).toHaveBeenCalledWith('uuid-group', actor);
-    expect(service.listGroupRequests).toHaveBeenCalledWith(actor, resolvedId, {
+  it('listGroupRequests delegates', () => {
+    controller.listGroupRequests(1, '1', '5', req);
+    expect(service.listGroupRequests).toHaveBeenCalledWith(actor, 1, {
       page: 1,
       limit: 5,
     });
   });
 
-  it('updateRequestStatus delegates directly (internal id)', () => {
+  it('updateRequestStatus delegates', () => {
     const dto = { status: 'APPROVED' } as any;
     controller.updateRequestStatus(5, dto, req);
     expect(service.updateRequestStatus).toHaveBeenCalledWith(actor, 5, dto);
   });
 
-  it('listActivities delegates directly (internal id)', () => {
+  it('listActivities delegates', () => {
     controller.listActivities(3, req);
     expect(service.listActivities).toHaveBeenCalledWith(actor, 3);
   });
 
-  it('createActivity delegates directly (internal id)', () => {
+  it('createActivity delegates', () => {
     const dto = { titulo: 'Act' } as any;
     controller.createActivity(3, dto, req);
     expect(service.createActivity).toHaveBeenCalledWith(actor, 3, dto);
   });
 
-  it('updateActivity delegates directly (internal id)', () => {
+  it('updateActivity delegates', () => {
     const dto = { titulo: 'Updated' } as any;
     controller.updateActivity(5, dto, req);
     expect(service.updateActivity).toHaveBeenCalledWith(actor, 5, dto);
   });
 
-  it('deleteRequest delegates directly (internal id)', () => {
+  it('deleteRequest delegates', () => {
     controller.deleteRequest(5, req);
     expect(service.deleteRequest).toHaveBeenCalledWith(actor, 5);
   });
 
-  it('deleteActivity delegates directly (internal id)', () => {
+  it('deleteActivity delegates', () => {
     controller.deleteActivity(5, req);
     expect(service.deleteActivity).toHaveBeenCalledWith(actor, 5);
   });
 
-  it('listMessages delegates directly (internal id)', () => {
+  it('listMessages delegates', () => {
     controller.listMessages(3, req);
     expect(service.listMessages).toHaveBeenCalledWith(actor, 3);
   });
 
-  it('uploadActivityAttachment delegates directly (internal id)', () => {
+  it('uploadActivityAttachment delegates', () => {
     const file = {
       originalname: 'f.pdf',
       mimetype: 'application/pdf',
       buffer: Buffer.from(''),
     };
     controller.uploadActivityAttachment(5, file, req);
-    expect(service.uploadActivityAttachment).toHaveBeenCalledWith(actor, 5, file);
+    expect(service.uploadActivityAttachment).toHaveBeenCalledWith(
+      actor,
+      5,
+      file,
+    );
   });
 
   it('downloadActivityAttachment delegates and sets headers', async () => {
@@ -134,25 +127,26 @@ describe('RecoveryController', () => {
     });
     const res = { setHeader: jest.fn() } as any;
     const result = await controller.downloadActivityAttachment(5, req, res);
-    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'application/pdf',
+    );
     expect(result).toBeInstanceOf(StreamableFile);
   });
 
-  it('createMessage delegates directly (internal id)', () => {
+  it('createMessage delegates', () => {
     const dto = { contenido: 'msg' } as any;
     controller.createMessage(3, dto, req);
     expect(service.createMessage).toHaveBeenCalledWith(actor, 3, dto);
   });
 
-  it('statsByGroup resolves groupId and delegates', async () => {
-    await controller.statsByGroup('uuid-group', req);
-    expect(resolver.resolveGroup).toHaveBeenCalledWith('uuid-group', actor);
-    expect(service.statsByGroup).toHaveBeenCalledWith(actor, resolvedId);
+  it('statsByGroup delegates', () => {
+    controller.statsByGroup(1, req);
+    expect(service.statsByGroup).toHaveBeenCalledWith(actor, 1);
   });
 
-  it('statsByStudent resolves studentId and delegates', async () => {
-    await controller.statsByStudent('uuid-student', req);
-    expect(resolver.resolveStudent).toHaveBeenCalledWith('uuid-student', actor);
-    expect(service.statsByStudent).toHaveBeenCalledWith(actor, resolvedId);
+  it('statsByStudent delegates', () => {
+    controller.statsByStudent(5, req);
+    expect(service.statsByStudent).toHaveBeenCalledWith(actor, 5);
   });
 });

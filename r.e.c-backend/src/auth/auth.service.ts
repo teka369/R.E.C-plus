@@ -100,8 +100,6 @@ export class AuthService {
   }
 
   private getRefreshSecret(): string {
-    // JWT_REFRESH_SECRET es obligatorio (validado por Joi en AppModule).
-    // El fallback a JWT_SECRET es solo safety-net — nunca debería ejecutarse en prod.
     return process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? '';
   }
 
@@ -144,7 +142,7 @@ export class AuthService {
       refreshToken,
       jti,
       expiresAt: new Date(decoded.exp * 1000),
-      tokenHash: await bcrypt.hash(refreshToken, 12),
+      tokenHash: await bcrypt.hash(refreshToken, 10),
     };
   }
 
@@ -470,7 +468,7 @@ export class AuthService {
       );
     }
 
-    const hashed = await bcrypt.hash(newPassword, 12);
+    const hashed = await bcrypt.hash(newPassword, 10);
 
     await this.prisma.$transaction([
       this.prisma.user.update({
