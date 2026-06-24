@@ -20,7 +20,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { SavePushTokenDto } from './dto/push-token.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PaginationQuery } from '../common/dto/pagination.dto';
 
@@ -92,20 +91,6 @@ export class UsersController {
       throw new ForbiddenException('No autorizado: identidad no válida');
     }
     return this.usersService.findOne(req.user, req.user.userId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('push-token')
-  async savePushToken(
-    @Body() dto: SavePushTokenDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    await this.usersService.savePushToken(
-      req.user.userId,
-      dto.token,
-      dto.platform,
-    );
-    return { saved: true };
   }
 
   @UseGuards(JwtAuthGuard)

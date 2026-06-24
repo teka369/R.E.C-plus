@@ -28,8 +28,6 @@ import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
 import { AuditContextMiddleware } from './common/audit-context.middleware';
 import { RestoreModule } from './admin/restore/restore.module';
 import { GatewayModule } from './gateway/gateway.module';
-import { FirebaseModule } from './services/firebase.module';
-import { ResolverModule } from './common/resolvers/resolver.module';
 
 const throttlerRedisLog = new Logger('ThrottlerRedis');
 
@@ -63,7 +61,6 @@ async function redisThrottlerStorageOrUndefined(
       isGlobal: true,
       validationSchema: Joi.object({
         JWT_SECRET: Joi.string().min(32).required(),
-        JWT_REFRESH_SECRET: Joi.string().min(32).required(),
         JWT_ISSUER: Joi.string().required(),
         JWT_AUDIENCE: Joi.string().required(),
         JWT_EXPIRES: Joi.string().default('15m'),
@@ -115,12 +112,10 @@ async function redisThrottlerStorageOrUndefined(
     InstitutionsModule,
     AuthModule,
     PrismaModule,
-    FirebaseModule,
     RedisCacheModule,
     HealthModule,
     CustomLoggerModule,
     RestoreModule,
-    ResolverModule,
     GatewayModule,
   ],
   controllers: [AppController],

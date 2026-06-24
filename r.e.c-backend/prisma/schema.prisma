@@ -259,7 +259,6 @@ model AcademicPeriod {
 
 model Grade {
   id        Int      @id @default(autoincrement())
-  publicId  String   @unique
   institutionId Int
   nombre    String
   groups    Group[]
@@ -273,7 +272,6 @@ model Grade {
 
 model Group {
   id                 Int      @id @default(autoincrement())
-  publicId           String   @unique
   institutionId      Int
   nombre             String
   gradeId            Int
@@ -330,7 +328,6 @@ model GradePerformance {
 
 model Subject {
   id                 Int      @id @default(autoincrement())
-  publicId           String   @unique
   institutionId      Int
   nombre             String
   codigo             String?

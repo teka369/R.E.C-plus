@@ -1,16 +1,13 @@
 import { MaterialsController } from '../../../src/materials/materials.controller';
 import { MaterialsService } from '../../../src/materials/materials.service';
-import { PublicIdResolver } from '../../../src/common/resolvers/public-id.resolver';
 import { UserRole } from '../../../src/users/dto/user-role.enum';
 
 describe('MaterialsController', () => {
   let controller: MaterialsController;
   let service: Record<string, jest.Mock>;
-  let resolver: Record<string, jest.Mock>;
 
   const actor = { userId: 1, role: UserRole.PROFESOR, institutionId: 1 };
   const req = { user: actor } as any;
-  const resolvedId = 42;
 
   beforeEach(() => {
     service = {
@@ -32,43 +29,26 @@ describe('MaterialsController', () => {
       updateGroupInfo: jest.fn(),
       listGradeLeagues: jest.fn(),
     };
-    resolver = {
-      resolveGroup: jest.fn().mockResolvedValue(resolvedId),
-      resolveSubject: jest.fn().mockResolvedValue(resolvedId),
-      resolveGrade: jest.fn().mockResolvedValue(resolvedId),
-    };
     controller = new MaterialsController(
       service as unknown as MaterialsService,
-      resolver as unknown as PublicIdResolver,
     );
   });
 
-  it('createStudy delegates (dto with resolved IDs)', () => {
+  // Study materials
+  it('createStudy delegates', () => {
     const dto = { titulo: 'M' } as any;
     controller.createStudy(dto, req);
     expect(service.createStudyMaterial).toHaveBeenCalledWith(actor, dto);
   });
 
-  it('uploadStudyFile resolves groupId and subjectId', async () => {
+  it('uploadStudyFile delegates', () => {
     const file = {
       originalname: 'f.pdf',
       mimetype: 'application/pdf',
       buffer: Buffer.from(''),
     };
-    await controller.uploadStudyFile(
-      file,
-      'uuid-group',
-      'uuid-subject',
-      req,
-    );
-    expect(resolver.resolveGroup).toHaveBeenCalledWith('uuid-group', actor);
-    expect(resolver.resolveSubject).toHaveBeenCalledWith('uuid-subject', actor);
-    expect(service.uploadStudyFile).toHaveBeenCalledWith(
-      actor,
-      resolvedId,
-      resolvedId,
-      file,
-    );
+    controller.uploadStudyFile(file, 1, 2, req);
+    expect(service.uploadStudyFile).toHaveBeenCalledWith(actor, 1, 2, file);
   });
 
   it('listStudy delegates with pagination', () => {
@@ -87,7 +67,7 @@ describe('MaterialsController', () => {
     });
   });
 
-  it('getStudy delegates (internal id)', () => {
+  it('getStudy delegates', () => {
     controller.getStudy(5, req);
     expect(service.getStudyMaterial).toHaveBeenCalledWith(actor, 5);
   });
@@ -98,9 +78,14 @@ describe('MaterialsController', () => {
       originalName: 'test.pdf',
       fileContent: Buffer.from('pdf'),
     });
-    const res = { setHeader: jest.fn() } as any;
+    const res = {
+      setHeader: jest.fn(),
+    } as any;
     const result = await controller.getStudyFile(1, req, res);
-    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'application/pdf',
+    );
     expect(res.setHeader).toHaveBeenCalledWith(
       'Content-Disposition',
       'inline; filename="test.pdf"',
@@ -144,6 +129,7 @@ describe('MaterialsController', () => {
     expect(service.deleteStudyMaterial).toHaveBeenCalledWith(actor, 5);
   });
 
+  // Syllabi
   it('createSyllabus delegates', () => {
     const dto = { titulo: 'S' } as any;
     controller.createSyllabus(dto, req);
@@ -171,22 +157,20 @@ describe('MaterialsController', () => {
     expect(service.deleteSyllabus).toHaveBeenCalledWith(actor, 1);
   });
 
-  it('getGroupInfo resolves groupId and delegates', async () => {
-    await controller.getGroupInfo('uuid-group', req);
-    expect(resolver.resolveGroup).toHaveBeenCalledWith('uuid-group', actor);
-    expect(service.getGroupInfo).toHaveBeenCalledWith(actor, resolvedId);
+  // Group Info
+  it('getGroupInfo delegates', () => {
+    controller.getGroupInfo(1, req);
+    expect(service.getGroupInfo).toHaveBeenCalledWith(actor, 1);
   });
 
-  it('updateGroupInfo resolves groupId and delegates', async () => {
+  it('updateGroupInfo delegates', () => {
     const dto = { liga: 'Gold' } as any;
-    await controller.updateGroupInfo('uuid-group', dto, req);
-    expect(resolver.resolveGroup).toHaveBeenCalledWith('uuid-group', actor);
-    expect(service.updateGroupInfo).toHaveBeenCalledWith(actor, resolvedId, dto);
+    controller.updateGroupInfo(1, dto, req);
+    expect(service.updateGroupInfo).toHaveBeenCalledWith(actor, 1, dto);
   });
 
-  it('listLeagues resolves gradeId and delegates', async () => {
-    await controller.listLeagues('uuid-grade', req);
-    expect(resolver.resolveGrade).toHaveBeenCalledWith('uuid-grade', actor);
-    expect(service.listGradeLeagues).toHaveBeenCalledWith(actor, resolvedId);
+  it('listLeagues delegates', () => {
+    controller.listLeagues(1, req);
+    expect(service.listGradeLeagues).toHaveBeenCalledWith(actor, 1);
   });
 });
