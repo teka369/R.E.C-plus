@@ -26,6 +26,9 @@ COPY --from=build /app/scripts ./scripts
 # Install only production dependencies in final stage
 RUN npm ci --omit=dev && npm cache clean --force
 
+RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
+USER node
+
 EXPOSE 4001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \

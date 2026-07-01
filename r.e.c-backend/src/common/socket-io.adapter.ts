@@ -1,5 +1,7 @@
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { INestApplication } from '@nestjs/common';
+import { createAdapter } from '@socket.io/redis-adapter';
+import Redis from 'ioredis';
 import type { ServerOptions } from 'socket.io';
 
 function socketCorsOrigins(): string[] {
@@ -11,6 +13,7 @@ function socketCorsOrigins(): string[] {
 
 /**
  * CORS del motor Socket.io alineado con `CORS_ORIGIN` (mismo origen que HTTP en main.ts).
+ * Con Redis adapter multi-instancia si REDIS_URL está configurado.
  */
 export class RecSocketIoAdapter extends IoAdapter {
   constructor(app: INestApplication) {
@@ -26,6 +29,16 @@ export class RecSocketIoAdapter extends IoAdapter {
         credentials: true,
       },
     } as ServerOptions;
-    return super.createIOServer(port, serverOptions);
+
+    const server = super.createIOServer(port, serverOptions);
+
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      const pubClient = new Redis(redisUrl);
+      const subClient = pubClient.duplicate();
+      server.adapter(createAdapter(pubClient, subClient));
+    }
+
+    return server;
   }
 }

@@ -2,7 +2,11 @@
 
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import CompetencyGradeView from "@/components/docente/CompetencyGradeView";
+import dynamic from "next/dynamic";
+const CompetencyGradeView = dynamic(
+  () => import("@/components/docente/CompetencyGradeView"),
+  { ssr: false },
+);
 import { academicApi, type GroupOfferingRow, type TeacherAssignment } from "@/lib/academicApi";
 import {
   performanceApi,

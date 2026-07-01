@@ -33,6 +33,8 @@ import {
 
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
+import { FirebaseAdminService } from '../services/firebase-admin.service';
+import { validateMimeByMagic } from '../common/utils/mime-validator';
 
 @Injectable()
 export class MaterialsService extends TenantScopedService {
@@ -41,6 +43,7 @@ export class MaterialsService extends TenantScopedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly appGatewayService: AppGatewayService,
+    private readonly firebaseAdmin: FirebaseAdminService,
   ) {
     super();
   }
@@ -64,6 +67,18 @@ export class MaterialsService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
+      const tokens = await this.prisma.pushToken.findMany({
+        where: { userId },
+        select: { token: true },
+      });
+      if (tokens.length > 0) {
+        await this.firebaseAdmin.sendToTokens(
+          tokens.map((t) => t.token),
+          title,
+          body,
+          { type },
+        );
+      }
     } catch {
       /* best-effort */
     }
@@ -187,6 +202,12 @@ export class MaterialsService extends TenantScopedService {
     if (!ALLOWED_MIME.has(file.mimetype)) {
       throw new BadRequestException(
         `Tipo de archivo no permitido: ${file.mimetype}`,
+      );
+    }
+
+    if (!validateMimeByMagic(new Uint8Array(file.buffer), file.mimetype)) {
+      throw new BadRequestException(
+        'El contenido del archivo no coincide con el tipo declarado',
       );
     }
 

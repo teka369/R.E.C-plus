@@ -22,12 +22,16 @@ import {
   buildPaginatedResult,
   PaginatedResult,
 } from '../common/dto/pagination.dto';
+import { FirebaseAdminService } from '../services/firebase-admin.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class CommunicationService extends TenantScopedService {
   constructor(
     private prisma: PrismaService,
     private readonly appGatewayService: AppGatewayService,
+    private readonly usersService: UsersService,
+    private readonly firebaseAdmin: FirebaseAdminService,
   ) {
     super();
   }
@@ -49,6 +53,40 @@ export class CommunicationService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
+      await this.pushToUser(userId, title, body, type);
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async pushToUser(
+    userId: number,
+    title: string,
+    body: string,
+    type: string,
+  ) {
+    try {
+      const tokens = await this.usersService.getPushTokensByUser(userId);
+      await this.firebaseAdmin.sendToTokens(tokens, title, body, { type });
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  private async pushToGroup(
+    groupId: number,
+    title: string,
+    body: string,
+    type: string,
+  ) {
+    try {
+      const students = await this.prisma.studentGroup.findMany({
+        where: { groupId, status: 'ACTIVE' },
+        select: { studentId: true },
+      });
+      await Promise.all(
+        students.map((s) => this.pushToUser(s.studentId, title, body, type)),
+      );
     } catch {
       /* best-effort */
     }

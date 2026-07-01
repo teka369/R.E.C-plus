@@ -468,8 +468,8 @@ export class AuthService {
       );
     }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
-
+    const hashed = await bcrypt.hash(newPassword, 12);
+ 
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: record.userId },

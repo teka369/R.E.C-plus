@@ -116,6 +116,7 @@ import {
 import { RedisCacheService } from '../common/cache/cache.service';
 import { TeacherLoadSummaryDto } from './dto/teacher-load-summary.dto';
 import { AppGatewayService } from '../gateway/app-gateway.service';
+import { FirebaseAdminService } from '../services/firebase-admin.service';
 
 @Injectable()
 export class AcademicService extends TenantScopedService {
@@ -123,6 +124,7 @@ export class AcademicService extends TenantScopedService {
     private readonly prisma: PrismaService,
     private readonly cache: RedisCacheService,
     private readonly appGatewayService: AppGatewayService,
+    private readonly firebaseAdmin: FirebaseAdminService,
   ) {
     super();
   }
@@ -144,6 +146,18 @@ export class AcademicService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
+      const tokens = await this.prisma.pushToken.findMany({
+        where: { userId },
+        select: { token: true },
+      });
+      if (tokens.length > 0) {
+        await this.firebaseAdmin.sendToTokens(
+          tokens.map((t) => t.token),
+          title,
+          body,
+          { type },
+        );
+      }
     } catch {
       /* best-effort */
     }
