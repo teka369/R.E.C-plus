@@ -23,6 +23,10 @@ jest.mock('node:fs', () => {
   };
 });
 
+jest.mock('../../../src/common/utils/mime-validator', () => ({
+  validateMimeByMagic: jest.fn(() => true),
+}));
+
 jest.mock('node:crypto', () => {
   const actual = jest.requireActual('node:crypto');
   return { ...actual, randomUUID: () => 'test-uuid' };

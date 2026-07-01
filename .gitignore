@@ -9,3 +9,8 @@ R.E.C-viejo/
 .env.local
 .env.*.local
 !.env.*.example
+
+# IDE / tooling
+.claude/
+CLAUDE.md
+captura.png
