@@ -48,6 +48,7 @@ const ALLOWED_RECOVERY_ATTACHMENT_MIME_TYPES = new Set([
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
 import { AppGatewayService } from '../gateway/app-gateway.service';
+import { FirebaseAdminService } from '../services/firebase-admin.service';
 
 @Injectable()
 export class RecoveryService extends TenantScopedService {
@@ -62,6 +63,7 @@ export class RecoveryService extends TenantScopedService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => AppGatewayService))
     private readonly appGatewayService: AppGatewayService,
+    private readonly firebaseAdmin: FirebaseAdminService,
   ) {
     super();
   }
@@ -83,6 +85,18 @@ export class RecoveryService extends TenantScopedService {
         data: { userId, title, body, type },
       });
       this.appGatewayService.emitToUser(userId, 'notification:new', n);
+      const tokens = await this.prisma.pushToken.findMany({
+        where: { userId },
+        select: { token: true },
+      });
+      if (tokens.length > 0) {
+        await this.firebaseAdmin.sendToTokens(
+          tokens.map((t) => t.token),
+          title,
+          body,
+          { type },
+        );
+      }
     } catch {
       /* best-effort */
     }

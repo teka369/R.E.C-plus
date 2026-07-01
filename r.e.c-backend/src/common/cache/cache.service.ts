@@ -18,6 +18,18 @@ export class RedisCacheService {
     await this.cache.del(key);
   }
 
+  async getOrFetch<T>(
+    key: string,
+    fetchFn: () => Promise<T>,
+    ttlSeconds: number,
+  ): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== null) return cached;
+    const value = await fetchFn();
+    await this.set(key, value, ttlSeconds);
+    return value;
+  }
+
   /**
    * Solo funciona con store Redis (`cache-manager-ioredis-yet`: expone `keys`).
    * Con caché en memoria no hay `keys` → no borra nada; por eso en producción conviene REDIS_URL + Redis en marcha.

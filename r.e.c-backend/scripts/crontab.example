@@ -1,0 +1,14 @@
+# ─── Respaldo automático de PostgreSQL — R.E.C ─────────────────────
+# Instalar: crontab -e  &&  pegar la línea de abajo (ajustar ruta)
+#
+# Variables requeridas en ~/.backup.env:
+#   DATABASE_URL=postgresql://postgres:pass@localhost:5432/rec_db
+#   AWS_S3_BUCKET=s3://recedu-backups        (opcional)
+#   BACKUP_ENCRYPT_KEY=<clave-secreta>        (opcional)
+# ──────────────────────────────────────────────────────────────────────
+
+# Backup diario a las 03:00 am
+0 3 * * * . $HOME/.backup.env && /home/david/PAGINAS-WEB/R.E.C-plus/r.e.c-backend/scripts/backup-db.sh >> $HOME/backup.log 2>&1
+
+# Verificación semanal (domingo 04:00): probar integridad del backup más reciente
+0 4 * * 0 . $HOME/.backup.env && pg_restore --list $(ls -t /home/david/PAGINAS-WEB/R.E.C-plus/r.e.c-backend/backups/*.sql.gz 2>/dev/null | head -1) >/dev/null 2>&1 && echo "OK: backup íntegro" >> $HOME/backup.log || echo "FALLO: backup corrupto" >> $HOME/backup.log

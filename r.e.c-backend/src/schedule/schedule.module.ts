@@ -4,9 +4,10 @@ import { ScheduleService } from './schedule.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { GatewayModule } from '../gateway/gateway.module';
+import { FirebaseModule } from '../services/firebase.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, GatewayModule],
+  imports: [PrismaModule, AuthModule, GatewayModule, FirebaseModule],
   controllers: [ScheduleController],
   providers: [ScheduleService],
 })

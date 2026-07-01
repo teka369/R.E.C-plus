@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layouts/Navbar";
 import Footer from "@/components/layouts/Footer";
-import UserManualExperience from "@/components/tutorial/UserManualExperience";
+import dynamic from "next/dynamic";
+const UserManualExperience = dynamic(
+  () => import("@/components/tutorial/UserManualExperience"),
+  { ssr: false },
+);
 
 export const dynamic = "force-static";
 export const revalidate = false;

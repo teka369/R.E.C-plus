@@ -24,10 +24,12 @@ import { RedisCacheModule } from './common/cache/cache.module';
 import { HealthModule } from './health/health.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 import { LoggerModule as CustomLoggerModule } from './logger/logger.module';
 import { AuditContextMiddleware } from './common/audit-context.middleware';
 import { RestoreModule } from './admin/restore/restore.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { FirebaseModule } from './services/firebase.module';
 
 const throttlerRedisLog = new Logger('ThrottlerRedis');
 
@@ -63,6 +65,7 @@ async function redisThrottlerStorageOrUndefined(
         JWT_SECRET: Joi.string().min(32).required(),
         JWT_ISSUER: Joi.string().required(),
         JWT_AUDIENCE: Joi.string().required(),
+        JWT_REFRESH_SECRET: Joi.string().min(32).required(),
         JWT_EXPIRES: Joi.string().default('15m'),
       }).unknown(true),
     }),
@@ -117,6 +120,7 @@ async function redisThrottlerStorageOrUndefined(
     CustomLoggerModule,
     RestoreModule,
     GatewayModule,
+    FirebaseModule,
   ],
   controllers: [AppController],
   providers: [
@@ -131,6 +135,10 @@ async function redisThrottlerStorageOrUndefined(
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TimeoutInterceptor,
     },
   ],
 })
