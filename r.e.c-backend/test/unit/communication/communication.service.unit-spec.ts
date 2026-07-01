@@ -47,6 +47,19 @@ describe('CommunicationService (unit)', () => {
     },
   };
 
+  const appGatewayService = {
+    emitToUser: jest.fn(),
+    emitToTenant: jest.fn(),
+  };
+
+  const usersService = {
+    getPushTokensByUser: jest.fn().mockResolvedValue([]),
+  };
+
+  const firebaseAdmin = {
+    sendToTokens: jest.fn().mockResolvedValue(undefined),
+  };
+
   let service: CommunicationService;
 
   const profesorActor: Actor = {
@@ -75,7 +88,7 @@ describe('CommunicationService (unit)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new CommunicationService(prisma as never);
+    service = new CommunicationService(prisma as never, appGatewayService as never, usersService as never, firebaseAdmin as never);
   });
 
   // ─── Feedback ─────────────────────────────────────────────────────────

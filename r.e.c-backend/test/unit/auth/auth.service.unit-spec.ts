@@ -516,7 +516,7 @@ describe('AuthService (unit)', () => {
 
       await service.resetPassword('valid-token', 'NewPassword123!');
 
-      expect(hashMock).toHaveBeenCalledWith('NewPassword123!', 10);
+      expect(hashMock).toHaveBeenCalledWith('NewPassword123!', 12);
       expect(prisma.$transaction).toHaveBeenCalled();
     });
 

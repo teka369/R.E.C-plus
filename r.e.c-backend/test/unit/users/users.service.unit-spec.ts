@@ -84,7 +84,7 @@ describe('UsersService (unit)', () => {
         password: 'Password123!',
       });
 
-      expect(bcrypt.hash).toHaveBeenCalledWith('Password123!', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('Password123!', 12);
       expect(result).toEqual({ id: 200, role: UserRole.PROFESOR });
     });
 
@@ -332,7 +332,7 @@ describe('UsersService (unit)', () => {
 
       const result = await service.changePassword(5, 'NewPass123!');
 
-      expect(bcrypt.hash).toHaveBeenCalledWith('NewPass123!', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('NewPass123!', 12);
       expect(result.publicId).toBe('uuid-5');
     });
   });

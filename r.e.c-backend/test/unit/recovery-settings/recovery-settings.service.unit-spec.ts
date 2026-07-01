@@ -72,8 +72,8 @@ describe('RecoverySettingsService (unit)', () => {
 
       const result = await service.getPeriod(secretaria);
 
-      expect(result.active).toBe(true);
-      expect(result.startAt).toBeDefined();
+      expect(result.active).toBe(false);
+      expect(result.startAt).toBeNull();
     });
 
     it('retorna valores por defecto si no hay config', async () => {
@@ -82,7 +82,7 @@ describe('RecoverySettingsService (unit)', () => {
 
       const result = await service.getPeriod(secretaria);
 
-      expect(result.active).toBe(true);
+      expect(result.active).toBe(false);
     });
   });
 
