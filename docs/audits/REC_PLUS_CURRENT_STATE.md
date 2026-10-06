@@ -1,5 +1,7 @@
 # R.E.C-plus — snapshot de estado
 
+Actualización 2026-10-06, rama `hardening/fase-0-baseline` (no está en `main`): el índice de esa rama ya no trackea `.env` reales ni uploads. El historial de `main` sigue teniéndolos. No hay hosting activo; no se rotó ningún servicio. Detalle en `docs/implementation/FASE_1_INDICE.md` y `docs/implementation/PURGA_HISTORIAL_GIT.md`.
+
 Documento de comparación para auditorías futuras. No sustituye el informe largo.
 
 ## Identidad de la auditoría
