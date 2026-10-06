@@ -3,12 +3,23 @@ node_modules/
 dist/
 R.E.C-viejo/
 
-# Environment variables — nunca commitear secrets
+# Environment variables — nunca commitear secrets.
+# Los .env reales que ya estuvieron en Git se consideran comprometidos.
 .env
 .env.*
 .env.local
 .env.*.local
+!.env.example
 !.env.*.example
+
+# Uploads de usuarios. No van al repo aunque el gitignore del backend ya los cubra.
+r.e.c-backend/uploads/
+uploads/
+
+# Informes y artefactos locales
+playwright-report/
+test-results/
+*.tsbuildinfo
 
 # IDE / tooling
 .claude/
