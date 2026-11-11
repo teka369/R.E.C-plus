@@ -5,6 +5,17 @@ Los secretos se generan en runtime y se inyectan por API. No se commitean.
 
 ## Automatizado
 
+Forma corta, pide las tres keys si no están en el entorno:
+
+```bash
+npm run deploy -- --dry-run
+npm run deploy
+```
+
+También: `node scripts/deploy/run-deploy.mjs` o `bash scripts/deploy/run-deploy.sh`.
+Las keys se pueden pasar por `NEON_API_KEY`, `RENDER_API_KEY` y `VERCEL_TOKEN`, o por `--neon-api-key`, `--render-api-key` y `--vercel-token`.
+No se guardan en el repo. Un `--keys-file` tiene que estar fuera del repo.
+
 Exporta los tokens en la terminal (no en un archivo del repo) y corre:
 
 ```bash

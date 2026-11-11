@@ -24,6 +24,7 @@ test-results/
 # Secretos generados en runtime. Nunca van al repo.
 rec-secrets.env
 *.secrets.env
+key.md
 
 # IDE / tooling
 .claude/
