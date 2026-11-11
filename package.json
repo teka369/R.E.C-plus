@@ -3,12 +3,15 @@
   "private": true,
   "description": "Monorepo R.E.C — scripts de despliegue en la raíz",
   "scripts": {
-    "deploy:backend": "bash scripts/deploy.sh backend",
-    "deploy:frontend": "bash scripts/deploy.sh frontend",
-    "deploy:all": "bash scripts/deploy.sh all",
-    "deploy:backend:pull": "bash scripts/deploy.sh backend --pull",
-    "deploy:frontend:pull": "bash scripts/deploy.sh frontend --pull",
-    "deploy:all:pull": "bash scripts/deploy.sh all --pull"
+    "secrets:generate": "node scripts/generate-secrets.mjs",
+    "deploy:secrets": "node scripts/generate-secrets.mjs",
+    "deploy:neon": "node scripts/deploy/neon.mjs",
+    "deploy:render": "node scripts/deploy/render.mjs",
+    "deploy:vercel": "node scripts/deploy/vercel.mjs",
+    "deploy:all": "node scripts/deploy/deploy-all.mjs",
+    "deploy:pm2:backend": "bash scripts/deploy.sh backend",
+    "deploy:pm2:frontend": "bash scripts/deploy.sh frontend",
+    "deploy:pm2:all": "bash scripts/deploy.sh all"
   },
   "dependencies": {
     "@sentry/node": "^10.47.0",

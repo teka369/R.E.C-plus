@@ -1,15 +1,58 @@
 # Deploy: Vercel + Render + Neon
 
 No hay VPS. El frontend vive en Vercel, el API Nest en Render y Postgres en Neon.
-Los secretos se generan en local y se pegan en los dashboards. No se commitean.
+Los secretos se generan en runtime y se inyectan por API. No se commitean.
+
+## Automatizado
+
+Exporta los tokens en la terminal (no en un archivo del repo) y corre:
+
+```bash
+npm run deploy:all -- --dry-run
+npm run deploy:all
+```
+
+En Windows el `--` es obligatorio para que npm pase los flags.
+
+Flags: `--dry-run`, `--skip-neon`, `--skip-render`, `--skip-vercel`, `--rotate-secrets`.
+
+Orden real de `deploy:all`:
+
+1. Genera `JWT_SECRET`, `JWT_REFRESH_SECRET` e `INTERNAL_API_KEY` (o reutiliza `REC_SECRETS_FILE`).
+2. Crea o reutiliza el proyecto Neon y obtiene URL pooled + directa.
+3. Crea o actualiza el servicio Render, inyecta variables y despliega.
+4. Espera `GET /health` 200.
+5. Crea o actualiza el proyecto Vercel (`rootDirectory=r.e.c-frontend`) e inyecta la URL de Render y el mismo `JWT_SECRET`. No define `SESSION_COOKIE_DOMAIN`.
+6. Actualiza `CORS_ORIGIN`, `EMBED_ORIGINS` y `FRONTEND_URL` en Render y redeploy.
+
+Piezas sueltas: `npm run deploy:secrets`, `deploy:neon`, `deploy:render`, `deploy:vercel`.
+En bash: `bash scripts/deploy/deploy-all.sh --dry-run`.
+
+Variables que debes exportar antes del run real:
+
+| Variable | Para qué |
+|---|---|
+| `NEON_API_KEY` | Crear/leer el proyecto. Si ya exportas `DATABASE_URL` y `DATABASE_DIRECT_URL`, Neon no se vuelve a crear |
+| `RENDER_API_KEY` | Crear servicio, env vars y deploys |
+| `RENDER_OWNER_ID` | Opcional. Si falta, el script lista owners |
+| `RENDER_BRANCH` | Opcional. Por defecto la rama git actual |
+| `VERCEL_TOKEN` | Proyecto, env y deployment |
+| `VERCEL_ORG_ID` | Opcional, si la cuenta es un team |
+| `VERCEL_PROJECT_ID` | Opcional. Si falta, crea `rec-frontend` |
+| `RESEND_API_KEY` | Opcional. Solo se inyecta si está en el entorno |
+
+El repo de GitHub tiene que estar conectado en Vercel y Render. El script no puede autorizar OAuth por ti.
+
+Los scripts viejos de PM2 quedaron como `deploy:pm2:*`. No uses esos para este stack.
 
 ## 1. Secretos
 
-En la raíz del repo:
-
 ```bash
-node scripts/generate-secrets.mjs
+npm run secrets:generate
+node scripts/generate-secrets.mjs --out /tmp/rec-secrets.env
 ```
+
+`--out` rechaza cualquier ruta dentro del repo y intenta dejar el archivo en modo 600.
 
 En Linux/macOS también vale `bash scripts/generate-secrets.sh`.
 Imprime `JWT_SECRET`, `JWT_REFRESH_SECRET` e `INTERNAL_API_KEY`.

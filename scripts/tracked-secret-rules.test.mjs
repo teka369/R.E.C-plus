@@ -15,5 +15,7 @@ assert.equal(isBlockedTrackedPath("r.e.c-backend/.env.example"), false);
 assert.equal(isBlockedTrackedPath("r.e.c-frontend/.env.production.example"), false);
 assert.equal(isBlockedTrackedPath(".env.coolify.example"), false);
 assert.equal(isBlockedTrackedPath("r.e.c-backend/src/main.ts"), false);
+assert.equal(isBlockedTrackedPath("rec-secrets.env"), true);
+assert.equal(isBlockedTrackedPath("scripts/deploy/local.secrets.env"), true);
 
 console.log("tracked-secret-rules ok");

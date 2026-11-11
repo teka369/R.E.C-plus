@@ -21,6 +21,10 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 
+# Secretos generados en runtime. Nunca van al repo.
+rec-secrets.env
+*.secrets.env
+
 # IDE / tooling
 .claude/
 CLAUDE.md
