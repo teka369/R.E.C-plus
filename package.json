@@ -8,6 +8,7 @@
     "deploy:neon": "node scripts/deploy/neon.mjs",
     "deploy:render": "node scripts/deploy/render.mjs",
     "deploy:vercel": "node scripts/deploy/vercel.mjs",
+    "deploy": "node scripts/deploy/run-deploy.mjs",
     "deploy:all": "node scripts/deploy/deploy-all.mjs",
     "deploy:pm2:backend": "bash scripts/deploy.sh backend",
     "deploy:pm2:frontend": "bash scripts/deploy.sh frontend",
