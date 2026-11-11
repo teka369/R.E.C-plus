@@ -4,6 +4,7 @@ import {
   AuthService,
   type AuthTokensResponse,
 } from '../../../src/auth/auth.service';
+import { hashPasswordResetToken } from '../../../src/auth/password-reset-token.util';
 
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
@@ -141,9 +142,9 @@ describe('AuthService (unit)', () => {
     it('lanza UnauthorizedException si el usuario no existe', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.login('noexiste@test.dev', 'pass', tr)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.login('noexiste@test.dev', 'pass', tr),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('lanza UnauthorizedException si la contraseña es incorrecta', async () => {
@@ -162,9 +163,9 @@ describe('AuthService (unit)', () => {
       });
       compareMock.mockResolvedValue(true);
 
-      await expect(service.login('ana@test.dev', 'Password!', tr)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.login('ana@test.dev', 'Password!', tr),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('permite login de SUPER_ADMIN con institución inactiva', async () => {
@@ -415,38 +416,12 @@ describe('AuthService (unit)', () => {
   // ─── recoverByCode ────────────────────────────────────────────────────
 
   describe('recoverByCode', () => {
-    it('retorna token de reset para un usuario válido', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 5 });
-      prisma.passwordResetToken.updateMany.mockResolvedValue({ count: 0 });
-      prisma.passwordResetToken.create.mockResolvedValue({ token: 'tok' });
+    it('no crea token ni lo devuelve aunque el código exista', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 5, codigo: 'COD123' });
 
-      const result = await service.recoverByCode('COD123');
-
-      expect(result).toEqual(expect.any(String));
-      expect(prisma.passwordResetToken.create).toHaveBeenCalled();
-    });
-
-    it('retorna null si el usuario no existe', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
-
-      const result = await service.recoverByCode('NOEXISTE');
-
-      expect(result).toBeNull();
+      await expect(service.recoverByCode()).rejects.toThrow(/deshabilitada/);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
       expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
-    });
-
-    it('invalida tokens previos no usados', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 5 });
-      prisma.passwordResetToken.updateMany.mockResolvedValue({ count: 2 });
-      prisma.passwordResetToken.create.mockResolvedValue({ token: 'new' });
-
-      await service.recoverByCode('COD123');
-
-      expect(prisma.passwordResetToken.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { userId: 5, usedAt: null },
-        }),
-      );
     });
   });
 
@@ -470,6 +445,11 @@ describe('AuthService (unit)', () => {
         expect.any(String),
         expect.stringMatching(/^recedu:\/\/reset\?token=/),
       );
+      const mailedToken = mail.sendPasswordReset.mock.calls[0][2] as string;
+      const stored = prisma.passwordResetToken.create.mock.calls[0][0].data
+        .token as string;
+      expect(stored).not.toBe(mailedToken);
+      expect(stored).toHaveLength(64);
     });
 
     it('no envía email si el usuario no existe (anti-enumeración)', async () => {
@@ -516,6 +496,9 @@ describe('AuthService (unit)', () => {
 
       await service.resetPassword('valid-token', 'NewPassword123!');
 
+      expect(prisma.passwordResetToken.findUnique).toHaveBeenCalledWith({
+        where: { token: hashPasswordResetToken('valid-token') },
+      });
       expect(hashMock).toHaveBeenCalledWith('NewPassword123!', 12);
       expect(prisma.$transaction).toHaveBeenCalled();
     });

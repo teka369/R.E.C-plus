@@ -88,11 +88,17 @@ export function DocenteTourProvider({ children }: { children: ReactNode }) {
   const [guideBarVisible, setGuideBarVisibleState] = useState(true);
   const driverRef = useRef<ReturnType<typeof driver> | null>(null);
   const progressRef = useRef(progress);
-  progressRef.current = progress;
   const mutedRef = useRef(muted);
-  mutedRef.current = muted;
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
 
   useEffect(() => {
+    // Hidrata progreso de localStorage tras el mount. No se puede leer en el render de SSR.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgress(loadDocenteTourProgress());
     setGuideBarVisibleState(loadGuideBarVisible());
     setReady(true);

@@ -89,7 +89,11 @@ export default function AccesoSecretariaPage() {
         return;
       }
       await login(user, access_token, refresh_token);
-      window.location.href = user.role === "SUPER_ADMIN" ? "/super-admin" : "/secretaria";
+      window.location.href = user.mustChangePassword
+        ? "/profile"
+        : user.role === "SUPER_ADMIN"
+          ? "/super-admin"
+          : "/secretaria";
     } catch (err: unknown) {
       if (isAxiosError(err) && err.response?.status === 429) {
         const data = err.response.data as { message?: string | string[] } | undefined;

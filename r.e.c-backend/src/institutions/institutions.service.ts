@@ -416,9 +416,7 @@ export class InstitutionsService {
         ...(dto.tipo !== undefined
           ? { tipo: dto.tipo as 'TERM' | 'RECOVERY' | 'INTERSESSION' }
           : {}),
-        ...(dto.fechaInicio
-          ? { fechaInicio: new Date(dto.fechaInicio) }
-          : {}),
+        ...(dto.fechaInicio ? { fechaInicio: new Date(dto.fechaInicio) } : {}),
         ...(dto.fechaFin ? { fechaFin: new Date(dto.fechaFin) } : {}),
       },
     });

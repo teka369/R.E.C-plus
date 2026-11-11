@@ -42,6 +42,10 @@ export class UpdateStudyMaterialDto {
   filePath?: string;
 
   @IsOptional()
+  @IsString()
+  uploadToken?: string;
+
+  @IsOptional()
   @IsEnum(StudyMaterialVisibility)
   visibility?: StudyMaterialVisibility;
 }

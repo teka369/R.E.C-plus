@@ -1,4 +1,8 @@
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TenantBoundaryGuard } from '../../../src/common/guards/tenant-boundary.guard';
 import { UserRole } from '../../../src/users/dto/user-role.enum';
@@ -66,7 +70,9 @@ describe('TenantBoundaryGuard', () => {
   });
 
   it('debe permitir rutas publicas sin user', async () => {
-    await expect(guard.canActivate(buildContext(undefined))).resolves.toBe(true);
+    await expect(guard.canActivate(buildContext(undefined))).resolves.toBe(
+      true,
+    );
   });
 
   it('debe permitir SUPER_ADMIN sin institutionId', async () => {
@@ -105,7 +111,11 @@ describe('TenantBoundaryGuard', () => {
     mockPrisma.institution.findUnique.mockResolvedValue({ activa: false });
     await expect(
       guard.canActivate(
-        buildContext({ userId: 4, role: UserRole.SECRETARIA, institutionId: 10 }),
+        buildContext({
+          userId: 4,
+          role: UserRole.SECRETARIA,
+          institutionId: 10,
+        }),
       ),
     ).rejects.toThrow(UnauthorizedException);
   });

@@ -477,7 +477,9 @@ describe('Security Fixes Integration', () => {
         .set('X-Visitor-Id', visitorId)
         .send({ email: u.email, password: 'wrongpassword' });
       expect(fifthFail.status).toBe(429);
-      expect(String(fifthFail.body?.message ?? '')).toMatch(/espera \d+ segundos/);
+      expect(String(fifthFail.body?.message ?? '')).toMatch(
+        /espera \d+ segundos/,
+      );
     });
   });
 });

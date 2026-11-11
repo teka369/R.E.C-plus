@@ -66,8 +66,13 @@ describe('UsersService (unit)', () => {
       });
 
       expect(bcrypt.hash).toHaveBeenCalled();
-      expect(prisma.user.create).toHaveBeenCalled();
-      expect(result).toEqual({ id: 100, role: UserRole.ESTUDIANTE });
+      const hashedArg = (bcrypt.hash as jest.Mock).mock.calls[0][0] as string;
+      const created = prisma.user.create.mock.calls[0][0].data;
+      expect(hashedArg).not.toBe(created.codigo);
+      expect(created.mustChangePassword).toBe(true);
+      expect(created.password).toBe(`hashed:${hashedArg}`);
+      expect(result.temporaryPassword).toBe(hashedArg);
+      expect(result.temporaryPassword).not.toBe(created.codigo);
     });
 
     it('permite crear profesor con password proporcionada', async () => {

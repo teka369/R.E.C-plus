@@ -93,7 +93,13 @@ export default function LoginPage() {
         return;
       }
       await login(user, access_token, refresh_token);
-      const target = user.role === "PROFESOR" ? "/docente" : "/estudiante";
+      const target = user.mustChangePassword
+        ? user.role === "PROFESOR"
+          ? "/docente/cambiar-contrasena"
+          : "/estudiante/cambiar-contrasena"
+        : user.role === "PROFESOR"
+          ? "/docente"
+          : "/estudiante";
       window.location.href = target;
     } catch (err: unknown) {
       if (isAxiosError(err) && err.response?.status === 429) {

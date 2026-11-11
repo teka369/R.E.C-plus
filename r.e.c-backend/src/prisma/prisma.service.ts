@@ -1,6 +1,13 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { AuditContextService } from '../common/audit-context.service';
+import {
+  concealSoftDeleted,
+  injectSoftDeleteWhere,
+  prepareUniqueReadArgs,
+  SOFT_DELETE_UNIQUE_OPS,
+  stripInjectedDeletedAt,
+} from './soft-delete';
 
 /**
  * Mapeo: clave = nombre del delegate en PrismaClient (camelCase),
@@ -47,26 +54,6 @@ const SOFT_DELETE_READ_OPS = [
 
 /** Operaciones de borrado que se convierten en soft-delete (update con deletedAt). */
 const SOFT_DELETE_WRITE_OPS = ['delete', 'deleteMany'] as const;
-
-/**
- * Comprueba si el argumento `where` ya contiene un filtro explícito sobre
- * `deletedAt` (a cualquier profundidad de AND/OR/NOT), lo que indica una
- * query de recuperación o auditoría que NO debe modificarse.
- */
-function hasExplicitDeletedAt(where: unknown): boolean {
-  if (!where || typeof where !== 'object') return false;
-  const obj = where as Record<string, unknown>;
-  if ('deletedAt' in obj) return true;
-  for (const key of ['AND', 'OR', 'NOT'] as const) {
-    const nested = obj[key];
-    if (Array.isArray(nested)) {
-      if (nested.some((item) => hasExplicitDeletedAt(item))) return true;
-    } else if (nested && typeof nested === 'object') {
-      if (hasExplicitDeletedAt(nested)) return true;
-    }
-  }
-  return false;
-}
 
 @Injectable()
 export class PrismaService
@@ -122,18 +109,23 @@ export class PrismaService
 
         const boundOriginal = originalFn.bind(delegate);
 
-        delegate[op] = function softDeleteReadWrapper(
+        delegate[op] = async function softDeleteReadWrapper(
           args?: Record<string, unknown>,
         ) {
-          const safeArgs = args ?? {};
-          const where = (safeArgs.where ?? {}) as Record<string, unknown>;
-          safeArgs.where = where;
-
-          if (!hasExplicitDeletedAt(where)) {
-            where.deletedAt = null;
+          if (SOFT_DELETE_UNIQUE_OPS.has(op)) {
+            const prepared = prepareUniqueReadArgs(args);
+            const result = await boundOriginal(prepared.args);
+            const visible = concealSoftDeleted(
+              op,
+              result as { deletedAt?: Date | null } | null,
+            );
+            return stripInjectedDeletedAt(
+              visible as Record<string, unknown> | null,
+              prepared.injectedDeletedAt,
+            );
           }
 
-          return boundOriginal(safeArgs);
+          return boundOriginal(injectSoftDeleteWhere(op, args));
         };
       }
 

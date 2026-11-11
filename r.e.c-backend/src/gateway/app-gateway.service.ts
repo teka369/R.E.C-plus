@@ -20,7 +20,11 @@ export class AppGatewayService {
     this.server.to(`user-${userId}`).emit(event, data);
   }
 
-  emitToTenant(institutionId: number | null | undefined, event: string, data: unknown) {
+  emitToTenant(
+    institutionId: number | null | undefined,
+    event: string,
+    data: unknown,
+  ) {
     if (
       !this.server ||
       institutionId == null ||
@@ -48,7 +52,10 @@ export class AppGatewayService {
     ) {
       return;
     }
-    const room = this.recoveryService.buildRecoveryRoom(institutionId, requestId);
+    const room = this.recoveryService.buildRecoveryRoom(
+      institutionId,
+      requestId,
+    );
     this.server.to(room).emit(event, data);
   }
 }

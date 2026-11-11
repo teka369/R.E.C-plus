@@ -23,7 +23,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const jwtExtractor = (req?: Request): string | null =>
       extractAccessTokenFromRequest(req);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     super({
       jwtFromRequest: jwtExtractor,
       ignoreExpiration: false,

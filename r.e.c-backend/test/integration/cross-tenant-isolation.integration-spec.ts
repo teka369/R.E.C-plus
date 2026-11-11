@@ -26,32 +26,47 @@ type TenantSeed = {
   estudianteToken: string;
 };
 
-async function seedTenant(app: INestApplication<App>, label: string): Promise<TenantSeed> {
+async function seedTenant(
+  app: INestApplication<App>,
+  label: string,
+): Promise<TenantSeed> {
   const institution = await prisma.institution.create({
-    data: { nombre: `Colegio ${label}`, slug: `colegio-${label.toLowerCase()}-${Date.now()}` },
+    data: {
+      nombre: `Colegio ${label}`,
+      slug: `colegio-${label.toLowerCase()}-${Date.now()}`,
+    },
   });
 
   const secretaria = await prisma.user.create({
     data: {
-      institutionId: institution.id, nombres: 'Sec', apellidos: label,
+      institutionId: institution.id,
+      nombres: 'Sec',
+      apellidos: label,
       email: `sec.${label.toLowerCase()}.${Date.now()}@test.edu`,
-      password: HASHED_PASSWORD, role: 'SECRETARIA',
+      password: HASHED_PASSWORD,
+      role: 'SECRETARIA',
     },
   });
 
   const profesor = await prisma.user.create({
     data: {
-      institutionId: institution.id, nombres: 'Doc', apellidos: label,
+      institutionId: institution.id,
+      nombres: 'Doc',
+      apellidos: label,
       email: `doc.${label.toLowerCase()}.${Date.now()}@test.edu`,
-      password: HASHED_PASSWORD, role: 'PROFESOR',
+      password: HASHED_PASSWORD,
+      role: 'PROFESOR',
     },
   });
 
   const estudiante = await prisma.user.create({
     data: {
-      institutionId: institution.id, nombres: 'Est', apellidos: label,
+      institutionId: institution.id,
+      nombres: 'Est',
+      apellidos: label,
       email: `est.${label.toLowerCase()}.${Date.now()}@test.edu`,
-      password: HASHED_PASSWORD, role: 'ESTUDIANTE',
+      password: HASHED_PASSWORD,
+      role: 'ESTUDIANTE',
     },
   });
 
@@ -60,7 +75,11 @@ async function seedTenant(app: INestApplication<App>, label: string): Promise<Te
   });
 
   const group = await prisma.group.create({
-    data: { institutionId: institution.id, nombre: `Grupo-${label}`, gradeId: grade.id },
+    data: {
+      institutionId: institution.id,
+      nombre: `Grupo-${label}`,
+      gradeId: grade.id,
+    },
   });
 
   const subject = await prisma.subject.create({
@@ -69,9 +88,13 @@ async function seedTenant(app: INestApplication<App>, label: string): Promise<Te
 
   const period = await prisma.academicPeriod.create({
     data: {
-      institutionId: institution.id, nombre: `2026-${label}`, codigo: `26-${label}`,
-      tipo: 'TERM', estado: 'ACTIVE',
-      fechaInicio: new Date('2026-01-01'), fechaFin: new Date('2026-12-31'),
+      institutionId: institution.id,
+      nombre: `2026-${label}`,
+      codigo: `26-${label}`,
+      tipo: 'TERM',
+      estado: 'ACTIVE',
+      fechaInicio: new Date('2026-01-01'),
+      fechaFin: new Date('2026-12-31'),
     },
   });
 
@@ -80,24 +103,39 @@ async function seedTenant(app: INestApplication<App>, label: string): Promise<Te
   });
 
   await prisma.studentGroup.create({
-    data: { studentId: estudiante.id, groupId: group.id, academicPeriodId: period.id },
+    data: {
+      studentId: estudiante.id,
+      groupId: group.id,
+      academicPeriodId: period.id,
+    },
   });
 
-  const offering = await prisma.academicOffering.create({
-    data: { groupId: group.id, subjectId: subject.id, academicPeriodId: period.id },
+  await prisma.academicOffering.create({
+    data: {
+      groupId: group.id,
+      subjectId: subject.id,
+      academicPeriodId: period.id,
+    },
   });
 
   const material = await prisma.studyMaterial.create({
     data: {
-      subjectId: subject.id, groupId: group.id, teacherId: profesor.id,
-      title: `Material ${label}`, type: 'PDF',
+      subjectId: subject.id,
+      groupId: group.id,
+      teacherId: profesor.id,
+      title: `Material ${label}`,
+      type: 'PDF',
     },
   });
 
   const recoveryRequest = await prisma.recoveryRequest.create({
     data: {
-      studentId: estudiante.id, teacherId: profesor.id, groupId: group.id,
-      subjectId: subject.id, reason: `Refuerzo ${label}`, type: 'RECOVERY',
+      studentId: estudiante.id,
+      teacherId: profesor.id,
+      groupId: group.id,
+      subjectId: subject.id,
+      reason: `Refuerzo ${label}`,
+      type: 'RECOVERY',
     },
   });
 
@@ -117,9 +155,19 @@ async function seedTenant(app: INestApplication<App>, label: string): Promise<Te
   const estudianteToken = loginEst.body.access_token;
 
   return {
-    institution, secretaria, profesor, estudiante,
-    grade, group, subject, period, material, recoveryRequest,
-    secretariaToken, profesorToken, estudianteToken,
+    institution,
+    secretaria,
+    profesor,
+    estudiante,
+    grade,
+    group,
+    subject,
+    period,
+    material,
+    recoveryRequest,
+    secretariaToken,
+    profesorToken,
+    estudianteToken,
   };
 }
 
@@ -135,7 +183,13 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
   });
 
@@ -177,7 +231,9 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
         .get('/academic/groups')
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`);
       expect(res.status).toBe(200);
-      const names = (res.body.data ?? res.body).map((g: any) => g.nombre ?? g.name);
+      const names = (res.body.data ?? res.body).map(
+        (g: any) => g.nombre ?? g.name,
+      );
       expect(names).not.toContain(tenantB.group.nombre);
     });
 
@@ -186,7 +242,9 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
         .get('/academic/grades')
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`);
       expect(res.status).toBe(200);
-      const names = (res.body.data ?? res.body).map((g: any) => g.nombre ?? g.name);
+      const names = (res.body.data ?? res.body).map(
+        (g: any) => g.nombre ?? g.name,
+      );
       expect(names).not.toContain(tenantB.grade.nombre);
     });
 
@@ -195,7 +253,9 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
         .get('/academic/subjects')
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`);
       expect(res.status).toBe(200);
-      const names = (res.body.data ?? res.body).map((s: any) => s.nombre ?? s.name);
+      const names = (res.body.data ?? res.body).map(
+        (s: any) => s.nombre ?? s.name,
+      );
       expect(names).not.toContain(tenantB.subject.nombre);
     });
   });

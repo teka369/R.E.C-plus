@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import {
   ConnectedSocket,
   MessageBody,
@@ -39,7 +40,9 @@ type RecoverySocket = Socket & {
 @WebSocketGateway({
   namespace: '/recovery',
   cors: {
-    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001')
+    origin: (
+      process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001'
+    )
       .split(/[\s,]+/)
       .map((o) => o.trim())
       .filter(Boolean),
@@ -55,7 +58,9 @@ type RecoverySocket = Socket & {
   }),
 )
 export class RecoveryGateway
-  implements OnGatewayConnection<RecoverySocket>, OnGatewayDisconnect<RecoverySocket>
+  implements
+    OnGatewayConnection<RecoverySocket>,
+    OnGatewayDisconnect<RecoverySocket>
 {
   @WebSocketServer()
   server!: Server;
@@ -73,7 +78,10 @@ export class RecoveryGateway
     if (authToken) return authToken;
 
     const header = client.handshake.headers.authorization;
-    if (typeof header === 'string' && header.toLowerCase().startsWith('bearer ')) {
+    if (
+      typeof header === 'string' &&
+      header.toLowerCase().startsWith('bearer ')
+    ) {
       return header.slice(7).trim();
     }
 
@@ -89,7 +97,11 @@ export class RecoveryGateway
   private getRequestId(client: RecoverySocket): number | null {
     const raw = client.handshake.query?.requestId;
     const requestId =
-      typeof raw === 'string' ? Number(raw) : Array.isArray(raw) ? Number(raw[0]) : NaN;
+      typeof raw === 'string'
+        ? Number(raw)
+        : Array.isArray(raw)
+          ? Number(raw[0])
+          : NaN;
     return Number.isInteger(requestId) && requestId > 0 ? requestId : null;
   }
 
@@ -113,7 +125,10 @@ export class RecoveryGateway
 
       await this.recoveryService.assertRequestAccess(actor, requestId);
 
-      const room = this.recoveryService.buildRecoveryRoom(actor.institutionId, requestId);
+      const room = this.recoveryService.buildRecoveryRoom(
+        actor.institutionId,
+        requestId,
+      );
       client.data.user = actor;
       client.data.requestId = requestId;
       client.data.room = room;
@@ -143,7 +158,10 @@ export class RecoveryGateway
     const saved = await this.recoveryService.createMessage(actor, requestId, {
       body: payload.body,
     } as CreateRecoveryMessageDto);
-    const room = this.recoveryService.buildRecoveryRoom(actor.institutionId, requestId);
+    const room = this.recoveryService.buildRecoveryRoom(
+      actor.institutionId,
+      requestId,
+    );
     this.server.to(room).emit('newMessage', saved);
     return saved;
   }

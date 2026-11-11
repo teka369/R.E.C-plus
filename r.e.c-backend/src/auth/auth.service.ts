@@ -10,7 +10,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID, randomBytes } from 'crypto';
+import { randomUUID } from 'crypto';
+import {
+  createPasswordResetToken,
+  hashPasswordResetToken,
+} from './password-reset-token.util';
 import type { StringValue } from 'ms';
 import { LoginAttemptsService } from './login-attempts.service';
 
@@ -31,6 +35,7 @@ type AuthUser = {
   institutionId: number | null;
   institution: AuthInstitution | null;
   password?: string;
+  mustChangePassword?: boolean;
 };
 
 type AuthUserView = {
@@ -41,6 +46,7 @@ type AuthUserView = {
   role: string;
   institutionId: number | null;
   institution: AuthInstitution | null;
+  mustChangePassword: boolean;
 };
 
 type TokenPayload = {
@@ -48,6 +54,7 @@ type TokenPayload = {
   role: string;
   email: string;
   institutionId: number | null;
+  mustChangePassword?: boolean;
 };
 
 type RefreshPayload = {
@@ -162,6 +169,7 @@ export class AuthService {
             activa: user.institution.activa,
           }
         : null,
+      mustChangePassword: user.mustChangePassword === true,
     };
   }
 
@@ -174,6 +182,7 @@ export class AuthService {
       role: user.role,
       email: user.email,
       institutionId: user.institutionId ?? null,
+      mustChangePassword: user.mustChangePassword === true,
     };
     const accessToken = await this.issueAccessToken(accessPayload);
     const refreshSession = await this.createRefreshSession(user.id);
@@ -340,6 +349,7 @@ export class AuthService {
             activa: user.institution.activa,
           }
         : null,
+      mustChangePassword: user.mustChangePassword === true,
     });
 
     await this.prisma.authSession.update({
@@ -377,28 +387,16 @@ export class AuthService {
     }
   }
 
-  async recoverByCode(codigo: string): Promise<string | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { codigo },
-    });
-
-    // No revelar si el código existe
-    if (!user) return null;
-
-    // Invalidar tokens previos no usados
-    await this.prisma.passwordResetToken.updateMany({
-      where: { userId: user.id, usedAt: null },
-      data: { usedAt: new Date() },
-    });
-
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
-
-    await this.prisma.passwordResetToken.create({
-      data: { userId: user.id, token, expiresAt },
-    });
-
-    return token;
+  /**
+   * Deshabilitado. El código de usuario es un identificador visible, no un secreto.
+   * Devolver un token aquí permitía tomar la cuenta sin el correo.
+   */
+  recoverByCode(): Promise<never> {
+    return Promise.reject(
+      new BadRequestException(
+        'La recuperación por código está deshabilitada. Usa tu correo institucional.',
+      ),
+    );
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -416,11 +414,15 @@ export class AuthService {
       data: { usedAt: new Date() },
     });
 
-    const token = randomBytes(32).toString('hex');
+    const token = createPasswordResetToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
     await this.prisma.passwordResetToken.create({
-      data: { userId: user.id, token, expiresAt },
+      data: {
+        userId: user.id,
+        token: hashPasswordResetToken(token),
+        expiresAt,
+      },
     });
 
     const frontendUrl =
@@ -440,7 +442,9 @@ export class AuthService {
     const resetPageUrl = `${frontendUrl}/reset-password`;
     const rawScheme = process.env.MOBILE_PASSWORD_RESET_SCHEME?.trim();
     const mobileScheme =
-      rawScheme && /^[a-z][a-z0-9+.-]*$/i.test(rawScheme) ? rawScheme : 'recedu';
+      rawScheme && /^[a-z][a-z0-9+.-]*$/i.test(rawScheme)
+        ? rawScheme
+        : 'recedu';
     const appResetDeepLink = `${mobileScheme}://reset?token=${encodeURIComponent(token)}`;
 
     try {
@@ -459,7 +463,7 @@ export class AuthService {
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const record = await this.prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: hashPasswordResetToken(token) },
     });
 
     if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) {
@@ -469,11 +473,11 @@ export class AuthService {
     }
 
     const hashed = await bcrypt.hash(newPassword, 12);
- 
+
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: record.userId },
-        data: { password: hashed },
+        data: { password: hashed, mustChangePassword: false },
       }),
       this.prisma.passwordResetToken.update({
         where: { id: record.id },

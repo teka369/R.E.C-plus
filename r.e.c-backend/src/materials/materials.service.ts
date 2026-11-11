@@ -35,6 +35,11 @@ import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
 import { FirebaseAdminService } from '../services/firebase-admin.service';
 import { validateMimeByMagic } from '../common/utils/mime-validator';
+import {
+  isServerIssuedStudyPath,
+  signStudyUpload,
+  verifyStudyUpload,
+} from './upload-token.util';
 
 @Injectable()
 export class MaterialsService extends TenantScopedService {
@@ -232,12 +237,44 @@ export class MaterialsService extends TenantScopedService {
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, file.buffer);
 
+    const storedPath = relativePath.replace(/\\/g, '/');
     return {
-      filePath: relativePath.replace(/\\/g, '/'),
+      filePath: storedPath,
+      uploadToken: signStudyUpload(actor.userId, storedPath),
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.buffer.length,
     };
+  }
+
+  private acceptedStudyFilePath(
+    actor: Actor,
+    filePath: string | undefined,
+    uploadToken: string | undefined,
+  ): string | undefined {
+    if (!filePath) return undefined;
+    if (
+      !isServerIssuedStudyPath(actor.userId, filePath) ||
+      !verifyStudyUpload(actor.userId, filePath, uploadToken)
+    ) {
+      throw new BadRequestException(
+        'filePath solo se acepta si lo emitió el upload de este profesor',
+      );
+    }
+    return filePath;
+  }
+
+  private resolveUpdatedFilePath(
+    actor: Actor,
+    currentPath: string | null,
+    dto: { filePath?: string | null; uploadToken?: string },
+  ): string | null | undefined {
+    if (dto.filePath === undefined) return undefined;
+    if (dto.filePath === null || dto.filePath === '') return null;
+    if (currentPath && dto.filePath === currentPath) return undefined;
+    return (
+      this.acceptedStudyFilePath(actor, dto.filePath, dto.uploadToken) ?? null
+    );
   }
 
   async createStudyMaterial(actor: Actor, dto: CreateStudyMaterialDto) {
@@ -254,7 +291,11 @@ export class MaterialsService extends TenantScopedService {
         type: dto.type as MaterialType,
         resourceUrl: dto.resourceUrl,
         imageUrl: dto.imageUrl,
-        filePath: dto.filePath,
+        filePath: this.acceptedStudyFilePath(
+          actor,
+          dto.filePath,
+          dto.uploadToken,
+        ),
         visibility: dto.visibility as Visibility,
       },
     });
@@ -322,7 +363,7 @@ export class MaterialsService extends TenantScopedService {
         type: (dto.type as MaterialType | undefined) ?? undefined,
         resourceUrl: dto.resourceUrl,
         imageUrl: dto.imageUrl,
-        filePath: dto.filePath,
+        filePath: this.resolveUpdatedFilePath(actor, material.filePath, dto),
         visibility: (dto.visibility as Visibility | undefined) ?? undefined,
       },
     });
