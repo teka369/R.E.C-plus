@@ -22,5 +22,6 @@ export function isBlockedTrackedPath(path) {
   ) {
     return true;
   }
+  if (base === "rec-secrets.env" || base.endsWith(".secrets.env")) return true;
   return false;
 }
