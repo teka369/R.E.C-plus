@@ -96,7 +96,8 @@ export default function CrearMaterialPage() {
     setError(null);
     setOk(null);
     try {
-      let uploadedFilePath = form.filePath || undefined;
+      let uploadedFilePath: string | undefined;
+      let uploadToken: string | undefined;
       if (localResourceFile) {
         const uploadResult = await materialsApi.uploadStudyFile(
           localResourceFile,
@@ -104,6 +105,7 @@ export default function CrearMaterialPage() {
           Number(form.subjectId),
         );
         uploadedFilePath = uploadResult.filePath;
+        uploadToken = uploadResult.uploadToken;
       }
 
       await materialsApi.createStudy({
@@ -115,6 +117,7 @@ export default function CrearMaterialPage() {
         resourceUrl: localResourceFile ? undefined : (form.resourceUrl || undefined),
         imageUrl: localImageDataUrl || form.imageUrl || undefined,
         filePath: uploadedFilePath,
+        uploadToken,
         visibility: form.visibility!,
       });
       setOk("Material creado correctamente");

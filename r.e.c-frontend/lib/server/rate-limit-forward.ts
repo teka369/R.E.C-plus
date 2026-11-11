@@ -19,20 +19,23 @@ function visitorCookieOptions(maxAgeSec: number, secure: boolean) {
   };
 }
 
+/**
+ * IP para reenviar a Nest. Nunca usa `X-Forwarded-For` del browser:
+ * el cliente puede rotarlo y evadir el rate limit.
+ * `X-Real-IP` solo se acepta si el deploy declara TRUST_PROXY_HEADERS=1
+ * (nginx lo sobrescribe con $remote_addr).
+ */
 export function getClientIpFromIncomingRequest(req: NextRequest | Request): string | null {
-  const forwarded = req.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
-  if (first) {
-    return first;
-  }
+  if (process.env.TRUST_PROXY_HEADERS !== "1") return null;
   const realIp = req.headers.get("x-real-ip")?.trim();
-  return realIp || null;
+  if (!realIp || realIp.includes(",")) return null;
+  return realIp;
 }
 
 /**
- * Cabeceras que el BFF envía al backend Nest para rate limiting por visitante.
- * - X-Forwarded-For: IP del cliente cuando existe.
- * - X-Visitor-Id: UUID estable en cookie (independiente por navegador/dispositivo).
+ * Cabeceras que el BFF envía al backend Nest.
+ * No reenvía el `X-Forwarded-For` del browser ni un visitor-id recién inventado
+ * (ambos se podían rotar para saltarse el límite).
  */
 export function buildRateLimitForwardHeaders(
   req: NextRequest | Request,
@@ -41,16 +44,14 @@ export function buildRateLimitForwardHeaders(
   const out: Record<string, string> = {};
   const ip = getClientIpFromIncomingRequest(req);
   if (ip) {
+    // Valor calculado por el BFF, no el header que mandó el browser.
     out["X-Forwarded-For"] = ip;
+    out["X-Real-IP"] = ip;
   }
 
-  let visitorId = cookieStore.get(REC_RATE_LIMIT_VISITOR_COOKIE)?.value?.trim() ?? "";
-  let setVisitorCookie: string | null = null;
-  if (!visitorId || !VISITOR_UUID_RE.test(visitorId)) {
-    visitorId = crypto.randomUUID();
-    setVisitorCookie = visitorId;
-  }
-  out["X-Visitor-Id"] = visitorId;
+  const existing = cookieStore.get(REC_RATE_LIMIT_VISITOR_COOKIE)?.value?.trim() ?? "";
+  const setVisitorCookie =
+    existing && VISITOR_UUID_RE.test(existing) ? null : crypto.randomUUID();
 
   return { headers: out, setVisitorCookie };
 }

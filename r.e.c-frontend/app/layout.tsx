@@ -4,11 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ThemeProviders from "@/components/providers/ThemeProviders";
 import GoogleAnalytics from "@/components/providers/GoogleAnalytics";
-import dynamic from "next/dynamic";
-const RecoveryCountdownBanner = dynamic(
-  () => import("@/components/layouts/RecoveryCountdownBanner"),
-  { ssr: false },
-);
+import RecoveryCountdownBanner from "@/components/layouts/RecoveryCountdownBanner";
 
 const inter = Inter({
   subsets: ["latin"],

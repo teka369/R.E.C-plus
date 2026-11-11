@@ -29,44 +29,11 @@ test.describe('TEST 6 — Recuperación de contraseña', () => {
     await recoveryPage.expectEmailSentConfirmation();
   });
 
-  test('Recuperación por código institucional: redirige a nueva contraseña', async ({ page }) => {
+  test('Recuperación por código ya no está en la UI', async ({ page }) => {
     const recoveryPage = new PasswordRecoveryPage(page);
-    const fakeResetToken = 'fake-reset-token-for-testing';
-
-    // Mock the backend POST /auth/recover-by-code
-    await page.route('**/auth/recover-by-code', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ token: fakeResetToken }),
-      });
-    });
-
     await recoveryPage.goto();
-
-    // Switch to code recovery mode
-    // First submit by email to get the sent confirmation, then switch to code mode
-    await page.route('**/auth/forgot-password', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Email sent' }),
-      });
-    });
-
-    await recoveryPage.submitEmail('student@test.edu');
-    await recoveryPage.expectEmailSentConfirmation();
-
-    // Click "use your code" button
-    await recoveryPage.switchToCodeMode();
-
-    // Enter institutional code
-    await recoveryPage.submitCode('EST-12345');
-
-    // Should redirect to /reset-password?token=...
-    await expect(page).toHaveURL(new RegExp(`reset-password.*token=${fakeResetToken}`), {
-      timeout: 10_000,
-    });
+    await expect(page.getByText(/usa tu código/i)).toHaveCount(0);
+    await expect(page.locator('#forgot-codigo')).toHaveCount(0);
   });
 
   test('Reset de contraseña: formulario completo con token válido', async ({ page }) => {

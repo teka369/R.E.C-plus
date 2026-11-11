@@ -412,7 +412,7 @@ function AcademicoContent() {
       {grades.length === 0 && groups.length === 0 && subjects.length === 0 && (
         <div className="sec-card p-4">
           <p className="text-sm font-semibold text-rec-text-primary">Aún no hay estructura académica registrada.</p>
-          <p className="sec-muted mt-1">Empieza en la pestaña "Estructura" creando al menos un grado, un grupo y una materia.</p>
+          <p className="sec-muted mt-1">Empieza en la pestaña &quot;Estructura&quot; creando al menos un grado, un grupo y una materia.</p>
         </div>
       )}
       <h3 className="font-medium">Resumen</h3>
@@ -489,7 +489,7 @@ function AcademicoContent() {
               {grades.length === 0 && (
                 <tr>
                   <td className="py-3 text-center text-rec-text-muted" colSpan={3}>
-                    Sin grados registrados. Crea el primero desde la pestaña "Estructura".
+                    Sin grados registrados. Crea el primero desde la pestaña &quot;Estructura&quot;.
                   </td>
                 </tr>
               )}

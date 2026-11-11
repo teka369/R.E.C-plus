@@ -233,6 +233,25 @@ describe('MaterialsService (unit)', () => {
 
       expect(result.academicOfferingId).toBe(20);
     });
+
+    it('rechaza filePath enviado por el cliente sin token de upload', async () => {
+      prisma.teacherAssignment.findUnique.mockResolvedValue({
+        id: 1,
+        group: { institutionId: 1 },
+      });
+
+      await expect(
+        service.createStudyMaterial(profesor, {
+          groupId: 5,
+          subjectId: 3,
+          title: 'Robo',
+          type: 'PDF',
+          visibility: 'GROUP',
+          filePath: 'study-materials/teacher-12/2026-03/otro.pdf',
+        } as never),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.studyMaterial.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateStudyMaterial', () => {

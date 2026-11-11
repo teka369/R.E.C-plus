@@ -19,16 +19,16 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('delegates to service.login con tracker desde headers', async () => {
+    it('usa req.ip y no el X-Forwarded-For del cliente', async () => {
       service.login.mockResolvedValue({
         access_token: 'at',
         refresh_token: 'rt',
       } as any);
       const req = {
-        headers: { 'x-forwarded-for': '203.0.113.10' },
-        ip: undefined,
-        ips: [],
-        socket: {},
+        headers: { 'x-forwarded-for': '198.51.100.9, 203.0.113.10' },
+        ip: '203.0.113.10',
+        ips: ['203.0.113.10'],
+        socket: { remoteAddress: '127.0.0.1' },
       } as unknown as Request;
       const result = await controller.login(
         {
@@ -74,16 +74,9 @@ describe('AuthController', () => {
   });
 
   describe('recoverByCode', () => {
-    it('returns token from service', async () => {
-      service.recoverByCode.mockResolvedValue('tok123');
-      const result = await controller.recoverByCode({ codigo: 'ABC' });
-      expect(result).toEqual({ token: 'tok123' });
-    });
-
-    it('returns null token when service returns null', async () => {
-      service.recoverByCode.mockResolvedValue(null as any);
-      const result = await controller.recoverByCode({ codigo: 'BAD' });
-      expect(result).toEqual({ token: null });
+    it('no devuelve token y responde 410', () => {
+      expect(() => controller.recoverByCode()).toThrow(/deshabilitada/);
+      expect(service.recoverByCode).not.toHaveBeenCalled();
     });
   });
 

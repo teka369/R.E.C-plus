@@ -8,13 +8,13 @@ import {
   getOptionsToken,
   getStorageToken,
 } from '@nestjs/throttler';
-import type { ThrottlerModuleOptions, ThrottlerStorage } from '@nestjs/throttler';
+import type {
+  ThrottlerModuleOptions,
+  ThrottlerStorage,
+} from '@nestjs/throttler';
 import type { Request } from 'express';
 import { extractAccessTokenFromRequest } from '../../auth/jwt-from-request.util';
-
-/** UUID v4 enviado por el BFF Next.js (cookie httpOnly `rec_rl_vid`) cuando la IP vista por Nest no distingue visitantes. */
-const VISITOR_UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { clientIpFromExpressRequest } from '../../auth/client-ip.util';
 
 function userIdFromJwtPayload(sub: unknown): number | null {
   if (typeof sub === 'number' && Number.isFinite(sub) && sub > 0) {
@@ -50,7 +50,9 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const token = extractAccessTokenFromRequest(r);
     if (token) {
       try {
-        const payload = await this.jwtService.verifyAsync<{ sub?: unknown }>(token);
+        const payload = await this.jwtService.verifyAsync<{ sub?: unknown }>(
+          token,
+        );
         const uid = userIdFromJwtPayload(payload?.sub);
         if (uid != null) {
           return `user:${uid}`;
@@ -60,42 +62,21 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       }
     }
 
-    const rawVisitor = r.headers['x-visitor-id'];
-    const visitorId = Array.isArray(rawVisitor)
-      ? rawVisitor[0]?.trim() ?? ''
-      : typeof rawVisitor === 'string'
-        ? rawVisitor.trim()
-        : '';
-    if (visitorId && VISITOR_UUID_RE.test(visitorId)) {
-      return `visitor:${visitorId}`;
-    }
-
-    const xff = r.headers['x-forwarded-for'];
-    const xffStr = Array.isArray(xff) ? xff.join(',') : xff;
-    if (typeof xffStr === 'string' && xffStr.length > 0) {
-      const first = xffStr.split(',')[0]?.trim();
-      if (first) {
-        return `ip:${first}`;
-      }
-    }
-
-    const ip =
-      r.ip ??
-      (Array.isArray(r.ips) && r.ips.length > 0 ? r.ips[0] : undefined) ??
-      r.socket?.remoteAddress ??
-      'unknown';
-    return `ip:${ip}`;
+    return `ip:${clientIpFromExpressRequest(r)}`;
   }
 
   protected async throwThrottlingException(
     context: ExecutionContext,
     throttlerLimitDetail: ThrottlerLimitDetail,
   ): Promise<void> {
-    const res = context.switchToHttp().getResponse();
+    const res = context.switchToHttp().getResponse<{
+      header: (name: string, value: string) => void;
+    }>();
     const secondsRemaining = Math.ceil(
       throttlerLimitDetail.timeToExpire / 1000,
     );
     res.header('Retry-After', String(secondsRemaining));
+    await Promise.resolve();
     throw new ThrottlerException(
       `Has superado el número de intentos permitidos. Por favor, espera ${secondsRemaining} segundos antes de realizar una nueva solicitud.`,
     );

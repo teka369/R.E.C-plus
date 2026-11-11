@@ -6,7 +6,7 @@ import { setTutorialInitialAutolaunchPending, setWelcomeDismissed } from "@/lib/
 import { saveGuideBarVisible as saveDocenteGuideBarVisible } from "@/lib/docenteTour/storage";
 import { saveEstudianteGuideBarVisible } from "@/lib/estudianteTour/storage";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 export type WelcomeFormatVariant = "public" | "docente" | "estudiante";
 
@@ -24,10 +24,11 @@ export default function WelcomeFormatModal({ open, onClose, variant, userId }: P
   const router = useRouter();
   const { user } = useAuth();
   const [panel, setPanel] = useState<"menu" | "video">("menu");
-
-  useEffect(() => {
+  const [openSnapshot, setOpenSnapshot] = useState(open);
+  if (open !== openSnapshot) {
+    setOpenSnapshot(open);
     if (!open) setPanel("menu");
-  }, [open]);
+  }
 
   const persistAndClose = useCallback(() => {
     if (userId) setWelcomeDismissed(userId);

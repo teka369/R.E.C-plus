@@ -131,9 +131,12 @@ export default function RecoveryCountdownBanner() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
-  const [config, setConfig] = useState<RecoveryConfig | null>(null);
+  const [loadedConfig, setLoadedConfig] = useState<RecoveryConfig | null>(null);
+  const config = isPublicAccessPath(pathname) ? null : loadedConfig;
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() =>
+    typeof window === "undefined" ? false : readStoredOpen(),
+  );
   const [position, setPosition] = useState<BannerPos | null>(null);
   const [dragging, setDragging] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -147,16 +150,15 @@ export default function RecoveryCountdownBanner() {
 
   useEffect(() => {
     if (isPublicAccessPath(pathname)) {
-      setConfig(null);
       return;
     }
     let cancelled = false;
     async function load() {
       try {
         const c = await recoverySettingsApi.getConfig();
-        if (!cancelled) setConfig(c);
+        if (!cancelled) setLoadedConfig(c);
       } catch {
-        if (!cancelled) setConfig(null);
+        if (!cancelled) setLoadedConfig(null);
       }
     }
     void load();
@@ -170,10 +172,6 @@ export default function RecoveryCountdownBanner() {
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    setExpanded(readStoredOpen());
   }, []);
 
   const visible = useMemo(() => {
@@ -357,7 +355,7 @@ export default function RecoveryCountdownBanner() {
     router.push(recoveryPathForRole(user?.role));
   }, [router, user?.role]);
 
-  const remainingParts = useMemo(() => {
+  const remainingParts = (() => {
     if (!config?.endAt) return null;
     const endMs = new Date(config.endAt).getTime();
     const remaining = Math.max(0, endMs - nowMs);
@@ -370,7 +368,7 @@ export default function RecoveryCountdownBanner() {
     const ss = String(seconds).padStart(2, "0");
     const compact = days > 0 ? `${days}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
     return { days, hours, minutes, seconds, compact };
-  }, [config?.endAt, nowMs]);
+  })();
 
   if (!visible || !config?.endAt || remainingParts == null) return null;
 

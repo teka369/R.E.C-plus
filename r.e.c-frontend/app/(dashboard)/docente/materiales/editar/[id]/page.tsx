@@ -74,7 +74,8 @@ export default function EditarMaterialPage() {
     setError(null);
     setOk(null);
     try {
-      let uploadedFilePath = form.filePath;
+      let uploadedFilePath: string | undefined;
+      let uploadToken: string | undefined;
       if (localResourceFile) {
         const uploadResult = await materialsApi.uploadStudyFile(
           localResourceFile,
@@ -82,16 +83,20 @@ export default function EditarMaterialPage() {
           item.subjectId,
         );
         uploadedFilePath = uploadResult.filePath;
-      }
-      if (removeLocalFile && !localResourceFile) {
+        uploadToken = uploadResult.uploadToken;
+      } else if (removeLocalFile) {
         uploadedFilePath = "";
       }
 
+      const formWithoutPath = { ...form };
+      delete formWithoutPath.filePath;
       const payload: UpdateStudyMaterialInput = {
-        ...form,
+        ...formWithoutPath,
         resourceUrl: localResourceFile ? undefined : form.resourceUrl,
         imageUrl: localImageDataUrl || form.imageUrl,
-        filePath: uploadedFilePath,
+        ...(uploadedFilePath !== undefined
+          ? { filePath: uploadedFilePath, uploadToken }
+          : {}),
       };
 
       const updated = await materialsApi.updateStudy(idNum, payload);

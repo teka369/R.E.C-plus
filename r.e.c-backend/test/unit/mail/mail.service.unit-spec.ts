@@ -49,7 +49,9 @@ describe('MailService', () => {
       );
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          html: expect.stringContaining('recedu://reset?token=secret-token-hex'),
+          html: expect.stringContaining(
+            'recedu://reset?token=secret-token-hex',
+          ),
         }),
       );
     });

@@ -70,11 +70,13 @@ export default function BackgroundCarousel() {
   const [showPrevious, setShowPrevious] = useState(false);
   const fadeCleanupRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  const [layout, setLayout] = useState(compact);
+  if (compact !== layout) {
+    setLayout(compact);
     setIndex(0);
     setPreviousIndex(null);
     setShowPrevious(false);
-  }, [compact]);
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {

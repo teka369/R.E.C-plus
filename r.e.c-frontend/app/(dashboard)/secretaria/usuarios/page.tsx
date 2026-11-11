@@ -4,7 +4,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import { PageHero, DataTable, Chip } from "@/components/ui";
+import { PageHero, DataTable } from "@/components/ui";
 import { UserRole } from "@/types/user";
 import { type UserDTO } from "@/lib/usersApi";
 import { usePaginatedApi } from "@/hooks/useApi";

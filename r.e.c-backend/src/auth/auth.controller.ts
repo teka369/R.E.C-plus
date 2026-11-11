@@ -1,11 +1,10 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, GoneException, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { RecoverByCodeDto } from './dto/recover-by-code.dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import { resolveLoginTrackerFromRequest } from './login-tracker.util';
@@ -44,10 +43,11 @@ export class AuthController {
   }
 
   @Post('recover-by-code')
-  @Throttle({ default: { ttl: 300_000, limit: 3 } }) // 3 intentos por 5 minutos
-  async recoverByCode(@Body() dto: RecoverByCodeDto) {
-    const token = await this.auth.recoverByCode(dto.codigo);
-    return { token: token ?? null };
+  @Throttle({ default: { ttl: 300_000, limit: 3 } })
+  recoverByCode(): never {
+    throw new GoneException(
+      'La recuperación por código está deshabilitada. Solicita el restablecimiento con tu correo institucional.',
+    );
   }
 
   @Post('reset-password')

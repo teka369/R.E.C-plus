@@ -5,7 +5,11 @@ const prisma = new PrismaClient();
 (async () => {
   const existing = await prisma.user.findFirst({ where: { role: 'SECRETARIA' } });
   if (!existing) {
-    const hashed = await bcrypt.hash('admin12345', 10);
+    const initial = process.env.SECRETARIA_BOOTSTRAP_PASSWORD;
+    if (!initial || initial.length < 12 || initial === 'admin12345') {
+      throw new Error('Define SECRETARIA_BOOTSTRAP_PASSWORD (>=12, no admin12345) antes de ejecutar este script');
+    }
+    const hashed = await bcrypt.hash(initial, 12);
     await prisma.user.create({
       data: {
         nombres: 'Sec',

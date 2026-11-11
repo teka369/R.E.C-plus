@@ -88,7 +88,12 @@ describe('CommunicationService (unit)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new CommunicationService(prisma as never, appGatewayService as never, usersService as never, firebaseAdmin as never);
+    service = new CommunicationService(
+      prisma as never,
+      appGatewayService as never,
+      usersService as never,
+      firebaseAdmin as never,
+    );
   });
 
   // ─── Feedback ─────────────────────────────────────────────────────────

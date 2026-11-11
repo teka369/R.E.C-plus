@@ -476,7 +476,9 @@ describe('PerformanceService (unit)', () => {
         fechaCierre: null,
       });
       (prisma as any).institutionGradingPolicy = {
-        findUnique: jest.fn().mockResolvedValue({ gradeScaleMax: 5, passingThreshold: 3.0 }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ gradeScaleMax: 5, passingThreshold: 3.0 }),
       };
       prisma.academicOffering.findMany.mockResolvedValue([{ id: 200 }]);
       prisma.evaluationGrade.findMany.mockResolvedValue([
@@ -613,7 +615,11 @@ describe('PerformanceService (unit)', () => {
         fechaCierre: null,
       });
 
-      const result = await service.getGroupAcademicOverview(secretariaActor, 10, 2);
+      const result = await service.getGroupAcademicOverview(
+        secretariaActor,
+        10,
+        2,
+      );
 
       expect(result.academicPeriod?.id).toBe(5);
       expect(result.termSlotsAvailable).toEqual([1, 2, 3, 4]);
@@ -651,7 +657,9 @@ describe('PerformanceService (unit)', () => {
         groupId: 10,
       });
       (prisma as any).groupSubject = {
-        findFirst: jest.fn().mockResolvedValue({ id: 50, group: { institutionId: 1 } }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 50, group: { institutionId: 1 } }),
       };
       prisma.academicPeriod.findFirst.mockResolvedValue({ id: 5 });
       prisma.academicOffering.findUnique.mockResolvedValue({

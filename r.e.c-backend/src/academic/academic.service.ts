@@ -190,23 +190,22 @@ export class AcademicService extends TenantScopedService {
 
   /** Misma lógica de fallback que PerformanceService.upsertStudentAcademic. */
   private async getInstitutionGradingPolicyWithWeights(institutionId: number) {
-    const policy =
-      (await this.prisma.institutionGradingPolicy.findUnique({
-        where: { institutionId },
-      })) ?? {
-        allowClosedPeriodEdits: false,
-        allowFinalOverride: true,
-        gradeScaleMax: 5,
-        passingThreshold: 3.0,
-        gradingMode: GradingMode.SIMPLE,
-        competencyWeights: {
-          COGNITIVE: 30,
-          PROCEDURAL: 30,
-          ATTITUDINAL: 30,
-          SELF_EVAL: 5,
-          CO_EVAL: 5,
-        },
-      };
+    const policy = (await this.prisma.institutionGradingPolicy.findUnique({
+      where: { institutionId },
+    })) ?? {
+      allowClosedPeriodEdits: false,
+      allowFinalOverride: true,
+      gradeScaleMax: 5,
+      passingThreshold: 3.0,
+      gradingMode: GradingMode.SIMPLE,
+      competencyWeights: {
+        COGNITIVE: 30,
+        PROCEDURAL: 30,
+        ATTITUDINAL: 30,
+        SELF_EVAL: 5,
+        CO_EVAL: 5,
+      },
+    };
 
     const rawCompetencyWeights = policy.competencyWeights;
     const competencyWeightsRecord: Record<string, number> =
@@ -381,10 +380,14 @@ export class AcademicService extends TenantScopedService {
     });
     await this.cache.delByPattern('groups:*');
     try {
-      this.appGatewayService.emitToTenant(grade.institutionId, 'notification:new', {
-        title: '🏫 Nuevo grupo creado',
-        body: `El grupo "${dto.nombre}" fue creado en tu institución.`,
-      });
+      this.appGatewayService.emitToTenant(
+        grade.institutionId,
+        'notification:new',
+        {
+          title: '🏫 Nuevo grupo creado',
+          body: `El grupo "${dto.nombre}" fue creado en tu institución.`,
+        },
+      );
     } catch {
       /* best-effort */
     }
@@ -993,7 +996,8 @@ export class AcademicService extends TenantScopedService {
     return withAssignments
       .map((item) => ({
         teacherId: item.teacherId,
-        teacherName: teacherById.get(item.teacherId) ?? `Docente ${item.teacherId}`,
+        teacherName:
+          teacherById.get(item.teacherId) ?? `Docente ${item.teacherId}`,
         assignmentCount: item._count.teacherId,
       }))
       .sort((a, b) => b.assignmentCount - a.assignmentCount);
@@ -1392,7 +1396,9 @@ export class AcademicService extends TenantScopedService {
       throw new NotFoundException('Oferta académica no encontrada');
 
     const { policy, competencyWeightsRecord } =
-      await this.getInstitutionGradingPolicyWithWeights(offering.group.institutionId);
+      await this.getInstitutionGradingPolicyWithWeights(
+        offering.group.institutionId,
+      );
 
     return {
       ...offering,
@@ -1457,8 +1463,7 @@ export class AcademicService extends TenantScopedService {
         orden,
         ...(dto.competencyCategory
           ? {
-              competencyCategory:
-                dto.competencyCategory as CompetencyCategory,
+              competencyCategory: dto.competencyCategory as CompetencyCategory,
             }
           : {}),
       },

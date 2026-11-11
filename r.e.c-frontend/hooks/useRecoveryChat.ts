@@ -15,10 +15,12 @@ export function useRecoveryChat(requestId: number | null, initialMessages: Recov
   const { socket, isConnected, joinRecovery, leaveRecovery } = useSocket();
   const [messages, setMessages] = useState<RecoveryMessage[]>(initialMessages);
   const optimisticIdRef = useRef(-1);
-
-  useEffect(() => {
+  const incomingKey = `${requestId ?? "none"}:${initialMessages.map((m) => m.id).join(",")}`;
+  const [seenKey, setSeenKey] = useState(incomingKey);
+  if (incomingKey !== seenKey) {
+    setSeenKey(incomingKey);
     setMessages(initialMessages);
-  }, [initialMessages, requestId]);
+  }
 
   useEffect(() => {
     if (!requestId || !socket) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import {
   ConnectedSocket,
   MessageBody,
@@ -37,7 +38,9 @@ type AppSocket = Socket & {
 @WebSocketGateway({
   namespace: '/app',
   cors: {
-    origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001')
+    origin: (
+      process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001'
+    )
       .split(/[\s,]+/)
       .map((o) => o.trim())
       .filter(Boolean),
@@ -72,7 +75,10 @@ export class AppGateway
     if (authToken) return authToken;
 
     const header = client.handshake.headers.authorization;
-    if (typeof header === 'string' && header.toLowerCase().startsWith('bearer ')) {
+    if (
+      typeof header === 'string' &&
+      header.toLowerCase().startsWith('bearer ')
+    ) {
       return header.slice(7).trim();
     }
 
@@ -86,7 +92,10 @@ export class AppGateway
   }
 
   private getRecoveryRoom(actor: WsUser, requestId: number) {
-    return this.recoveryService.buildRecoveryRoom(actor.institutionId, requestId);
+    return this.recoveryService.buildRecoveryRoom(
+      actor.institutionId,
+      requestId,
+    );
   }
 
   async handleConnection(client: AppSocket) {
@@ -149,9 +158,13 @@ export class AppGateway
     if (!actor || !payload?.requestId) return;
 
     await this.recoveryService.assertRequestAccess(actor, payload.requestId);
-    const saved = await this.recoveryService.createMessage(actor, payload.requestId, {
-      body: payload.body,
-    });
+    const saved = await this.recoveryService.createMessage(
+      actor,
+      payload.requestId,
+      {
+        body: payload.body,
+      },
+    );
     const room = this.getRecoveryRoom(actor, payload.requestId);
     this.server.to(room).emit('recovery:newMessage', saved);
     return saved;

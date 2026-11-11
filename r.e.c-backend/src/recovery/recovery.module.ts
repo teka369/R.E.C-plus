@@ -8,7 +8,12 @@ import { GatewayModule } from '../gateway/gateway.module';
 import { FirebaseModule } from '../services/firebase.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, forwardRef(() => GatewayModule), FirebaseModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    forwardRef(() => GatewayModule),
+    FirebaseModule,
+  ],
   controllers: [RecoveryController],
   providers: [RecoveryService, RecoveryGateway],
   exports: [RecoveryService],

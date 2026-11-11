@@ -22,7 +22,7 @@ export class FirebaseAdminService implements OnModuleInit {
       }
       const serviceAccount = JSON.parse(
         fs.readFileSync(serviceAccountPath, 'utf-8'),
-      );
+      ) as admin.ServiceAccount;
       if (admin.apps.length === 0) {
         this.app = admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),

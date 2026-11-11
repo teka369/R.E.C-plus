@@ -31,7 +31,8 @@ module.exports = {
     {
       name: 'recedu-backend',
       cwd: path.join(BASE, 'r.e.c-backend'),
-      script: 'dist/src/main.js',
+      // Nest emite dist/main.js (sourceRoot=src). No usar dist/src/main.js.
+      script: 'dist/main.js',
       node_args: '--env-file=.env',
       exec_mode: 'fork',
       instances: 1,

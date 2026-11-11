@@ -12,6 +12,8 @@ export type UserDTO = {
   institutionId?: number | null;
   createdAt?: string;
   updatedAt?: string;
+  mustChangePassword?: boolean;
+  temporaryPassword?: string;
 };
 
 export type CreateUserDto = {
@@ -30,7 +32,7 @@ export type ChangePasswordDto = {
 export type BulkCreateResult = {
   created: number;
   failed: number;
-  results: { index: number; id?: number; codigo?: string; error?: string }[];
+  results: { index: number; id?: number; codigo?: string; temporaryPassword?: string; error?: string }[];
 };
 
 export type PaginatedResult<T> = {

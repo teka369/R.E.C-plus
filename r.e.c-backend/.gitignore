@@ -3,8 +3,10 @@ node_modules/
 dist/
 .env
 .env.*
+!.env.example
 !.env.*.example
 coverage/
 uploads/
 *.log
 firebase-service-account.json
+*.tsbuildinfo

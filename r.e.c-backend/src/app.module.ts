@@ -19,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RecoverySettingsModule } from './recovery-settings/recovery-settings.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { TenantBoundaryGuard } from './common/guards/tenant-boundary.guard';
+import { MustChangePasswordGuard } from './auth/must-change-password.guard';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { RedisCacheModule } from './common/cache/cache.module';
 import { HealthModule } from './health/health.module';
@@ -131,6 +132,10 @@ async function redisThrottlerStorageOrUndefined(
     {
       provide: APP_GUARD,
       useClass: TenantBoundaryGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: MustChangePasswordGuard,
     },
     {
       provide: APP_INTERCEPTOR,

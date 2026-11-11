@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
 import { LOGIN_ATTEMPTS_REDIS } from './login-attempts.constants';
 import { LoginAttemptsMemoryStore } from './login-attempts-memory.store';
@@ -44,18 +39,21 @@ export class LoginAttemptsService implements OnModuleDestroy {
       return this.memory.increment(tracker);
     }
     const r = this.redis;
-    return this.safeRedis(async () => {
-      const k = this.key(tracker);
-      const count = await r.incr(k);
-      if (count === 1) {
-        await r.expire(k, WINDOW_SEC);
-      }
-      let ttl = await r.ttl(k);
-      if (ttl < 0) {
-        ttl = WINDOW_SEC;
-      }
-      return { count, ttl };
-    }, { count: 0, ttl: WINDOW_SEC });
+    return this.safeRedis(
+      async () => {
+        const k = this.key(tracker);
+        const count = await r.incr(k);
+        if (count === 1) {
+          await r.expire(k, WINDOW_SEC);
+        }
+        let ttl = await r.ttl(k);
+        if (ttl < 0) {
+          ttl = WINDOW_SEC;
+        }
+        return { count, ttl };
+      },
+      { count: 0, ttl: WINDOW_SEC },
+    );
   }
 
   async reset(tracker: string): Promise<void> {
@@ -74,16 +72,19 @@ export class LoginAttemptsService implements OnModuleDestroy {
       return this.memory.getCount(tracker);
     }
     const r = this.redis;
-    return this.safeRedis(async () => {
-      const k = this.key(tracker);
-      const raw = await r.get(k);
-      const count = raw ? parseInt(raw, 10) : 0;
-      let ttl = await r.ttl(k);
-      if (ttl < 0) {
-        ttl = 0;
-      }
-      return { count: Number.isFinite(count) ? count : 0, ttl };
-    }, { count: 0, ttl: 0 });
+    return this.safeRedis(
+      async () => {
+        const k = this.key(tracker);
+        const raw = await r.get(k);
+        const count = raw ? parseInt(raw, 10) : 0;
+        let ttl = await r.ttl(k);
+        if (ttl < 0) {
+          ttl = 0;
+        }
+        return { count: Number.isFinite(count) ? count : 0, ttl };
+      },
+      { count: 0, ttl: 0 },
+    );
   }
 
   async onModuleDestroy(): Promise<void> {

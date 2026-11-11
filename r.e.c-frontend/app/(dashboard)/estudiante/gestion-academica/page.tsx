@@ -718,7 +718,7 @@ function StudentSubjectCard({
       .filter((x): x is { grade: number; weight: number | null } => x.grade != null);
   }, [simGrades]);
 
-  const simAvg = useMemo(() => {
+  const simAvg = (() => {
     if (!simParsed.length) return null;
     const withW = simParsed.filter((x) => x.weight != null && x.weight > 0);
     if (withW.length === simParsed.length) {
@@ -731,7 +731,7 @@ function StudentSubjectCard({
       if (wsum > 0) return Number((sum / wsum).toFixed(2));
     }
     return computeAverage(simParsed.map((x) => x.grade));
-  }, [simParsed]);
+  })();
 
   const neededOnPending = useMemo(() => {
     const n = evals.length;

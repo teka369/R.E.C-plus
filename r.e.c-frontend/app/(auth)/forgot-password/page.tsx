@@ -1,19 +1,15 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/layouts/Navbar";
 import api from "@/lib/axios";
 import { getErrorMessage } from "@/lib/errors";
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"email" | "codigo">("email");
 
   const onSubmitEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,28 +22,6 @@ export default function ForgotPasswordPage() {
       setSent(true);
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Error al enviar la solicitud"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onSubmitCodigo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.post("/auth/recover-by-code", {
-        codigo: codigo.trim(),
-      });
-      const token = res.data?.token;
-      if (token) {
-        sessionStorage.setItem("rec_password_reset_token", token);
-        router.push("/reset-password");
-      } else {
-        setError("No se pudo verificar el código. Revisa que sea correcto o contacta a tu secretaría.");
-      }
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, "Error al verificar el código"));
     } finally {
       setLoading(false);
     }
@@ -69,13 +43,9 @@ export default function ForgotPasswordPage() {
                 restablecimiento y un <strong>token de recuperación</strong> que debes copiar y pegar allí (no va en la
                 barra de direcciones). Revisa también la carpeta de spam.
               </p>
-              <button
-                type="button"
-                onClick={() => { setMode("codigo"); setSent(false); }}
-                className="mt-4 text-sm font-semibold text-[color:var(--rec-primary)] hover:underline"
-              >
-                ¿No recibiste el correo? Usa tu código
-              </button>
+              <p className="mt-3 text-sm text-rec-text-muted">
+                La recuperación por código de usuario fue deshabilitada. El código no es un secreto.
+              </p>
               <Link
                 href="/login"
                 className="mt-3 inline-block text-sm font-semibold text-[color:var(--rec-primary)] hover:underline"
@@ -83,7 +53,7 @@ export default function ForgotPasswordPage() {
                 ← Volver al inicio de sesión
               </Link>
             </>
-          ) : mode === "email" ? (
+          ) : (
             <>
               <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Restablecer contraseña</h1>
               <p className="mt-2 text-sm text-rec-text-muted">
@@ -119,65 +89,6 @@ export default function ForgotPasswordPage() {
                   {loading ? "Enviando..." : "Enviar instrucciones"}
                 </button>
               </form>
-
-              <button
-                type="button"
-                onClick={() => { setMode("codigo"); setError(null); }}
-                className="mt-4 text-sm text-rec-text-muted hover:text-[color:var(--rec-primary)]"
-              >
-                ¿No tienes acceso al correo? Usa tu código
-              </button>
-
-              <Link
-                href="/login"
-                className="mt-3 inline-block text-sm text-rec-text-muted hover:text-[color:var(--rec-primary)]"
-              >
-                ← Volver al inicio de sesión
-              </Link>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-[color:var(--rec-title)]">Recuperar con código</h1>
-              <p className="mt-2 text-sm text-rec-text-muted">
-                Ingresa el código que te asignó la secretaría de tu institución.
-              </p>
-
-              <form onSubmit={onSubmitCodigo} className="mt-6 flex flex-col gap-4" noValidate>
-                <label className="text-sm font-semibold text-rec-text-secondary" htmlFor="forgot-codigo">
-                  Código
-                </label>
-                <input
-                  id="forgot-codigo"
-                  type="text"
-                  className="rounded-xl border border-rec-border-strong px-4 py-3 text-sm outline-none transition focus:border-[color:var(--rec-primary)] focus:ring-2 focus:ring-[color:var(--rec-primary)]/20"
-                  placeholder="Tu código de usuario"
-                  autoComplete="off"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
-                  required
-                />
-
-                {error && (
-                  <p className="rounded-xl border border-rec-danger-border bg-rec-danger-bg px-3 py-2 text-sm text-rec-danger-text">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  disabled={loading}
-                  className="mt-1 rounded-xl bg-[color:var(--rec-primary)] px-4 py-3 text-sm font-semibold text-rec-text-on-media transition hover:bg-[color:var(--rec-primary-strong)] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {loading ? "Verificando..." : "Verificar código"}
-                </button>
-              </form>
-
-              <button
-                type="button"
-                onClick={() => { setMode("email"); setError(null); }}
-                className="mt-4 text-sm text-rec-text-muted hover:text-[color:var(--rec-primary)]"
-              >
-                ← Recuperar por correo electrónico
-              </button>
 
               <Link
                 href="/login"

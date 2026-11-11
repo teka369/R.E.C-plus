@@ -9,8 +9,7 @@ async function main() {
   console.log(JSON.stringify({
     secretaria: secretaria ? { id: secretaria.id, email: secretaria.email } : null,
     professor: professor ? { id: professor.id, email: professor.email } : null,
-    student: student ? { id: student.id, email: student.email } : null,
-    defaultPasswords: { secretaria: 'admin12345', others: 'password123' }
+    student: student ? { id: student.id, email: student.email } : null
   }, null, 2));
 }
 

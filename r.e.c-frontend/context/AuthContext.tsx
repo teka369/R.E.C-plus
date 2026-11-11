@@ -17,6 +17,7 @@ export type LoginApiUser = {
   role: Role;
   nombres?: string;
   apellidos?: string;
+  mustChangePassword?: boolean;
 };
 
 function toAuthUser(u: AuthUser | LoginApiUser): AuthUser {
