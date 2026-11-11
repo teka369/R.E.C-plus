@@ -4,7 +4,9 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
+  // Neon: URL con -pooler y ?sslmode=require (runtime de Render).
   url       = env("DATABASE_URL")
+  // Neon: URL directa, sin pooler. Prisma migrate deploy usa esta.
   directUrl = env("DATABASE_DIRECT_URL")
 }
 

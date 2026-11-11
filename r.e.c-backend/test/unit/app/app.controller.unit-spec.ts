@@ -1,5 +1,4 @@
 import { AppController } from '../../../src/app.controller';
-import { ServiceUnavailableException } from '@nestjs/common';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -28,11 +27,14 @@ describe('AppController', () => {
       });
     });
 
-    it('throws ServiceUnavailableException when DB is down', async () => {
+    it('returns HTTP-200 body when DB is down (Render liveness)', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('Connection refused'));
-      await expect(controller.getHealth()).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const result = await controller.getHealth();
+      expect(result).toEqual({
+        status: 'degraded',
+        service: 'r.e.c-backend',
+        db: 'disconnected',
+      });
     });
   });
 });

@@ -30,7 +30,8 @@ function resolveSocketBaseUrl(): string {
   if (raw.length > 0 && /^https?:\/\//i.test(raw)) {
     return raw.replace(/\/+$/, "");
   }
-  if (typeof window !== "undefined") {
+  // En Vercel el origen de la página no sirve Socket.IO. Solo el fallback local.
+  if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
     return window.location.origin;
   }
   return "";

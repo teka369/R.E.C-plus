@@ -1,9 +1,9 @@
 const isDev = process.env.NODE_ENV === "development";
 
 /**
- * Dominio de cookie de sesión (p. ej. `recedu.co` sin protocolo).
- * En producción con front en recedu.co y API en api.recedu.co, definir el mismo
- * dominio registrable hace que el navegador envíe `rec_token` en el handshake WebSocket.
+ * Dominio de cookie de sesión. En Vercel + Render NO lo definas:
+ * son hosts distintos y la cookie httpOnly debe quedar solo en el dominio de Vercel.
+ * El socket no depende de esa cookie: el cliente pide el access token al BFF.
  */
 function sessionCookieDomain(): string | undefined {
   const d = process.env.SESSION_COOKIE_DOMAIN?.trim();
