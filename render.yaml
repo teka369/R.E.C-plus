@@ -1,0 +1,44 @@
+# Blueprint de Render para el API NestJS.
+# La base es Neon (externa). No se crea Postgres en Render.
+# Los secretos se marcan sync:false: se pegan en el dashboard, nunca en git.
+services:
+  - type: web
+    name: rec-backend
+    runtime: node
+    rootDir: r.e.c-backend
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    startCommand: npm run start:render
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 30d
+      - key: JWT_ISSUER
+        value: recedu
+      - key: JWT_AUDIENCE
+        value: recedu-app
+      - key: CORS_ORIGIN
+        sync: false
+      - key: EMBED_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false

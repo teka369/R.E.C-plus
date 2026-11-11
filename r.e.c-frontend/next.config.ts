@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Vercel construye el runtime. No usar output:standalone (eso era para Docker).
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,

@@ -1,4 +1,10 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import * as os from 'node:os';
 import { PrismaService } from '../prisma/prisma.service';
@@ -26,6 +32,7 @@ export class HealthController {
 
   @SkipThrottle()
   @Get()
+  @HttpCode(HttpStatus.OK)
   async check(): Promise<HealthResponse> {
     const startTime = Date.now();
     let dbStatus: HealthStatus = 'down';

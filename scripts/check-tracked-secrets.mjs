@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { isBlockedTrackedPath } from "./tracked-secret-rules.mjs";
 
 const tracked = execFileSync("git", ["ls-files"], { encoding: "utf8" })
   .split(/\r?\n/)
@@ -6,36 +7,9 @@ const tracked = execFileSync("git", ["ls-files"], { encoding: "utf8" })
 
 let fail = 0;
 
-function allowedEnv(path) {
-  return (
-    path.endsWith(".example") ||
-    path.endsWith(".env.example") ||
-    path.endsWith(".env.coolify.example") ||
-    /\.env\.[^/]+\.example$/.test(path)
-  );
-}
-
 for (const path of tracked) {
-  const base = path.split("/").pop() ?? path;
-  if (
-    base === ".env" ||
-    base === ".env.local" ||
-    base === ".env.test" ||
-    base === ".env.production" ||
-    base === ".env.development" ||
-    base === ".env.docker"
-  ) {
-    console.error(`BLOCK tracked env file: ${path}`);
-    fail = 1;
-  } else if (base.startsWith(".env.") && !allowedEnv(path)) {
-    console.error(`BLOCK tracked env file: ${path}`);
-    fail = 1;
-  }
-  if (
-    path.startsWith("r.e.c-backend/uploads/") ||
-    path.includes("/uploads/study-materials/")
-  ) {
-    console.error(`BLOCK tracked user upload: ${path}`);
+  if (isBlockedTrackedPath(path)) {
+    console.error(`BLOCK tracked sensitive file: ${path}`);
     fail = 1;
   }
 }
