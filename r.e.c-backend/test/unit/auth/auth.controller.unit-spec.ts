@@ -57,7 +57,7 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('delegates to service.logout and returns success', async () => {
-      service.logout.mockResolvedValue(undefined as any);
+      service.logout.mockResolvedValue(undefined);
       const result = await controller.logout({ refresh_token: 'rt' });
       expect(service.logout).toHaveBeenCalledWith('rt');
       expect(result).toEqual({ success: true });
@@ -66,7 +66,7 @@ describe('AuthController', () => {
 
   describe('forgotPassword', () => {
     it('delegates to service.forgotPassword and returns message', async () => {
-      service.forgotPassword.mockResolvedValue(undefined as any);
+      service.forgotPassword.mockResolvedValue(undefined);
       const result = await controller.forgotPassword({ email: 'a@b.com' });
       expect(service.forgotPassword).toHaveBeenCalledWith('a@b.com');
       expect(result.message).toContain('Si el correo existe');
@@ -82,7 +82,7 @@ describe('AuthController', () => {
 
   describe('resetPassword', () => {
     it('delegates to service.resetPassword and returns message', async () => {
-      service.resetPassword.mockResolvedValue(undefined as any);
+      service.resetPassword.mockResolvedValue(undefined);
       const result = await controller.resetPassword({
         token: 't',
         password: 'p',

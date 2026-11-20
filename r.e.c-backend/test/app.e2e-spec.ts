@@ -26,11 +26,7 @@ function asPerformanceResponseBody(value: unknown): PerformanceResponseBody {
     'promedioGeneral' in value &&
     'leagueScore' in value
   ) {
-    const candidate = value as {
-      groupId: unknown;
-      promedioGeneral: unknown;
-      leagueScore: unknown;
-    };
+    const candidate = value;
     if (
       typeof candidate.groupId === 'number' &&
       (typeof candidate.promedioGeneral === 'number' ||
@@ -57,10 +53,7 @@ function asRecoveryConfigResponseBody(
     'startAt' in value &&
     'endAt' in value
   ) {
-    const candidate = value as {
-      startAt: unknown;
-      endAt: unknown;
-    };
+    const candidate = value;
     if (
       typeof candidate.startAt === 'string' &&
       typeof candidate.endAt === 'string'

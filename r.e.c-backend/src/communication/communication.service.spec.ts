@@ -113,7 +113,7 @@ describe('CommunicationService', () => {
       prisma.studentGroup.findFirst.mockResolvedValue({ id: 20 });
       prisma.feedback.create.mockResolvedValue({ id: 100, ...baseDto });
 
-      const result = await service.createFeedback(baseDto as any, actor);
+      const result = await service.createFeedback(baseDto, actor);
 
       expect(prisma.user.findFirst).toHaveBeenCalledWith({
         where: { id: 99, institutionId: 1, role: UserRole.ESTUDIANTE },
@@ -172,7 +172,7 @@ describe('CommunicationService', () => {
         title: 'Nuevo título',
       });
 
-      const result = await service.updateFeedback(1, dto as any, actor);
+      const result = await service.updateFeedback(1, dto, actor);
 
       expect(prisma.feedback.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },

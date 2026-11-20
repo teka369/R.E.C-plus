@@ -12,7 +12,7 @@ import { UsePipes, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Server, Socket } from 'socket.io';
 import { RecoveryService } from './recovery.service';
-import { CreateRecoveryMessageDto } from './dto';
+
 import { UserRole } from '../users/dto/user-role.enum';
 import { getRecTokenFromHandshakeCookie } from '../common/ws-handshake.util';
 
@@ -157,7 +157,7 @@ export class RecoveryGateway
     await this.recoveryService.assertRequestAccess(actor, requestId);
     const saved = await this.recoveryService.createMessage(actor, requestId, {
       body: payload.body,
-    } as CreateRecoveryMessageDto);
+    });
     const room = this.recoveryService.buildRecoveryRoom(
       actor.institutionId,
       requestId,

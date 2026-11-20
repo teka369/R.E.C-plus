@@ -268,7 +268,7 @@ describe('PerformanceService', () => {
       1,
       31,
       21,
-      payload as never,
+      payload,
     );
     const createCallsAfterFirstRun =
       prisma.academicEvaluation.create.mock.calls.length;
@@ -278,7 +278,7 @@ describe('PerformanceService', () => {
       1,
       31,
       21,
-      payload as never,
+      payload,
     );
 
     expect(first).toEqual(second);

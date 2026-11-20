@@ -657,7 +657,7 @@ export class PerformanceService extends TenantScopedService {
       });
     }
 
-    const row = updated as unknown as GradePerformanceRow;
+    const row = updated;
     const scoreBreakdown = this.buildScoreBreakdown({
       promedioGeneral: row.promedioGeneral,
       asistenciaPromedio: row.asistenciaPromedio,
