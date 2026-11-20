@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Injectable } from '@nestjs/common';
 import { StorageAdapter, StorageObject } from './storage.interface';
 
@@ -9,14 +14,14 @@ import { StorageAdapter, StorageObject } from './storage.interface';
 @Injectable()
 export class S3StorageAdapter implements StorageAdapter {
   readonly name = 's3';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   private client: any;
   private bucket: string;
 
   constructor() {
     this.bucket = process.env.S3_BUCKET || '';
     // Lazy require to avoid hard dependency
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+
     const { S3Client } = require('@aws-sdk/client-s3');
     this.client = new S3Client({
       region: process.env.S3_REGION || 'auto',
@@ -30,7 +35,6 @@ export class S3StorageAdapter implements StorageAdapter {
   }
 
   async put(object: StorageObject): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     await this.client.send(
       new PutObjectCommand({
@@ -44,7 +48,6 @@ export class S3StorageAdapter implements StorageAdapter {
   }
 
   async get(key: string): Promise<Buffer> {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { GetObjectCommand } = require('@aws-sdk/client-s3');
     const res = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
@@ -55,8 +58,9 @@ export class S3StorageAdapter implements StorageAdapter {
   }
 
   async delete(key: string): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
   }
 }

@@ -561,6 +561,7 @@ describe('MaterialsService (unit)', () => {
       prisma.syllabus.findUnique.mockResolvedValue({
         id: 1,
         teacherId: profesor.userId,
+        group: { institutionId: profesor.institutionId },
       });
       prisma.syllabus.update.mockResolvedValue({ id: 1, title: 'Editado' });
 
@@ -583,11 +584,38 @@ describe('MaterialsService (unit)', () => {
       prisma.syllabus.findUnique.mockResolvedValue({
         id: 1,
         teacherId: 999,
+        group: { institutionId: profesor.institutionId },
       });
 
       await expect(
         service.updateSyllabus(profesor, 1, {} as never),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rechaza temario de otra institucion (cross-tenant)', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: { institutionId: 999 },
+      });
+
+      await expect(
+        service.updateSyllabus(profesor, 1, { title: 'x' } as never),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.syllabus.update).not.toHaveBeenCalled();
+    });
+
+    it('falla de forma segura si falta la relacion group', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: null,
+      });
+
+      await expect(
+        service.updateSyllabus(profesor, 1, { title: 'x' } as never),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.syllabus.update).not.toHaveBeenCalled();
     });
   });
 
@@ -596,6 +624,7 @@ describe('MaterialsService (unit)', () => {
       prisma.syllabus.findUnique.mockResolvedValue({
         id: 1,
         teacherId: profesor.userId,
+        group: { institutionId: profesor.institutionId },
       });
       prisma.syllabus.delete.mockResolvedValue({});
 
@@ -610,6 +639,32 @@ describe('MaterialsService (unit)', () => {
       await expect(service.deleteSyllabus(profesor, 999)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('rechaza temario de otra institucion (cross-tenant)', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: { institutionId: 999 },
+      });
+
+      await expect(service.deleteSyllabus(profesor, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(prisma.syllabus.delete).not.toHaveBeenCalled();
+    });
+
+    it('falla de forma segura si falta la relacion group', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: null,
+      });
+
+      await expect(service.deleteSyllabus(profesor, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(prisma.syllabus.delete).not.toHaveBeenCalled();
     });
   });
 

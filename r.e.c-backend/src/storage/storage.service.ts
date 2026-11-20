@@ -14,8 +14,10 @@ export class StorageService {
     if (provider === 's3') {
       // Adaptador S3 se resuelve dinámicamente para no forzar la dependencia
       // cuando no se usa. Requiere @aws-sdk/client-s3 instalado.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
       const { S3StorageAdapter } = require('./s3-storage.adapter');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       this.adapter = new S3StorageAdapter();
       this.logger.log('Storage provider: s3');
     } else {

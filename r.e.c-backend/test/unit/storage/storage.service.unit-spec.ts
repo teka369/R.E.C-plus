@@ -20,7 +20,11 @@ describe('StorageService (local)', () => {
 
   it('put/get/delete roundtrip', async () => {
     const key = 'dir/file.txt';
-    await service.put({ key, buffer: Buffer.from('hello'), mimeType: 'text/plain' });
+    await service.put({
+      key,
+      buffer: Buffer.from('hello'),
+      mimeType: 'text/plain',
+    });
     const buf = await service.get(key);
     expect(buf.toString()).toBe('hello');
     await service.delete(key);
@@ -28,7 +32,8 @@ describe('StorageService (local)', () => {
   });
 
   afterAll(() => {
-    const fs = require('node:fs');
-    fs.rmSync(tmpRoot, { recursive: true, force: true });
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { rmSync } = require('node:fs');
+    rmSync(tmpRoot, { recursive: true, force: true });
   });
 });
