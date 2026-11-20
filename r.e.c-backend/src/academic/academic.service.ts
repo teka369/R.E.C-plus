@@ -475,14 +475,9 @@ export class AcademicService extends TenantScopedService {
 
   // Materias
   async createSubject(actor: Actor, dto: CreateSubjectDto) {
-    const result = await this.prisma.subject.create({
-      data: {
-        institutionId: this.getActorInstitutionId(actor),
-        nombre: dto.nombre,
-        codigo: dto.codigo,
-      },
-    });
-    await this.cache.delByPattern('subjects:*');
+    const institutionId = this.getActorInstitutionId(actor);
+
+    // Validar el grupo (si se envia) ANTES de cualquier escritura o efecto secundario.
     if (dto.groupId != null) {
       const group = await this.prisma.group.findUnique({
         where: { id: dto.groupId },
@@ -491,12 +486,24 @@ export class AcademicService extends TenantScopedService {
       if (
         !group ||
         (actor.role !== UserRole.SUPER_ADMIN &&
-          group.institutionId !== this.getActorInstitutionId(actor))
+          group.institutionId !== institutionId)
       ) {
         throw new ForbiddenException(
           'No se puede notificar a un grupo de otra institucion',
         );
       }
+    }
+
+    const result = await this.prisma.subject.create({
+      data: {
+        institutionId,
+        nombre: dto.nombre,
+        codigo: dto.codigo,
+      },
+    });
+    await this.cache.delByPattern('subjects:*');
+
+    if (dto.groupId != null) {
       await this.notifyGroup(
         dto.groupId,
         '📖 Nueva materia agregada',
