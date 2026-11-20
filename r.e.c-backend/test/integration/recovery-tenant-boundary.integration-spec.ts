@@ -8,7 +8,7 @@ import { cleanTestDb } from '../helpers/db-cleanup';
 import { prismaTestClient as prisma } from '../helpers/prisma-test-client';
 
 describe('Recovery tenant boundary integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let jwtService: JwtService;
 
   beforeAll(async () => {
@@ -26,7 +26,7 @@ describe('Recovery tenant boundary integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('rechaza a SECRETARIA de tenant A al actualizar solicitud de tenant B', async () => {

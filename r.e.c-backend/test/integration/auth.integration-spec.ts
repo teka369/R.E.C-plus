@@ -35,7 +35,7 @@ async function createAuthTestData() {
 }
 
 describe('Auth integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -58,7 +58,7 @@ describe('Auth integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── POST /auth/login ────────────────────────────────────────────────────

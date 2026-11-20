@@ -76,7 +76,7 @@ async function buildTenant(
 }
 
 describe('Academic integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tenantA: TenantFixture;
   let tenantB: TenantFixture;
 
@@ -105,7 +105,7 @@ describe('Academic integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── Grades ──────────────────────────────────────────────────────────────

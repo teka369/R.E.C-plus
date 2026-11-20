@@ -130,7 +130,7 @@ async function buildTenant(
 // ─── Suite ───────────────────────────────────────────────────────────────────
 
 describe('Security Fixes Integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tA: Tenant;
   let tB: Tenant;
 
@@ -160,7 +160,7 @@ describe('Security Fixes Integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── FASE 1: createFeedback cross-tenant ─────────────────────────────────

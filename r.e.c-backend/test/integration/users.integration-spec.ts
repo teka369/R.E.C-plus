@@ -92,7 +92,7 @@ async function buildTenant(
 }
 
 describe('Users integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tenantA: TenantFixture;
   let tenantB: TenantFixture;
   let superAdmin: { id: number; email: string };
@@ -135,7 +135,7 @@ describe('Users integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── GET /users/me ───────────────────────────────────────────────────────
