@@ -74,9 +74,10 @@ async function redisThrottlerStorageOrUndefined(
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
-          process.env.NODE_ENV !== 'production'
+          process.env.NODE_ENV === 'development'
             ? { target: 'pino-pretty', options: { singleLine: true } }
             : undefined,
+        autoLogging: process.env.NODE_ENV !== 'test',
         redact: ['req.headers.authorization'],
         serializers: {
           req(req: { method: string; url: string }) {
@@ -101,7 +102,12 @@ async function redisThrottlerStorageOrUndefined(
           }
         }
         return {
-          throttlers: [{ ttl: 60_000, limit: isTest ? 10_000 : 100 }],
+          throttlers: [
+            {
+              ttl: isTest ? 1_000 : 60_000,
+              limit: isTest ? 10_000 : 100,
+            },
+          ],
           storage,
         };
       },

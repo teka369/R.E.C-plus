@@ -182,7 +182,7 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

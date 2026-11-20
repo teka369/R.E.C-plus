@@ -16,7 +16,7 @@ describe('Recovery tenant boundary integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     await app.init();
     jwtService = app.get(JwtService);
   });

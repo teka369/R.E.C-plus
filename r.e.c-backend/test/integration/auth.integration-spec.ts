@@ -42,7 +42,7 @@ describe('Auth integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -75,7 +75,7 @@ describe('Auth integration', () => {
       expect(res.body).toHaveProperty('access_token');
       expect(res.body).toHaveProperty('refresh_token');
       expect(res.body).toHaveProperty('user');
-      expect(res.body.user.id).toBe(user.id);
+      expect(res.body.user.id).toBe(user.publicId);
       expect(res.body.user.email).toBe(user.email);
       expect(res.body.user.role).toBe('PROFESOR');
       expect(res.body.user).not.toHaveProperty('password');
@@ -128,7 +128,10 @@ describe('Auth integration', () => {
       expect(refreshRes.status).toBe(201);
       expect(refreshRes.body).toHaveProperty('access_token');
       expect(refreshRes.body).toHaveProperty('refresh_token');
-      expect(refreshRes.body.access_token).not.toBe(loginRes.body.access_token);
+      // El access token puede coincidir si ambos se firman en el mismo segundo.
+      expect(refreshRes.body.refresh_token).not.toBe(
+        loginRes.body.refresh_token,
+      );
     });
 
     it('refresh sin token → 400', async () => {
@@ -225,7 +228,7 @@ describe('Auth integration', () => {
         .post('/auth/refresh')
         .send({ refresh_token: loginA.body.refresh_token });
       expect(refreshA.status).toBe(201);
-      expect(refreshA.body.user.id).toBe(userA.id);
+      expect(refreshA.body.user.id).toBe(userA.publicId);
       expect(refreshA.body.user.institutionId).toBe(institutionA.id);
 
       // Refresh con token de B devuelve datos de B, no de A
@@ -233,7 +236,7 @@ describe('Auth integration', () => {
         .post('/auth/refresh')
         .send({ refresh_token: loginB.body.refresh_token });
       expect(refreshB.status).toBe(201);
-      expect(refreshB.body.user.id).toBe(userB.id);
+      expect(refreshB.body.user.id).toBe(userB.publicId);
       expect(refreshB.body.user.institutionId).toBe(institutionB.id);
     });
   });
