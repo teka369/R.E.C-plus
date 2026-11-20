@@ -11,6 +11,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
 import type { StringValue } from 'ms';
 import { LOGIN_ATTEMPTS_REDIS } from './login-attempts.constants';
+import { shouldUseLoginAttemptsRedis } from './login-attempts-redis';
 import { LoginAttemptsMemoryStore } from './login-attempts-memory.store';
 import { LoginAttemptsService } from './login-attempts.service';
 @Module({
@@ -42,8 +43,8 @@ import { LoginAttemptsService } from './login-attempts.service';
     {
       provide: LOGIN_ATTEMPTS_REDIS,
       useFactory: (): Redis | null => {
-        const url = process.env.REDIS_URL;
-        return url ? new Redis(url) : null;
+        if (!shouldUseLoginAttemptsRedis()) return null;
+        return new Redis(process.env.REDIS_URL as string);
       },
     },
     LoginAttemptsMemoryStore,
