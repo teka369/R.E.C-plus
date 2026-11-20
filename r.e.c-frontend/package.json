@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "deploy": "npm run build && pm2 restart recedu-frontend"
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@lottiefiles/react-lottie-player": "^3.6.0",

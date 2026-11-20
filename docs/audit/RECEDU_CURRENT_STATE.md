@@ -1,5 +1,7 @@
 # Estado real del proyecto Recedu
 
+Nota: el alojamiento descrito más abajo como Render o Vercel quedó retirado. Usa [docs/operations/servidor.md](../operations/servidor.md).
+
 Fecha de auditoría: 2026-11-20. Rama de trabajo: `work/audit-recovery` (tracking `origin/fix/audit-2026-11-11-critical`, commit `ef89eb2`).
 
 ## Identidad
