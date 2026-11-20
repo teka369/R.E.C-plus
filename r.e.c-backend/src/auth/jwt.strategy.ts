@@ -51,13 +51,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         select: { id: true, deletedAt: true, role: true, institutionId: true },
       });
       if (!user || user.deletedAt) {
-        throw new UnauthorizedException('Sesión inválida o usuario desactivado');
+        throw new UnauthorizedException(
+          'Sesión inválida o usuario desactivado',
+        );
       }
-      if (user.institutionId && user.institutionId !== (payload.institutionId ?? null)) {
+      if (
+        user.institutionId &&
+        user.institutionId !== (payload.institutionId ?? null)
+      ) {
         throw new UnauthorizedException('Contexto de institución obsoleto');
       }
-      if (user.role !== payload.role) {
-        throw new UnauthorizedException('Rol obsoleto; vuelve a iniciar sesión');
+      if (String(user.role) !== String(payload.role)) {
+        throw new UnauthorizedException(
+          'Rol obsoleto; vuelve a iniciar sesión',
+        );
       }
       // Verificar institución activa
       if (user.institutionId) {

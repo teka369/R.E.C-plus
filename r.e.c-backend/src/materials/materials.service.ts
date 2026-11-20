@@ -703,7 +703,7 @@ export class MaterialsService extends TenantScopedService {
     if (!syl) throw new NotFoundException('Temario no encontrado');
     if (actor.role !== UserRole.SUPER_ADMIN) {
       const institutionId = this.getActorInstitutionId(actor);
-      if (syl.group?.institutionId && syl.group.institutionId !== institutionId) {
+      if (!syl.group || syl.group.institutionId !== institutionId) {
         throw new ForbiddenException('Temario fuera de su institucion');
       }
     }
@@ -736,7 +736,7 @@ export class MaterialsService extends TenantScopedService {
     if (!syl) throw new NotFoundException('Temario no encontrado');
     if (actor.role !== UserRole.SUPER_ADMIN) {
       const institutionId = this.getActorInstitutionId(actor);
-      if (syl.group?.institutionId && syl.group.institutionId !== institutionId) {
+      if (!syl.group || syl.group.institutionId !== institutionId) {
         throw new ForbiddenException('Temario fuera de su institucion');
       }
     }
@@ -800,7 +800,8 @@ export class MaterialsService extends TenantScopedService {
     if (!syl) throw new NotFoundException('Temario no encontrado');
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
-      syl.group.institutionId !== this.getActorInstitutionId(actor)
+      (!syl.group ||
+        syl.group.institutionId !== this.getActorInstitutionId(actor))
     ) {
       throw new ForbiddenException('No autorizado');
     }
