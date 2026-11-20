@@ -14,7 +14,7 @@ Rama de integración: `work/audit-recovery` (base `fix/audit-2026-11-11-critical
 - Consolidación de ramas.
 
 ## Verificado
-- Backend build ✅, lint ✅, unit tests 558/558 ✅.
+- Backend build ✅, lint ✅, unit tests 562/562 ✅.
 - Frontend build ✅, lint 0 errors.
 - Prisma validate ✅.
 - Deploy dry-run ✅.
