@@ -31,6 +31,7 @@ import { AuditContextMiddleware } from './common/audit-context.middleware';
 import { RestoreModule } from './admin/restore/restore.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { FirebaseModule } from './services/firebase.module';
+import { StorageModule } from './storage/storage.module';
 
 const throttlerRedisLog = new Logger('ThrottlerRedis');
 
@@ -122,6 +123,7 @@ async function redisThrottlerStorageOrUndefined(
     RestoreModule,
     GatewayModule,
     FirebaseModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [
