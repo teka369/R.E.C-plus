@@ -3,6 +3,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -66,6 +67,52 @@ export class HealthController {
         },
       },
     };
+  }
+
+  @SkipThrottle()
+  @Get('ready')
+  async ready(): Promise<HealthResponse & { ready: boolean }> {
+    const startTime = Date.now();
+    let dbStatus: HealthStatus = 'down';
+    let dbLatency: number | undefined;
+
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      dbLatency = Date.now() - startTime;
+      dbStatus = dbLatency < 100 ? 'ok' : 'degraded';
+    } catch {
+      dbStatus = 'down';
+    }
+
+    const ready = dbStatus !== 'down';
+
+    const overallStatus: HealthStatus =
+      dbStatus === 'down'
+        ? 'down'
+        : dbStatus === 'degraded'
+          ? 'degraded'
+          : 'ok';
+
+    const response: HealthResponse & { ready: boolean } = {
+      status: overallStatus,
+      ready,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.APP_VERSION || '1.0.0',
+      services: {
+        database: {
+          status: dbStatus,
+          latency: dbLatency,
+        },
+      },
+    };
+
+    if (!ready) {
+      throw new ServiceUnavailableException(response);
+    }
+
+    return response;
   }
 
   @UseGuards(InternalApiKeyGuard)
