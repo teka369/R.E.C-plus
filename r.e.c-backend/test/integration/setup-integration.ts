@@ -1,3 +1,4 @@
+import { clearLoginAttemptStateForTests } from '../../src/auth/login-attempts-memory.store';
 import { prismaTestClient } from '../helpers/prisma-test-client';
 import { cleanTestDb } from '../helpers/db-cleanup';
 
@@ -7,6 +8,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  clearLoginAttemptStateForTests();
   await cleanTestDb(prismaTestClient);
 });
 

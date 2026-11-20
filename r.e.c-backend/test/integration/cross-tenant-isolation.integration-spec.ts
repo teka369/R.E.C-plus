@@ -142,16 +142,19 @@ async function seedTenant(
   const loginRes = await request(app.getHttpServer())
     .post('/auth/login')
     .send({ email: secretaria.email, password: TEST_PASSWORD });
+  expect(loginRes.status).toBe(201);
   const secretariaToken = loginRes.body.access_token;
 
   const loginProf = await request(app.getHttpServer())
     .post('/auth/login')
     .send({ email: profesor.email, password: TEST_PASSWORD });
+  expect(loginProf.status).toBe(201);
   const profesorToken = loginProf.body.access_token;
 
   const loginEst = await request(app.getHttpServer())
     .post('/auth/login')
     .send({ email: estudiante.email, password: TEST_PASSWORD });
+  expect(loginEst.status).toBe(201);
   const estudianteToken = loginEst.body.access_token;
 
   return {

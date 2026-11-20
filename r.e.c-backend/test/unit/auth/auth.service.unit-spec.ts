@@ -1,4 +1,8 @@
-import { UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  HttpException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import {
   AuthService,
@@ -154,6 +158,30 @@ describe('AuthService (unit)', () => {
       await expect(service.login('ana@test.dev', 'wrong', tr)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+
+    it('no autentica si el tracker ya acumula 5 fallos', async () => {
+      loginAttempts.getCount.mockResolvedValue({ count: 5, ttl: 900 });
+
+      await expect(
+        service.login('ana@test.dev', 'Password!', tr),
+      ).rejects.toBeInstanceOf(HttpException);
+      await expect(
+        service.login('ana@test.dev', 'Password!', tr),
+      ).rejects.toMatchObject({ status: 429 });
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('bloquea en el quinto fallo sin subir el límite', async () => {
+      prisma.user.findUnique.mockResolvedValue(fakeUser);
+      compareMock.mockResolvedValue(false);
+      loginAttempts.getCount.mockResolvedValue({ count: 4, ttl: 900 });
+      loginAttempts.increment.mockResolvedValue({ count: 5, ttl: 899 });
+
+      await expect(
+        service.login('ana@test.dev', 'wrong', tr),
+      ).rejects.toMatchObject({ status: 429 });
+      expect(loginAttempts.increment).toHaveBeenCalledWith(tr);
     });
 
     it('lanza UnauthorizedException si la institución está inactiva', async () => {
