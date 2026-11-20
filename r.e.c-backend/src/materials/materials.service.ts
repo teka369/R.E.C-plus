@@ -696,8 +696,17 @@ export class MaterialsService extends TenantScopedService {
   }
 
   async updateSyllabus(actor: Actor, id: number, dto: UpdateSyllabusDto) {
-    const syl = await this.prisma.syllabus.findUnique({ where: { id } });
+    const syl = await this.prisma.syllabus.findUnique({
+      where: { id },
+      include: { group: { select: { institutionId: true } } },
+    });
     if (!syl) throw new NotFoundException('Temario no encontrado');
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      const institutionId = this.getActorInstitutionId(actor);
+      if (syl.group?.institutionId && syl.group.institutionId !== institutionId) {
+        throw new ForbiddenException('Temario fuera de su institucion');
+      }
+    }
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede editar');
     }
@@ -720,8 +729,17 @@ export class MaterialsService extends TenantScopedService {
   }
 
   async deleteSyllabus(actor: Actor, id: number) {
-    const syl = await this.prisma.syllabus.findUnique({ where: { id } });
+    const syl = await this.prisma.syllabus.findUnique({
+      where: { id },
+      include: { group: { select: { institutionId: true } } },
+    });
     if (!syl) throw new NotFoundException('Temario no encontrado');
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      const institutionId = this.getActorInstitutionId(actor);
+      if (syl.group?.institutionId && syl.group.institutionId !== institutionId) {
+        throw new ForbiddenException('Temario fuera de su institucion');
+      }
+    }
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede eliminar');
     }
