@@ -288,7 +288,7 @@ export class MaterialsService extends TenantScopedService {
         teacherId: actor.userId,
         title: dto.title,
         description: dto.description,
-        type: dto.type as MaterialType,
+        type: dto.type,
         resourceUrl: dto.resourceUrl,
         imageUrl: dto.imageUrl,
         filePath: this.acceptedStudyFilePath(
@@ -296,7 +296,7 @@ export class MaterialsService extends TenantScopedService {
           dto.filePath,
           dto.uploadToken,
         ),
-        visibility: dto.visibility as Visibility,
+        visibility: dto.visibility,
       },
     });
 
@@ -648,8 +648,7 @@ export class MaterialsService extends TenantScopedService {
         groupId: dto.groupId,
         teacherId: actor.userId,
         title: dto.title,
-        status:
-          (dto.status as SyllabusStatus | undefined) ?? SyllabusStatus.BORRADOR,
+        status: dto.status ?? SyllabusStatus.BORRADOR,
         duration: dto.duration,
         content: dto.content,
       },
@@ -714,7 +713,7 @@ export class MaterialsService extends TenantScopedService {
       where: { id },
       data: {
         title: dto.title,
-        status: dto.status as SyllabusStatus | undefined,
+        status: dto.status,
         duration: dto.duration,
         content: dto.content,
       },

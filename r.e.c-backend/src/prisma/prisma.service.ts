@@ -80,7 +80,7 @@ export class PrismaService
   private getDelegate(key: string): Record<string, unknown> | null {
     const value = (this as unknown as Record<string, unknown>)[key];
     if (value && typeof value === 'object' && 'findUnique' in value) {
-      return value as Record<string, unknown>;
+      return value;
     }
     return null;
   }

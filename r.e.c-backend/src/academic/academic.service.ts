@@ -1211,7 +1211,7 @@ export class AcademicService extends TenantScopedService {
         institutionId: this.getActorInstitutionId(actor),
         nombre: dto.nombre,
         codigo: dto.codigo,
-        tipo: (dto.tipo ?? AcademicPeriodType.TERM) as AcademicPeriodType,
+        tipo: dto.tipo ?? AcademicPeriodType.TERM,
         estado: AcademicPeriodStatus.DRAFT,
         fechaInicio: new Date(dto.fechaInicio),
         fechaFin: new Date(dto.fechaFin),
@@ -1288,9 +1288,7 @@ export class AcademicService extends TenantScopedService {
       data: {
         ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
         ...(dto.codigo !== undefined ? { codigo: dto.codigo } : {}),
-        ...(dto.tipo !== undefined
-          ? { tipo: dto.tipo as AcademicPeriodType }
-          : {}),
+        ...(dto.tipo !== undefined ? { tipo: dto.tipo } : {}),
         ...(dto.fechaInicio ? { fechaInicio: new Date(dto.fechaInicio) } : {}),
         ...(dto.fechaFin ? { fechaFin: new Date(dto.fechaFin) } : {}),
         ...(dto.fechaCierre !== undefined
