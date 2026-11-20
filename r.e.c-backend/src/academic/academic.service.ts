@@ -484,6 +484,19 @@ export class AcademicService extends TenantScopedService {
     });
     await this.cache.delByPattern('subjects:*');
     if (dto.groupId != null) {
+      const group = await this.prisma.group.findUnique({
+        where: { id: dto.groupId },
+        select: { institutionId: true },
+      });
+      if (
+        !group ||
+        (actor.role !== UserRole.SUPER_ADMIN &&
+          group.institutionId !== this.getActorInstitutionId(actor))
+      ) {
+        throw new ForbiddenException(
+          'No se puede notificar a un grupo de otra institucion',
+        );
+      }
       await this.notifyGroup(
         dto.groupId,
         '📖 Nueva materia agregada',
