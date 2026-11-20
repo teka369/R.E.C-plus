@@ -15,6 +15,7 @@ import type {
 import type { Request } from 'express';
 import { extractAccessTokenFromRequest } from '../../auth/jwt-from-request.util';
 import { clientIpFromExpressRequest } from '../../auth/client-ip.util';
+import { retryAfterSeconds } from './retry-after';
 
 function userIdFromJwtPayload(sub: unknown): number | null {
   if (typeof sub === 'number' && Number.isFinite(sub) && sub > 0) {
@@ -72,9 +73,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const res = context.switchToHttp().getResponse<{
       header: (name: string, value: string) => void;
     }>();
-    const secondsRemaining = Math.ceil(
-      throttlerLimitDetail.timeToExpire / 1000,
-    );
+    const secondsRemaining = retryAfterSeconds(throttlerLimitDetail);
     res.header('Retry-After', String(secondsRemaining));
     await Promise.resolve();
     throw new ThrottlerException(

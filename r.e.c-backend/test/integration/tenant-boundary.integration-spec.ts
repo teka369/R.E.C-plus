@@ -62,7 +62,7 @@ describe('TenantBoundaryGuard integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,

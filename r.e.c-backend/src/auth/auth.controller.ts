@@ -7,6 +7,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
+import { authRouteThrottle } from './auth-throttle';
 import { resolveLoginTrackerFromRequest } from './login-tracker.util';
 
 @Controller('auth')
@@ -15,7 +16,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  @Throttle(authRouteThrottle(5, 900_000))
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const tracker = resolveLoginTrackerFromRequest(req);
     return this.auth.login(dto.email, dto.password, tracker);
@@ -33,7 +34,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  @Throttle({ default: { ttl: 300_000, limit: 3 } }) // 3 solicitudes por 5 minutos
+  @Throttle(authRouteThrottle(3, 300_000)) // 3 solicitudes por 5 minutos
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.auth.forgotPassword(dto.email);
     return {
@@ -43,7 +44,7 @@ export class AuthController {
   }
 
   @Post('recover-by-code')
-  @Throttle({ default: { ttl: 300_000, limit: 3 } })
+  @Throttle(authRouteThrottle(3, 300_000))
   recoverByCode(): never {
     throw new GoneException(
       'La recuperación por código está deshabilitada. Solicita el restablecimiento con tu correo institucional.',
@@ -51,7 +52,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  @Throttle({ default: { ttl: 300_000, limit: 5 } }) // 5 intentos por 5 minutos
+  @Throttle(authRouteThrottle(5, 300_000)) // 5 intentos por 5 minutos
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.auth.resetPassword(dto.token, dto.password);
     return { message: 'Contraseña actualizada correctamente.' };
