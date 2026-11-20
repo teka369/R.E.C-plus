@@ -1,5 +1,7 @@
 # Preparación para producción — Vercel / Render / Neon
 
+Este documento describe un alojamiento que ya no se usa. La guía vigente es [docs/operations/servidor.md](../operations/servidor.md).
+
 ## Vercel (frontend)
 
 - Framework: Next.js 16.2.3. Root Directory: `r.e.c-frontend`.

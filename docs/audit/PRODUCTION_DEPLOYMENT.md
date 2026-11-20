@@ -1,6 +1,3 @@
-# Despliegue de producción
+# Despliegue
 
-Ver DEPLOY.md y docs/audit/PRODUCTION_READINESS.md.
-- Dry-run verificado.
-- Despliegue real no realizado (requiere credenciales/autorización).
-- Free tiers: Render Free, Vercel Hobby, Neon Free.
+El despliegue automático a un proveedor concreto se retiró. La instalación en un servidor propio está en [docs/operations/servidor.md](../operations/servidor.md).

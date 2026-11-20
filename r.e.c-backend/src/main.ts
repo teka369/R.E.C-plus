@@ -58,9 +58,9 @@ async function bootstrap() {
         'NotFoundException',
       ],
     });
-    console.log('✅ Sentry initialized');
+    console.log('Sentry initialized');
   } else {
-    console.warn('⚠️  SENTRY_DSN not configured. Error tracking disabled.');
+    console.warn('SENTRY_DSN not configured. Error tracking disabled.');
   }
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });

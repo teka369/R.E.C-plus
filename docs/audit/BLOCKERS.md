@@ -1,5 +1,7 @@
 # Bloqueos externos
 
+La lista operativa de rotación y purga también está en [docs/security/controles.md](../security/controles.md).
+
 No se imprimen valores de secretos.
 
 ## Rotación pendiente (credenciales históricas comprometidas)
