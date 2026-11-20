@@ -173,7 +173,7 @@ async function seedTenant(
 
 // Añadir tokens al tipo
 describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tenantA: TenantSeed;
   let tenantB: TenantSeed;
 
@@ -200,7 +200,7 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── USERS ────────────────────────────────────────────────────────
