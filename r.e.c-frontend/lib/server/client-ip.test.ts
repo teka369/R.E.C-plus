@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {
   buildRateLimitForwardHeaders,
   getClientIpFromIncomingRequest,
-} from "./rate-limit-forward.ts";
+} from "./rate-limit-forward";
 
 function headers(map: Record<string, string>) {
   return {
