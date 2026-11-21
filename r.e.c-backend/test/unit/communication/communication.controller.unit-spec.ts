@@ -89,7 +89,7 @@ describe('CommunicationController', () => {
   });
 
   it('markMessageRead delegates', async () => {
-    await controller.markMessageRead({ messageId: 5 } as any, req);
+    await controller.markMessageRead({ messageId: 5 }, req);
     expect(service.markMessageRead).toHaveBeenCalledWith(5, actor);
   });
 
@@ -109,7 +109,7 @@ describe('CommunicationController', () => {
   });
 
   it('markNotificationRead delegates', async () => {
-    await controller.markNotificationRead({ notificationId: 3 } as any, req);
+    await controller.markNotificationRead({ notificationId: 3 }, req);
     expect(service.markNotificationRead).toHaveBeenCalledWith(3, actor);
   });
 });

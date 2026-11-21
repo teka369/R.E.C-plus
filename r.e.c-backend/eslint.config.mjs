@@ -33,6 +33,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['test/e2e/assert-e2e-database.ts'],
+    rules: {
+      'prettier/prettier': 'off',
+    },
+  },
+  {
     files: ['test/**/*.ts', 'src/**/*.spec.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',

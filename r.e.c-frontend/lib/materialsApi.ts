@@ -21,6 +21,7 @@ export type StudyMaterial = {
 
 export type UploadStudyFileResult = {
   filePath: string;
+  uploadToken: string;
   originalName: string;
   mimeType: string;
   size: number;
@@ -35,6 +36,7 @@ export type CreateStudyMaterialInput = {
   resourceUrl?: string;
   imageUrl?: string;
   filePath?: string;
+  uploadToken?: string;
   visibility: StudyMaterial["visibility"];
 };
 
@@ -45,6 +47,7 @@ export type UpdateStudyMaterialInput = {
   resourceUrl?: string;
   imageUrl?: string;
   filePath?: string;
+  uploadToken?: string;
   visibility?: StudyMaterial["visibility"];
 };
 

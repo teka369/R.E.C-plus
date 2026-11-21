@@ -30,7 +30,8 @@ function resolveSocketBaseUrl(): string {
   if (raw.length > 0 && /^https?:\/\//i.test(raw)) {
     return raw.replace(/\/+$/, "");
   }
-  if (typeof window !== "undefined") {
+  // En Vercel el origen de la página no sirve Socket.IO. Solo el fallback local.
+  if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
     return window.location.origin;
   }
   return "";
@@ -47,6 +48,7 @@ async function fetchAccessTokenForSocket(): Promise<string | null> {
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { token } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -55,7 +57,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     const socketBaseUrl = resolveSocketBaseUrl();
     if (!socketBaseUrl) {
-      setIsConnected(false);
       return () => {
         cancelled = true;
       };
@@ -93,6 +94,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
       socket = s;
       socketRef.current = s;
+      setSocket(s);
 
       s.on("connect", () => setIsConnected(true));
       s.on("disconnect", () => setIsConnected(false));
@@ -106,6 +108,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         socket.disconnect();
       }
       socketRef.current = null;
+      setSocket(null);
       setIsConnected(false);
     };
   }, [token]);
@@ -121,7 +124,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value: SocketContextValue = {
-    socket: socketRef.current,
+    socket,
     isConnected,
     joinRecovery,
     leaveRecovery,

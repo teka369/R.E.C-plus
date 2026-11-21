@@ -190,23 +190,22 @@ export class AcademicService extends TenantScopedService {
 
   /** Misma lógica de fallback que PerformanceService.upsertStudentAcademic. */
   private async getInstitutionGradingPolicyWithWeights(institutionId: number) {
-    const policy =
-      (await this.prisma.institutionGradingPolicy.findUnique({
-        where: { institutionId },
-      })) ?? {
-        allowClosedPeriodEdits: false,
-        allowFinalOverride: true,
-        gradeScaleMax: 5,
-        passingThreshold: 3.0,
-        gradingMode: GradingMode.SIMPLE,
-        competencyWeights: {
-          COGNITIVE: 30,
-          PROCEDURAL: 30,
-          ATTITUDINAL: 30,
-          SELF_EVAL: 5,
-          CO_EVAL: 5,
-        },
-      };
+    const policy = (await this.prisma.institutionGradingPolicy.findUnique({
+      where: { institutionId },
+    })) ?? {
+      allowClosedPeriodEdits: false,
+      allowFinalOverride: true,
+      gradeScaleMax: 5,
+      passingThreshold: 3.0,
+      gradingMode: GradingMode.SIMPLE,
+      competencyWeights: {
+        COGNITIVE: 30,
+        PROCEDURAL: 30,
+        ATTITUDINAL: 30,
+        SELF_EVAL: 5,
+        CO_EVAL: 5,
+      },
+    };
 
     const rawCompetencyWeights = policy.competencyWeights;
     const competencyWeightsRecord: Record<string, number> =
@@ -381,10 +380,14 @@ export class AcademicService extends TenantScopedService {
     });
     await this.cache.delByPattern('groups:*');
     try {
-      this.appGatewayService.emitToTenant(grade.institutionId, 'notification:new', {
-        title: '🏫 Nuevo grupo creado',
-        body: `El grupo "${dto.nombre}" fue creado en tu institución.`,
-      });
+      this.appGatewayService.emitToTenant(
+        grade.institutionId,
+        'notification:new',
+        {
+          title: '🏫 Nuevo grupo creado',
+          body: `El grupo "${dto.nombre}" fue creado en tu institución.`,
+        },
+      );
     } catch {
       /* best-effort */
     }
@@ -472,14 +475,34 @@ export class AcademicService extends TenantScopedService {
 
   // Materias
   async createSubject(actor: Actor, dto: CreateSubjectDto) {
+    const institutionId = this.getActorInstitutionId(actor);
+
+    // Validar el grupo (si se envia) ANTES de cualquier escritura o efecto secundario.
+    if (dto.groupId != null) {
+      const group = await this.prisma.group.findUnique({
+        where: { id: dto.groupId },
+        select: { institutionId: true },
+      });
+      if (
+        !group ||
+        (actor.role !== UserRole.SUPER_ADMIN &&
+          group.institutionId !== institutionId)
+      ) {
+        throw new ForbiddenException(
+          'No se puede notificar a un grupo de otra institucion',
+        );
+      }
+    }
+
     const result = await this.prisma.subject.create({
       data: {
-        institutionId: this.getActorInstitutionId(actor),
+        institutionId,
         nombre: dto.nombre,
         codigo: dto.codigo,
       },
     });
     await this.cache.delByPattern('subjects:*');
+
     if (dto.groupId != null) {
       await this.notifyGroup(
         dto.groupId,
@@ -993,7 +1016,8 @@ export class AcademicService extends TenantScopedService {
     return withAssignments
       .map((item) => ({
         teacherId: item.teacherId,
-        teacherName: teacherById.get(item.teacherId) ?? `Docente ${item.teacherId}`,
+        teacherName:
+          teacherById.get(item.teacherId) ?? `Docente ${item.teacherId}`,
         assignmentCount: item._count.teacherId,
       }))
       .sort((a, b) => b.assignmentCount - a.assignmentCount);
@@ -1187,7 +1211,7 @@ export class AcademicService extends TenantScopedService {
         institutionId: this.getActorInstitutionId(actor),
         nombre: dto.nombre,
         codigo: dto.codigo,
-        tipo: (dto.tipo ?? AcademicPeriodType.TERM) as AcademicPeriodType,
+        tipo: dto.tipo ?? AcademicPeriodType.TERM,
         estado: AcademicPeriodStatus.DRAFT,
         fechaInicio: new Date(dto.fechaInicio),
         fechaFin: new Date(dto.fechaFin),
@@ -1264,9 +1288,7 @@ export class AcademicService extends TenantScopedService {
       data: {
         ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
         ...(dto.codigo !== undefined ? { codigo: dto.codigo } : {}),
-        ...(dto.tipo !== undefined
-          ? { tipo: dto.tipo as AcademicPeriodType }
-          : {}),
+        ...(dto.tipo !== undefined ? { tipo: dto.tipo } : {}),
         ...(dto.fechaInicio ? { fechaInicio: new Date(dto.fechaInicio) } : {}),
         ...(dto.fechaFin ? { fechaFin: new Date(dto.fechaFin) } : {}),
         ...(dto.fechaCierre !== undefined
@@ -1392,7 +1414,9 @@ export class AcademicService extends TenantScopedService {
       throw new NotFoundException('Oferta académica no encontrada');
 
     const { policy, competencyWeightsRecord } =
-      await this.getInstitutionGradingPolicyWithWeights(offering.group.institutionId);
+      await this.getInstitutionGradingPolicyWithWeights(
+        offering.group.institutionId,
+      );
 
     return {
       ...offering,
@@ -1457,8 +1481,7 @@ export class AcademicService extends TenantScopedService {
         orden,
         ...(dto.competencyCategory
           ? {
-              competencyCategory:
-                dto.competencyCategory as CompetencyCategory,
+              competencyCategory: dto.competencyCategory as CompetencyCategory,
             }
           : {}),
       },

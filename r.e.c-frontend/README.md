@@ -2,7 +2,7 @@
 
 ## Requisitos
 
-- Node.js 20+
+- Node.js 26
 
 ## Variables de entorno
 
@@ -49,4 +49,4 @@ docker run -p 3000:3000 rec-frontend
 ## Notas de despliegue
 
 - `NEXT_PUBLIC_API_BASE_URL` se inyecta en build. Si cambia el dominio del backend, hay que redeploy del frontend.
-- Este proyecto está preparado para ejecutarse en Coolify usando el stack en la raíz del repo (`docker-compose.coolify.yml`).
+- El alojamiento previsto es un servidor propio. Ver `docs/operations/servidor.md`.

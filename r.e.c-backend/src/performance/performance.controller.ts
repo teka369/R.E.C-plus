@@ -87,7 +87,11 @@ export class PerformanceController {
     @Req() req: AuthenticatedRequest,
   ) {
     const version = v != null ? Number(v) : 1;
-    return this.performance.getGroupAcademicOverview(req.user, groupId, version);
+    return this.performance.getGroupAcademicOverview(
+      req.user,
+      groupId,
+      version,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

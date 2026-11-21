@@ -6,8 +6,8 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${port}`;
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  retries: 0,
+  workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL,
@@ -16,10 +16,10 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: `npx next dev --port ${port}`,
+    command: `npx next dev --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 180000,
     env: {
       ...process.env,
       PORT: String(port),
@@ -55,11 +55,21 @@ export default defineConfig({
     /* ── Secretaria tests — reuse SECRETARIA storageState ── */
     {
       name: 'secretaria',
-      testMatch: /subject-assignment\.spec\.ts|reports\.spec\.ts/,
+      testMatch: /subject-assignment\.spec\.ts/,
       dependencies: ['auth-setup'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/secretaria-storage.json',
+      },
+    },
+
+    {
+      name: 'student',
+      testMatch: /reports\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/estudiante-storage.json',
       },
     },
 

@@ -1,11 +1,10 @@
-# PostgreSQL solo para recedu.co — escucha en localhost (no expone a Internet).
-# Postgres con contraseña fuerte: copia .env.docker.example → .env.docker y:
+# Postgres y Redis locales. No exponen puertos fuera de la máquina.
+# Copia .env.docker.example a .env.docker y ejecuta:
 #   docker compose --env-file .env.docker up -d
-# Solo Redis (sin .env.docker): docker compose up -d redis
-#   (Compose interpola todo el archivo; POSTGRES_PASSWORD tiene valor por defecto solo para eso.)
+# Solo Redis: docker compose up -d redis
 #
-# El backend Nest (PM2) usa DATABASE_URL apuntando a 127.0.0.1:5432
-# Redis: rate limit (throttler) + caché Nest (invalidación por patrón). En .env: REDIS_URL=redis://127.0.0.1:6379
+# DATABASE_URL=postgresql://...@127.0.0.1:5432/...
+# REDIS_URL=redis://127.0.0.1:6379
 
 services:
   redis:

@@ -130,7 +130,7 @@ async function buildTenant(
 // ─── Suite ───────────────────────────────────────────────────────────────────
 
 describe('Security Fixes Integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tA: Tenant;
   let tB: Tenant;
 
@@ -139,7 +139,7 @@ describe('Security Fixes Integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -148,6 +148,10 @@ describe('Security Fixes Integration', () => {
       }),
     );
     await app.init();
+    // Supertest cierra el http.Server si fue él quien llamó listen().
+    // beforeEach dispara varios login en paralelo; en Node 26 el primer
+    // response cerraba el servidor y el resto moría con ECONNRESET.
+    await app.listen(0, '127.0.0.1');
   });
 
   beforeEach(async () => {
@@ -160,7 +164,7 @@ describe('Security Fixes Integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── FASE 1: createFeedback cross-tenant ─────────────────────────────────
@@ -477,7 +481,9 @@ describe('Security Fixes Integration', () => {
         .set('X-Visitor-Id', visitorId)
         .send({ email: u.email, password: 'wrongpassword' });
       expect(fifthFail.status).toBe(429);
-      expect(String(fifthFail.body?.message ?? '')).toMatch(/espera \d+ segundos/);
+      expect(String(fifthFail.body?.message ?? '')).toMatch(
+        /espera \d+ segundos/,
+      );
     });
   });
 });

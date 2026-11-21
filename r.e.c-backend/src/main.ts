@@ -58,16 +58,18 @@ async function bootstrap() {
         'NotFoundException',
       ],
     });
-    console.log('✅ Sentry initialized');
+    console.log('Sentry initialized');
   } else {
-    console.warn('⚠️  SENTRY_DSN not configured. Error tracking disabled.');
+    console.warn('SENTRY_DSN not configured. Error tracking disabled.');
   }
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useWebSocketAdapter(new RecSocketIoAdapter(app));
   app.useLogger(app.get(Logger));
   // Confiar en la IP del proxy (Nginx): TRUST_PROXY=1 → un salto; sin definir → solo loopback (dev)
-  const expressApp = app.getHttpAdapter().getInstance();
+  const expressApp = app.getHttpAdapter().getInstance() as {
+    set: (key: string, value: boolean | number | string) => void;
+  };
   expressApp.set('trust proxy', resolveTrustProxy());
   // Comprimir todas las respuestas JSON >= 1KB (reduce tráfico ~60-70%)
   app.use(compression());

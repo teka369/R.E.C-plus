@@ -233,6 +233,25 @@ describe('MaterialsService (unit)', () => {
 
       expect(result.academicOfferingId).toBe(20);
     });
+
+    it('rechaza filePath enviado por el cliente sin token de upload', async () => {
+      prisma.teacherAssignment.findUnique.mockResolvedValue({
+        id: 1,
+        group: { institutionId: 1 },
+      });
+
+      await expect(
+        service.createStudyMaterial(profesor, {
+          groupId: 5,
+          subjectId: 3,
+          title: 'Robo',
+          type: 'PDF',
+          visibility: 'GROUP',
+          filePath: 'study-materials/teacher-12/2026-03/otro.pdf',
+        } as never),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.studyMaterial.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateStudyMaterial', () => {
@@ -248,7 +267,7 @@ describe('MaterialsService (unit)', () => {
 
       const result = await service.updateStudyMaterial(profesor, 1, {
         title: 'Editado',
-      } as never);
+      });
 
       expect(result.title).toBe('Editado');
     });
@@ -260,7 +279,7 @@ describe('MaterialsService (unit)', () => {
       });
 
       await expect(
-        service.updateStudyMaterial(profesor, 1, { title: 'X' } as never),
+        service.updateStudyMaterial(profesor, 1, { title: 'X' }),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -268,7 +287,7 @@ describe('MaterialsService (unit)', () => {
       prisma.studyMaterial.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.updateStudyMaterial(profesor, 999, { title: 'X' } as never),
+        service.updateStudyMaterial(profesor, 999, { title: 'X' }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -521,7 +540,7 @@ describe('MaterialsService (unit)', () => {
         groupId: 5,
         subjectId: 3,
         title: 'Temario Mat',
-      } as never);
+      });
 
       expect(result.title).toBe('Temario Mat');
     });
@@ -532,7 +551,7 @@ describe('MaterialsService (unit)', () => {
           groupId: 5,
           subjectId: 3,
           title: 'X',
-        } as never),
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -542,12 +561,13 @@ describe('MaterialsService (unit)', () => {
       prisma.syllabus.findUnique.mockResolvedValue({
         id: 1,
         teacherId: profesor.userId,
+        group: { institutionId: profesor.institutionId },
       });
       prisma.syllabus.update.mockResolvedValue({ id: 1, title: 'Editado' });
 
       const result = await service.updateSyllabus(profesor, 1, {
         title: 'Editado',
-      } as never);
+      });
 
       expect(result.title).toBe('Editado');
     });
@@ -555,20 +575,47 @@ describe('MaterialsService (unit)', () => {
     it('lanza NotFoundException si no existe', async () => {
       prisma.syllabus.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.updateSyllabus(profesor, 999, {} as never),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateSyllabus(profesor, 999, {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('rechaza si no es el autor', async () => {
       prisma.syllabus.findUnique.mockResolvedValue({
         id: 1,
         teacherId: 999,
+        group: { institutionId: profesor.institutionId },
+      });
+
+      await expect(service.updateSyllabus(profesor, 1, {})).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('rechaza temario de otra institucion (cross-tenant)', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: { institutionId: 999 },
       });
 
       await expect(
-        service.updateSyllabus(profesor, 1, {} as never),
+        service.updateSyllabus(profesor, 1, { title: 'x' }),
       ).rejects.toThrow(ForbiddenException);
+      expect(prisma.syllabus.update).not.toHaveBeenCalled();
+    });
+
+    it('falla de forma segura si falta la relacion group', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: null,
+      });
+
+      await expect(
+        service.updateSyllabus(profesor, 1, { title: 'x' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.syllabus.update).not.toHaveBeenCalled();
     });
   });
 
@@ -577,6 +624,7 @@ describe('MaterialsService (unit)', () => {
       prisma.syllabus.findUnique.mockResolvedValue({
         id: 1,
         teacherId: profesor.userId,
+        group: { institutionId: profesor.institutionId },
       });
       prisma.syllabus.delete.mockResolvedValue({});
 
@@ -591,6 +639,32 @@ describe('MaterialsService (unit)', () => {
       await expect(service.deleteSyllabus(profesor, 999)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('rechaza temario de otra institucion (cross-tenant)', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: { institutionId: 999 },
+      });
+
+      await expect(service.deleteSyllabus(profesor, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(prisma.syllabus.delete).not.toHaveBeenCalled();
+    });
+
+    it('falla de forma segura si falta la relacion group', async () => {
+      prisma.syllabus.findUnique.mockResolvedValue({
+        id: 1,
+        teacherId: profesor.userId,
+        group: null,
+      });
+
+      await expect(service.deleteSyllabus(profesor, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(prisma.syllabus.delete).not.toHaveBeenCalled();
     });
   });
 

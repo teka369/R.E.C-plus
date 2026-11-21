@@ -2,10 +2,12 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { INestApplication } from '@nestjs/common';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
-import type { ServerOptions } from 'socket.io';
+import type { Server, ServerOptions } from 'socket.io';
 
 function socketCorsOrigins(): string[] {
-  return (process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001')
+  return (
+    process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001'
+  )
     .split(/[\s,]+/)
     .map((o) => o.trim())
     .filter(Boolean);
@@ -30,7 +32,7 @@ export class RecSocketIoAdapter extends IoAdapter {
       },
     } as ServerOptions;
 
-    const server = super.createIOServer(port, serverOptions);
+    const server = super.createIOServer(port, serverOptions) as Server;
 
     const redisUrl = process.env.REDIS_URL;
     if (redisUrl) {

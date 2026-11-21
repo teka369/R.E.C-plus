@@ -53,7 +53,7 @@ describe('UsersController', () => {
         email: 'a@b.co',
         role: UserRole.ESTUDIANTE,
       } as any;
-      controller.create(dto, secretariaReq as any);
+      controller.create(dto, secretariaReq);
       expect(service.create).toHaveBeenCalledWith(secretariaReq.user, dto);
     });
   });
@@ -61,7 +61,7 @@ describe('UsersController', () => {
   describe('bulkCreate', () => {
     it('delegates to service.bulkCreate', () => {
       const dtos = [{ nombre: 'A' }] as any;
-      controller.bulkCreate(dtos, secretariaReq as any);
+      controller.bulkCreate(dtos, secretariaReq);
       expect(service.bulkCreate).toHaveBeenCalledWith(secretariaReq.user, dtos);
     });
 
@@ -81,13 +81,7 @@ describe('UsersController', () => {
 
   describe('findAll', () => {
     it('delegates with pagination and filters', () => {
-      controller.findAll(
-        UserRole.ESTUDIANTE,
-        '1',
-        '2',
-        '10',
-        secretariaReq as any,
-      );
+      controller.findAll(UserRole.ESTUDIANTE, '1', '2', '10', secretariaReq);
       expect(service.findAll).toHaveBeenCalledWith(
         secretariaReq.user,
         UserRole.ESTUDIANTE,
@@ -105,7 +99,7 @@ describe('UsersController', () => {
         undefined,
         undefined,
         undefined,
-        secretariaReq as any,
+        secretariaReq,
       );
       expect(service.findAll).toHaveBeenCalledWith(
         secretariaReq.user,
@@ -122,7 +116,7 @@ describe('UsersController', () => {
   describe('getProfile', () => {
     it('delegates to findOne with own userId', async () => {
       service.findOne.mockResolvedValue({ publicId: 'uuid-1' });
-      await controller.getProfile(secretariaReq as any);
+      await controller.getProfile(secretariaReq);
       expect(service.findOne).toHaveBeenCalledWith(secretariaReq.user, 1);
     });
 
@@ -137,7 +131,7 @@ describe('UsersController', () => {
   describe('findOne', () => {
     it('allows SECRETARIA to view any user by publicId', async () => {
       service.findOneByPublicId.mockResolvedValue({ publicId: 'uuid-99' });
-      await controller.findOne('uuid-99', secretariaReq as any);
+      await controller.findOne('uuid-99', secretariaReq);
       expect(service.findOneByPublicId).toHaveBeenCalledWith(
         secretariaReq.user,
         'uuid-99',
@@ -147,7 +141,7 @@ describe('UsersController', () => {
     it('allows student to view own profile by publicId', async () => {
       service.findOne.mockResolvedValue({ publicId: 'uuid-5' });
       service.findOneByPublicId.mockResolvedValue({ publicId: 'uuid-5' });
-      await controller.findOne('uuid-5', studentReq as any);
+      await controller.findOne('uuid-5', studentReq);
       expect(service.findOneByPublicId).toHaveBeenCalledWith(
         studentReq.user,
         'uuid-5',
@@ -163,7 +157,7 @@ describe('UsersController', () => {
 
     it('allows SUPER_ADMIN to view any user by publicId', async () => {
       service.findOneByPublicId.mockResolvedValue({ publicId: 'uuid-5' });
-      await controller.findOne('uuid-5', superReq as any);
+      await controller.findOne('uuid-5', superReq);
       expect(service.findOneByPublicId).toHaveBeenCalledWith(
         superReq.user,
         'uuid-5',
@@ -174,7 +168,7 @@ describe('UsersController', () => {
   describe('update', () => {
     it('delegates to service.updateByPublicId', () => {
       const dto = { nombre: 'Updated' } as any;
-      controller.update('uuid-5', dto, secretariaReq as any);
+      controller.update('uuid-5', dto, secretariaReq);
       expect(service.updateByPublicId).toHaveBeenCalledWith(
         secretariaReq.user,
         'uuid-5',
@@ -186,14 +180,14 @@ describe('UsersController', () => {
   describe('updateProfile', () => {
     it('delegates to service.update with own userId', async () => {
       const dto = { nombre: 'Me' } as any;
-      await controller.updateProfile(dto, secretariaReq as any);
+      await controller.updateProfile(dto, secretariaReq);
       expect(service.update).toHaveBeenCalledWith(secretariaReq.user, 1, dto);
     });
   });
 
   describe('remove', () => {
     it('delegates to service.removeByPublicId', () => {
-      controller.remove('uuid-5', secretariaReq as any);
+      controller.remove('uuid-5', secretariaReq);
       expect(service.removeByPublicId).toHaveBeenCalledWith(
         secretariaReq.user,
         'uuid-5',
@@ -206,7 +200,7 @@ describe('UsersController', () => {
       service.findOneByPublicId.mockResolvedValue({ publicId: 'uuid-5' });
       service.changePasswordByPublicId.mockResolvedValue(undefined);
       const dto = { newPassword: 'new123' } as any;
-      await controller.changePassword('uuid-5', dto, secretariaReq as any);
+      await controller.changePassword('uuid-5', dto, secretariaReq);
       expect(service.changePasswordByPublicId).toHaveBeenCalledWith(
         'uuid-5',
         'new123',
@@ -217,7 +211,7 @@ describe('UsersController', () => {
       service.findOneByPublicId.mockResolvedValue({ publicId: 'uuid-5' });
       service.changePasswordByPublicId.mockResolvedValue(undefined);
       const dto = { newPassword: 'new123' } as any;
-      await controller.changePassword('uuid-5', dto, superReq as any);
+      await controller.changePassword('uuid-5', dto, superReq);
       expect(service.changePasswordByPublicId).toHaveBeenCalledWith(
         'uuid-5',
         'new123',
@@ -230,7 +224,7 @@ describe('UsersController', () => {
         undefined,
       );
       const dto = { currentPassword: 'old', newPassword: 'new123' } as any;
-      await controller.changePassword('uuid-5', dto, studentReq as any);
+      await controller.changePassword('uuid-5', dto, studentReq);
       expect(
         service.changePasswordWithValidationByPublicId,
       ).toHaveBeenCalledWith('uuid-5', 'old', 'new123');

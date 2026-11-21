@@ -5,20 +5,25 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=26"
+  },
   "scripts": {
     "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/main.js",
+    "start:with-migrations": "prisma migrate deploy && node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --max-warnings=0",
     "test": "npm run test:unit",
     "test:unit": "jest --config ./test/jest-unit.json",
     "test:unit:watch": "jest --config ./test/jest-unit.json --watch",
-    "test:integration": "jest --config ./test/jest-integration.json --runInBand",
+    "test:integration": "jest --config ./test/jest-integration.json --runInBand --detectOpenHandles",
     "test:integration:migrate": "prisma migrate deploy",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
+    "seed:e2e": "ts-node --project test/e2e/tsconfig.seed.json test/e2e/seed-e2e.ts",
     "test:cov": "jest --config ./test/jest-unit.json --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
@@ -29,8 +34,7 @@
     "prisma:studio": "prisma studio",
     "seed:json": "node scripts/seed-from-json.js",
     "saas:superadmin": "node scripts/bootstrap-super-admin.js",
-    "bootstrap:dev-access": "node scripts/bootstrap-dev-access.js",
-    "deploy": "npm run build && pm2 restart recedu-backend"
+    "bootstrap:dev-access": "node scripts/bootstrap-dev-access.js"
   },
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.2.0",

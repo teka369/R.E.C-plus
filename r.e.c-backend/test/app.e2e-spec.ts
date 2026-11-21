@@ -2,10 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import * as bcrypt from 'bcryptjs';
 import { AppModule } from './../src/app.module';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { UserRole } from '../src/users/dto/user-role.enum';
+import { assertE2eDatabase } from './e2e/assert-e2e-database';
 
 type PerformanceResponseBody = {
   groupId: number;
@@ -26,11 +28,7 @@ function asPerformanceResponseBody(value: unknown): PerformanceResponseBody {
     'promedioGeneral' in value &&
     'leagueScore' in value
   ) {
-    const candidate = value as {
-      groupId: unknown;
-      promedioGeneral: unknown;
-      leagueScore: unknown;
-    };
+    const candidate = value;
     if (
       typeof candidate.groupId === 'number' &&
       (typeof candidate.promedioGeneral === 'number' ||
@@ -57,10 +55,7 @@ function asRecoveryConfigResponseBody(
     'startAt' in value &&
     'endAt' in value
   ) {
-    const candidate = value as {
-      startAt: unknown;
-      endAt: unknown;
-    };
+    const candidate = value;
     if (
       typeof candidate.startAt === 'string' &&
       typeof candidate.endAt === 'string'
@@ -110,12 +105,14 @@ describe('AppController (e2e)', () => {
     );
 
   beforeAll(async () => {
+    assertE2eDatabase();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     await app.init();
+    await app.listen(0, '127.0.0.1');
 
     prisma = app.get(PrismaService);
     jwtService = new JwtService({ secret: process.env.JWT_SECRET });
@@ -141,13 +138,14 @@ describe('AppController (e2e)', () => {
     });
     academicPeriodId = academicPeriod.id;
 
+    const password = await bcrypt.hash('E2e-Password-1', 12);
     const secretaria = await prisma.user.create({
       data: {
         institutionId,
         nombres: 'E2E',
         apellidos: 'Secretaria',
         email: `e2e.secretaria.${runId}@test.dev`,
-        password: 'e2e',
+        password,
         role: 'SECRETARIA',
       },
     });
@@ -159,7 +157,7 @@ describe('AppController (e2e)', () => {
         nombres: 'E2E',
         apellidos: 'Profesor',
         email: `e2e.profesor.${runId}@test.dev`,
-        password: 'e2e',
+        password,
         role: 'PROFESOR',
       },
     });
@@ -171,7 +169,7 @@ describe('AppController (e2e)', () => {
         nombres: 'E2E',
         apellidos: 'Estudiante',
         email: `e2e.estudiante.${runId}@test.dev`,
-        password: 'e2e',
+        password,
         role: 'ESTUDIANTE',
       },
     });

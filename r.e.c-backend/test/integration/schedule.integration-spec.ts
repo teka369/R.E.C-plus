@@ -93,7 +93,7 @@ async function buildTenant(
 }
 
 describe('Schedule integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tenantA: TenantFixture;
   let tenantB: TenantFixture;
 
@@ -102,7 +102,7 @@ describe('Schedule integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -121,7 +121,7 @@ describe('Schedule integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── Weekly entries ──────────────────────────────────────────────────────

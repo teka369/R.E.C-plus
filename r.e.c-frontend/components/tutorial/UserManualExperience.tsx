@@ -139,10 +139,12 @@ export default function UserManualExperience() {
   const [openFaq, setOpenFaq] = useState<string | null>(MANUAL_FAQS[0]?.id ?? null);
 
   const chapters = useMemo(() => chaptersForRole(role), [role]);
-
-  useEffect(() => {
-    setActiveId(chapters[0]?.id ?? "");
-  }, [chapters]);
+  const firstChapterId = chapters[0]?.id ?? "";
+  const [chapterKey, setChapterKey] = useState(firstChapterId);
+  if (firstChapterId !== chapterKey) {
+    setChapterKey(firstChapterId);
+    setActiveId(firstChapterId);
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;

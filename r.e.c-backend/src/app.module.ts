@@ -19,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RecoverySettingsModule } from './recovery-settings/recovery-settings.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { TenantBoundaryGuard } from './common/guards/tenant-boundary.guard';
+import { MustChangePasswordGuard } from './auth/must-change-password.guard';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { RedisCacheModule } from './common/cache/cache.module';
 import { HealthModule } from './health/health.module';
@@ -72,9 +73,10 @@ async function redisThrottlerStorageOrUndefined(
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
-          process.env.NODE_ENV !== 'production'
+          process.env.NODE_ENV === 'development'
             ? { target: 'pino-pretty', options: { singleLine: true } }
             : undefined,
+        autoLogging: process.env.NODE_ENV !== 'test',
         redact: ['req.headers.authorization'],
         serializers: {
           req(req: { method: string; url: string }) {
@@ -99,7 +101,12 @@ async function redisThrottlerStorageOrUndefined(
           }
         }
         return {
-          throttlers: [{ ttl: 60_000, limit: isTest ? 10_000 : 100 }],
+          throttlers: [
+            {
+              ttl: isTest ? 1_000 : 60_000,
+              limit: isTest ? 10_000 : 100,
+            },
+          ],
           storage,
         };
       },
@@ -131,6 +138,10 @@ async function redisThrottlerStorageOrUndefined(
     {
       provide: APP_GUARD,
       useClass: TenantBoundaryGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: MustChangePasswordGuard,
     },
     {
       provide: APP_INTERCEPTOR,

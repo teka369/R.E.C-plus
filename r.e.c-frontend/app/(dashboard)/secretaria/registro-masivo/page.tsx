@@ -609,6 +609,7 @@ export default function RegistroMasivoPage() {
                     <th className="p-2 text-left">#</th>
                     <th className="p-2 text-left">Estado</th>
                     <th className="p-2 text-left">Código</th>
+                    <th className="p-2 text-left">Contraseña temporal</th>
                     <th className="p-2 text-left">Detalle</th>
                   </tr>
                 </thead>
@@ -618,6 +619,7 @@ export default function RegistroMasivoPage() {
                       <td className="p-2">{r.index + 1}</td>
                       <td className="p-2">{r.id ? "OK" : "ERROR"}</td>
                       <td className="p-2 font-mono">{r.codigo ?? "—"}</td>
+                      <td className="p-2 font-mono">{r.temporaryPassword ?? "—"}</td>
                       <td className="p-2">{r.id ? `ID ${r.id}` : (r.error || "")}</td>
                     </tr>
                   ))}
@@ -626,7 +628,7 @@ export default function RegistroMasivoPage() {
             </div>
             {result.created > 0 && (
               <p className="mt-2 text-xs text-rec-warning-text bg-rec-warning-bg border border-rec-warning-border rounded-lg p-3">
-                <strong>Importante:</strong> El código de cada usuario es su contraseña inicial. Comparta los códigos con los usuarios para que puedan acceder a la plataforma.
+                <strong>Importante:</strong> La contraseña temporal no es el código. Compártala por un canal aparte y pida cambiarla en el primer acceso.
               </p>
             )}
           </div>

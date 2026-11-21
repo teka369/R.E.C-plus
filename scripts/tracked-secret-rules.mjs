@@ -1,0 +1,26 @@
+export function isBlockedTrackedPath(path) {
+  const base = path.split("/").pop() ?? path;
+  const allowedExample =
+    path.endsWith(".example") ||
+    path.endsWith(".env.example") ||
+    /\.env\.[^/]+\.example$/.test(path);
+  if (
+    base === ".env" ||
+    base === ".env.local" ||
+    base === ".env.test" ||
+    base === ".env.production" ||
+    base === ".env.development" ||
+    base === ".env.docker"
+  ) {
+    return true;
+  }
+  if (base.startsWith(".env.") && !allowedExample) return true;
+  if (
+    path.startsWith("r.e.c-backend/uploads/") ||
+    path.includes("/uploads/study-materials/")
+  ) {
+    return true;
+  }
+  if (base === "rec-secrets.env" || base.endsWith(".secrets.env") || base === "key.md") return true;
+  return false;
+}

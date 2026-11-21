@@ -133,7 +133,7 @@ async function buildTenant(
 }
 
 describe('Materials integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tenantA: TenantFixture;
   let tenantB: TenantFixture;
 
@@ -142,7 +142,7 @@ describe('Materials integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -162,7 +162,7 @@ describe('Materials integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── Syllabus ────────────────────────────────────────────────────────────

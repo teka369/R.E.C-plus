@@ -13,8 +13,8 @@ const HASHED_PASSWORD = bcrypt.hashSync(TEST_PASSWORD, 10);
 interface TenantFixture {
   institution: { id: number };
   secretaria: { id: number; email: string };
-  profesor: { id: number; email: string };
-  estudiante: { id: number; email: string };
+  profesor: { id: number; email: string; publicId: string };
+  estudiante: { id: number; email: string; publicId: string };
   secretariaToken: string;
   profesorToken: string;
   estudianteToken: string;
@@ -92,7 +92,7 @@ async function buildTenant(
 }
 
 describe('Users integration', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication<App> | undefined;
   let tenantA: TenantFixture;
   let tenantB: TenantFixture;
   let superAdmin: { id: number; email: string };
@@ -103,7 +103,7 @@ describe('Users integration', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -135,7 +135,7 @@ describe('Users integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   // ─── GET /users/me ───────────────────────────────────────────────────────
@@ -225,7 +225,7 @@ describe('Users integration', () => {
   describe('PATCH /users/:id (actualizar)', () => {
     it('SECRETARIA puede actualizar usuario de su institución → 200', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/users/${tenantA.profesor.id}`)
+        .patch(`/users/${tenantA.profesor.publicId}`)
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`)
         .send({ nombres: 'NuevoNombre' });
 
@@ -236,7 +236,7 @@ describe('Users integration', () => {
 
     it('SECRETARIA no puede actualizar usuario de otra institución → 400', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/users/${tenantB.profesor.id}`)
+        .patch(`/users/${tenantB.profesor.publicId}`)
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`)
         .send({ nombres: 'Intruso' });
 
@@ -246,7 +246,7 @@ describe('Users integration', () => {
 
     it('Campos inválidos → 400', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/users/${tenantA.profesor.id}`)
+        .patch(`/users/${tenantA.profesor.publicId}`)
         .set('Authorization', `Bearer ${tenantA.secretariaToken}`)
         .send({ email: 'no-es-un-email' });
 
@@ -285,7 +285,7 @@ describe('Users integration', () => {
 
     it('ESTUDIANTE no puede actualizar usuarios via PATCH /users/:id → 403', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/users/${tenantA.estudiante.id}`)
+        .patch(`/users/${tenantA.estudiante.publicId}`)
         .set('Authorization', `Bearer ${tenantA.estudianteToken}`)
         .send({ nombres: 'Cambio no permitido' });
 
@@ -302,7 +302,7 @@ describe('Users integration', () => {
 
     it('SUPER_ADMIN puede actualizar usuario de cualquier institución → 200', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/users/${tenantB.profesor.id}`)
+        .patch(`/users/${tenantB.profesor.publicId}`)
         .set('Authorization', `Bearer ${superAdminToken}`)
         .send({ nombres: 'EditadoPorAdmin' });
 

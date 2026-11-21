@@ -18,7 +18,7 @@ function CrearUsuarioContent() {
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("ESTUDIANTE");
   const [error, setError] = useState<string | null>(null);
-  const [createdUser, setCreatedUser] = useState<{ codigo: string; nombres: string; apellidos: string } | null>(null);
+  const [createdUser, setCreatedUser] = useState<{ codigo: string; nombres: string; apellidos: string; temporaryPassword?: string } | null>(null);
   const [instDomain, setInstDomain] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +59,12 @@ function CrearUsuarioContent() {
         password: password.trim() || undefined,
         role,
       });
-      setCreatedUser({ codigo: res.codigo, nombres: res.nombres, apellidos: res.apellidos });
+      setCreatedUser({
+        codigo: res.codigo,
+        nombres: res.nombres,
+        apellidos: res.apellidos,
+        temporaryPassword: res.temporaryPassword,
+      });
     } catch (error: unknown) {
       setError(getErrorMessage(error, "Error al crear usuario"));
     }
@@ -71,7 +76,7 @@ function CrearUsuarioContent() {
   };
 
   if (createdUser) {
-    const usedPassword = password.trim() || createdUser.codigo;
+    const usedPassword = password.trim() || createdUser.temporaryPassword || "";
     return (
       <section className="sec-page space-y-5">
         <div className="sec-hero">
@@ -91,7 +96,7 @@ function CrearUsuarioContent() {
             <p className="mt-2 text-xs text-rec-warning-text">
               {password.trim()
                 ? "Se usó la contraseña proporcionada."
-                : "La contraseña inicial es el mismo código. El usuario debe cambiarla en su primer acceso desde \"¿Olvidaste tu contraseña?\"."}
+                : "Se generó una contraseña temporal distinta del código. El usuario debe cambiarla en el primer acceso."}
             </p>
           </div>
           <Button onClick={handleClose}>Continuar</Button>

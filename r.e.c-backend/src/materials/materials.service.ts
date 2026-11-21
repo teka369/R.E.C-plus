@@ -35,6 +35,11 @@ import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
 import { FirebaseAdminService } from '../services/firebase-admin.service';
 import { validateMimeByMagic } from '../common/utils/mime-validator';
+import {
+  isServerIssuedStudyPath,
+  signStudyUpload,
+  verifyStudyUpload,
+} from './upload-token.util';
 
 @Injectable()
 export class MaterialsService extends TenantScopedService {
@@ -232,12 +237,44 @@ export class MaterialsService extends TenantScopedService {
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, file.buffer);
 
+    const storedPath = relativePath.replace(/\\/g, '/');
     return {
-      filePath: relativePath.replace(/\\/g, '/'),
+      filePath: storedPath,
+      uploadToken: signStudyUpload(actor.userId, storedPath),
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.buffer.length,
     };
+  }
+
+  private acceptedStudyFilePath(
+    actor: Actor,
+    filePath: string | undefined,
+    uploadToken: string | undefined,
+  ): string | undefined {
+    if (!filePath) return undefined;
+    if (
+      !isServerIssuedStudyPath(actor.userId, filePath) ||
+      !verifyStudyUpload(actor.userId, filePath, uploadToken)
+    ) {
+      throw new BadRequestException(
+        'filePath solo se acepta si lo emitió el upload de este profesor',
+      );
+    }
+    return filePath;
+  }
+
+  private resolveUpdatedFilePath(
+    actor: Actor,
+    currentPath: string | null,
+    dto: { filePath?: string | null; uploadToken?: string },
+  ): string | null | undefined {
+    if (dto.filePath === undefined) return undefined;
+    if (dto.filePath === null || dto.filePath === '') return null;
+    if (currentPath && dto.filePath === currentPath) return undefined;
+    return (
+      this.acceptedStudyFilePath(actor, dto.filePath, dto.uploadToken) ?? null
+    );
   }
 
   async createStudyMaterial(actor: Actor, dto: CreateStudyMaterialDto) {
@@ -251,11 +288,15 @@ export class MaterialsService extends TenantScopedService {
         teacherId: actor.userId,
         title: dto.title,
         description: dto.description,
-        type: dto.type as MaterialType,
+        type: dto.type,
         resourceUrl: dto.resourceUrl,
         imageUrl: dto.imageUrl,
-        filePath: dto.filePath,
-        visibility: dto.visibility as Visibility,
+        filePath: this.acceptedStudyFilePath(
+          actor,
+          dto.filePath,
+          dto.uploadToken,
+        ),
+        visibility: dto.visibility,
       },
     });
 
@@ -322,7 +363,7 @@ export class MaterialsService extends TenantScopedService {
         type: (dto.type as MaterialType | undefined) ?? undefined,
         resourceUrl: dto.resourceUrl,
         imageUrl: dto.imageUrl,
-        filePath: dto.filePath,
+        filePath: this.resolveUpdatedFilePath(actor, material.filePath, dto),
         visibility: (dto.visibility as Visibility | undefined) ?? undefined,
       },
     });
@@ -607,8 +648,7 @@ export class MaterialsService extends TenantScopedService {
         groupId: dto.groupId,
         teacherId: actor.userId,
         title: dto.title,
-        status:
-          (dto.status as SyllabusStatus | undefined) ?? SyllabusStatus.BORRADOR,
+        status: dto.status ?? SyllabusStatus.BORRADOR,
         duration: dto.duration,
         content: dto.content,
       },
@@ -655,8 +695,17 @@ export class MaterialsService extends TenantScopedService {
   }
 
   async updateSyllabus(actor: Actor, id: number, dto: UpdateSyllabusDto) {
-    const syl = await this.prisma.syllabus.findUnique({ where: { id } });
+    const syl = await this.prisma.syllabus.findUnique({
+      where: { id },
+      include: { group: { select: { institutionId: true } } },
+    });
     if (!syl) throw new NotFoundException('Temario no encontrado');
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      const institutionId = this.getActorInstitutionId(actor);
+      if (!syl.group || syl.group.institutionId !== institutionId) {
+        throw new ForbiddenException('Temario fuera de su institucion');
+      }
+    }
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede editar');
     }
@@ -664,7 +713,7 @@ export class MaterialsService extends TenantScopedService {
       where: { id },
       data: {
         title: dto.title,
-        status: dto.status as SyllabusStatus | undefined,
+        status: dto.status,
         duration: dto.duration,
         content: dto.content,
       },
@@ -679,8 +728,17 @@ export class MaterialsService extends TenantScopedService {
   }
 
   async deleteSyllabus(actor: Actor, id: number) {
-    const syl = await this.prisma.syllabus.findUnique({ where: { id } });
+    const syl = await this.prisma.syllabus.findUnique({
+      where: { id },
+      include: { group: { select: { institutionId: true } } },
+    });
     if (!syl) throw new NotFoundException('Temario no encontrado');
+    if (actor.role !== UserRole.SUPER_ADMIN) {
+      const institutionId = this.getActorInstitutionId(actor);
+      if (!syl.group || syl.group.institutionId !== institutionId) {
+        throw new ForbiddenException('Temario fuera de su institucion');
+      }
+    }
     if (actor.role !== UserRole.PROFESOR || syl.teacherId !== actor.userId) {
       throw new ForbiddenException('Solo el autor puede eliminar');
     }
@@ -741,7 +799,8 @@ export class MaterialsService extends TenantScopedService {
     if (!syl) throw new NotFoundException('Temario no encontrado');
     if (
       actor.role !== UserRole.SUPER_ADMIN &&
-      syl.group.institutionId !== this.getActorInstitutionId(actor)
+      (!syl.group ||
+        syl.group.institutionId !== this.getActorInstitutionId(actor))
     ) {
       throw new ForbiddenException('No autorizado');
     }

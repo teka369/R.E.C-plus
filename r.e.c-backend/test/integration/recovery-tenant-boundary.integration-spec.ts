@@ -1,24 +1,32 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../../src/app.module';
-import { JwtService } from '@nestjs/jwt';
 import { cleanTestDb } from '../helpers/db-cleanup';
 import { prismaTestClient as prisma } from '../helpers/prisma-test-client';
 
+const TEST_PASSWORD = 'Test1234!';
+const HASHED_PASSWORD = bcrypt.hashSync(TEST_PASSWORD, 10);
+
 describe('Recovery tenant boundary integration', () => {
-  let app: INestApplication<App>;
-  let jwtService: JwtService;
+  let app: INestApplication<App> | undefined;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({ forceCloseConnections: true });
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
-    jwtService = app.get(JwtService);
   });
 
   beforeEach(async () => {
@@ -26,7 +34,7 @@ describe('Recovery tenant boundary integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('rechaza a SECRETARIA de tenant A al actualizar solicitud de tenant B', async () => {
@@ -43,7 +51,7 @@ describe('Recovery tenant boundary integration', () => {
         nombres: 'Sec',
         apellidos: 'A',
         email: `sec.a.${Date.now()}@test.edu`,
-        password: '$2a$10$abcdefghijklmnopqrstuv',
+        password: HASHED_PASSWORD,
         role: 'SECRETARIA',
       },
     });
@@ -120,16 +128,14 @@ describe('Recovery tenant boundary integration', () => {
       },
     });
 
-    const token = jwtService.sign({
-      sub: secretariaA.id,
-      role: secretariaA.role,
-      email: secretariaA.email,
-      institutionId: institutionA.id,
-    });
+    const login = await request(app!.getHttpServer())
+      .post('/auth/login')
+      .send({ email: secretariaA.email, password: TEST_PASSWORD });
+    expect(login.status).toBe(201);
 
-    const response = await request(app.getHttpServer())
+    const response = await request(app!.getHttpServer())
       .patch(`/recovery/requests/${requestB.id}/status`)
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${login.body.access_token}`)
       .send({ status: 'APPROVED' });
 
     expect(response.status).toBe(403);

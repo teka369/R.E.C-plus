@@ -14,6 +14,7 @@ import {
 
 import { Actor } from '../common/tenant';
 import { TenantScopedService } from '../common/tenant-scoped.service';
+import { generateInitialPassword } from './initial-password.util';
 
 function createId(): string {
   return 'c' + randomBytes(16).toString('hex');
@@ -133,12 +134,17 @@ export class UsersService extends TenantScopedService {
       }
     }
 
-    // Si no se provee contraseña, usar el código como contraseña inicial
     const codigo = createId();
-    const password = data.password || codigo;
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const generatedPassword = !data.password;
+    const plainPassword = data.password || generateInitialPassword();
+    if (plainPassword === codigo) {
+      throw new BadRequestException(
+        'La contraseña no puede ser el código de usuario',
+      );
+    }
+    const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         institutionId,
         nombres: data.nombres,
@@ -147,6 +153,7 @@ export class UsersService extends TenantScopedService {
         password: hashedPassword,
         codigo,
         role,
+        mustChangePassword: generatedPassword,
       },
       select: {
         id: true,
@@ -157,10 +164,14 @@ export class UsersService extends TenantScopedService {
         email: true,
         codigo: true,
         role: true,
+        mustChangePassword: true,
         createdAt: true,
         updatedAt: true,
       },
     });
+
+    if (!generatedPassword) return created;
+    return { ...created, temporaryPassword: plainPassword };
   }
 
   async findAll(
@@ -319,6 +330,7 @@ export class UsersService extends TenantScopedService {
       index: number;
       id?: number;
       codigo?: string;
+      temporaryPassword?: string;
       error?: string;
     }[] = [];
     const actorInstitutionId =
@@ -346,10 +358,17 @@ export class UsersService extends TenantScopedService {
             ? (dto.institutionId ?? null)
             : actorInstitutionId;
 
-        // Si no se provee contraseña, usar el código como contraseña inicial
         const codigo = createId();
-        const password = dto.password || codigo;
-        const hashedPassword = await bcrypt.hash(password, 12);
+        const generatedPassword = !dto.password;
+        const plainPassword = dto.password || generateInitialPassword();
+        if (plainPassword === codigo) {
+          results.push({
+            index: i,
+            error: 'La contraseña no puede ser el código de usuario',
+          });
+          continue;
+        }
+        const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
         const created = await this.prisma.user.create({
           data: {
@@ -360,9 +379,15 @@ export class UsersService extends TenantScopedService {
             password: hashedPassword,
             codigo,
             role,
+            mustChangePassword: generatedPassword,
           },
         });
-        results.push({ index: i, id: created.id, codigo: created.codigo });
+        results.push({
+          index: i,
+          id: created.id,
+          codigo: created.codigo,
+          ...(generatedPassword ? { temporaryPassword: plainPassword } : {}),
+        });
       } catch (error: unknown) {
         const msg = this.getErrorMessage(error);
         results.push({ index: i, error: msg });
@@ -378,7 +403,7 @@ export class UsersService extends TenantScopedService {
     const hashed = await bcrypt.hash(newPassword, 12);
     return this.prisma.user.update({
       where: { id },
-      data: { password: hashed },
+      data: { password: hashed, mustChangePassword: false },
       select: {
         publicId: true,
         nombres: true,
@@ -413,7 +438,7 @@ export class UsersService extends TenantScopedService {
     const hashed = await bcrypt.hash(newPassword, 12);
     return this.prisma.user.update({
       where: { id },
-      data: { password: hashed },
+      data: { password: hashed, mustChangePassword: false },
       select: {
         publicId: true,
         nombres: true,
@@ -461,9 +486,7 @@ export class UsersService extends TenantScopedService {
     return tokens.map((t) => t.token);
   }
 
-  async getPushTokensByInstitution(
-    institutionId: number,
-  ): Promise<string[]> {
+  async getPushTokensByInstitution(institutionId: number): Promise<string[]> {
     const tokens = await this.prisma.pushToken.findMany({
       where: { user: { institutionId } },
       select: { token: true },

@@ -587,39 +587,40 @@ export class CommunicationService extends TenantScopedService {
   ): Promise<ActivityFeedItemDto[]> {
     const institutionId = this.getActorInstitutionId(actor);
 
-    const [students, teacherAssignments, groups, recoveries] = await Promise.all([
-      this.prisma.user.findMany({
-        where: { institutionId, role: UserRole.ESTUDIANTE },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        select: { id: true, nombres: true, apellidos: true, createdAt: true },
-      }),
-      this.prisma.teacherAssignment.findMany({
-        where: { group: { institutionId } },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        include: {
-          teacher: { select: { nombres: true, apellidos: true } },
-          group: { select: { nombre: true } },
-          subject: { select: { nombre: true } },
-        },
-      }),
-      this.prisma.group.findMany({
-        where: { institutionId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        select: { id: true, nombre: true, createdAt: true },
-      }),
-      this.prisma.recoveryRequest.findMany({
-        where: { group: { institutionId } },
-        orderBy: { requestedAt: 'desc' },
-        take: limit,
-        include: {
-          student: { select: { nombres: true, apellidos: true } },
-          subject: { select: { nombre: true } },
-        },
-      }),
-    ]);
+    const [students, teacherAssignments, groups, recoveries] =
+      await Promise.all([
+        this.prisma.user.findMany({
+          where: { institutionId, role: UserRole.ESTUDIANTE },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          select: { id: true, nombres: true, apellidos: true, createdAt: true },
+        }),
+        this.prisma.teacherAssignment.findMany({
+          where: { group: { institutionId } },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          include: {
+            teacher: { select: { nombres: true, apellidos: true } },
+            group: { select: { nombre: true } },
+            subject: { select: { nombre: true } },
+          },
+        }),
+        this.prisma.group.findMany({
+          where: { institutionId },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          select: { id: true, nombre: true, createdAt: true },
+        }),
+        this.prisma.recoveryRequest.findMany({
+          where: { group: { institutionId } },
+          orderBy: { requestedAt: 'desc' },
+          take: limit,
+          include: {
+            student: { select: { nombres: true, apellidos: true } },
+            subject: { select: { nombre: true } },
+          },
+        }),
+      ]);
 
     const studentItems: ActivityFeedItemDto[] = students.map((student) => ({
       type: 'STUDENT_ENROLLED',
@@ -628,14 +629,13 @@ export class CommunicationService extends TenantScopedService {
       href: `/secretaria/estudiantes/${student.id}`,
     }));
 
-    const teacherAssignmentItems: ActivityFeedItemDto[] = teacherAssignments.map(
-      (assignment) => ({
+    const teacherAssignmentItems: ActivityFeedItemDto[] =
+      teacherAssignments.map((assignment) => ({
         type: 'TEACHER_ASSIGNED',
         description: `${assignment.teacher.nombres} ${assignment.teacher.apellidos} asignado a ${assignment.group.nombre} — ${assignment.subject.nombre}`,
         date: assignment.createdAt.toISOString(),
         href: '/secretaria/docentes',
-      }),
-    );
+      }));
 
     const groupItems: ActivityFeedItemDto[] = groups.map((group) => ({
       type: 'GROUP_CREATED',
@@ -718,7 +718,11 @@ export class CommunicationService extends TenantScopedService {
       },
     });
     if (saved.userId) {
-      this.appGatewayService.emitToUser(saved.userId, 'notification:new', saved);
+      this.appGatewayService.emitToUser(
+        saved.userId,
+        'notification:new',
+        saved,
+      );
     } else {
       this.appGatewayService.emitToTenant(
         this.getActorInstitutionId(actor),
