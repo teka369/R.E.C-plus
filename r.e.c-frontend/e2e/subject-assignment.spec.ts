@@ -24,13 +24,24 @@ test.describe('Asignación de materias (SECRETARIA)', () => {
       await expect(row.getByText('Asignado correctamente')).toBeVisible();
     }
 
-    await row.getByRole('button', { name: /Ver asignaciones|Ocultar asignaciones/ }).click();
-    await expect(page.getByRole('cell', { name: fixture.spareSubject })).toBeVisible();
+    const toggle = row.getByRole('button', {
+      name: /Ver asignaciones|Ocultar asignaciones/,
+    });
+    if ((await toggle.innerText()).includes('Ver asignaciones')) {
+      await toggle.click();
+    }
+    await expect(
+      page.getByRole('cell', { name: fixture.spareSubject, exact: true }),
+    ).toBeVisible();
 
     await page.reload();
     await expect(row).toBeVisible({ timeout: 20_000 });
     await row.getByRole('button', { name: 'Ver asignaciones' }).click();
-    await expect(page.getByRole('cell', { name: fixture.groupOptionLabel })).toBeVisible();
-    await expect(page.getByRole('cell', { name: fixture.spareSubject })).toBeVisible();
+    await expect(
+      page.getByRole('cell', { name: fixture.groupOptionLabel, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('cell', { name: fixture.spareSubject, exact: true }),
+    ).toBeVisible();
   });
 });

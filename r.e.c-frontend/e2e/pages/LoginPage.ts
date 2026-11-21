@@ -40,12 +40,10 @@ export class LoginPage {
   /* ── Assertions ── */
 
   errorMessage(): Locator {
-    return this.page.locator('.bg-red-50');
+    return this.page.getByText(/credenciales inválidas/i);
   }
 
-  async expectErrorVisible(text?: string | RegExp) {
-    const loc = this.errorMessage();
-    await expect(loc).toBeVisible();
-    if (text) await expect(loc).toContainText(text);
+  async expectErrorVisible(text: string | RegExp = /credenciales inválidas/i) {
+    await expect(this.page.getByText(text)).toBeVisible({ timeout: 10_000 });
   }
 }

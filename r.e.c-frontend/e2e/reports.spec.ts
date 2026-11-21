@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissWelcomeIfPresent } from './fixtures/dismiss-welcome';
 import { loadE2eFixture } from './fixtures/load-fixture';
 
 test.describe('Reporte académico del estudiante', () => {
@@ -7,6 +8,7 @@ test.describe('Reporte académico del estudiante', () => {
   }) => {
     const fixture = loadE2eFixture();
     await page.goto('/estudiante/gestion-academica');
+    await dismissWelcomeIfPresent(page);
     const subject = page.getByRole('button', { name: fixture.subject });
     await expect(subject).toBeVisible({ timeout: 20_000 });
     await subject.click();
