@@ -6,7 +6,10 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
-export E2E_DATABASE="${E2E_DATABASE:-1}"
+if [ -z "${E2E_DATABASE:-}" ] || [ "${E2E_DATABASE}" != "1" ]; then
+  echo "E2E_DATABASE=1 es obligatorio de forma explícita antes de ejecutar E2E desechable."
+  exit 1
+fi
 if [ -z "${DATABASE_URL:-}" ]; then
   echo "DATABASE_URL es obligatorio y debe apuntar a recedu_e2e en loopback."
   exit 1
@@ -23,6 +26,7 @@ export E2E_BASE_URL="${E2E_BASE_URL:-http://127.0.0.1:3000}"
 export E2E_FIXTURE="${E2E_FIXTURE:-$root/r.e.c-backend/test/e2e/.generated/fixture.json}"
 
 cd "$root/r.e.c-backend"
+npx ts-node --project test/e2e/tsconfig.seed.json test/e2e/run-e2e-guard.ts
 npx prisma generate
 npx prisma migrate deploy
 NODE_ENV=test npm run test:e2e
