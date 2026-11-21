@@ -22,9 +22,7 @@ const REMOTE_MARKERS = [
   'fly.io',
 ];
 
-export type E2eDatabaseInput =
-  | string
-  | { databaseUrl?: string; directUrl?: string };
+export type E2eDatabaseInput = string | { databaseUrl?: string; directUrl?: string };
 
 export interface ParsedE2eUrl {
   host: string;
@@ -69,9 +67,9 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
     );
   }
 
-  const database = decodeURIComponent(
-    url.pathname.replace(/^\//, ''),
-  ).split('/')[0];
+  const database = decodeURIComponent(url.pathname.replace(/^\//, '')).split(
+    '/',
+  )[0];
   if (!DISPOSABLE_DB.test(database)) {
     reject(
       `Se rechazó el E2E: la base debe llamarse recedu_e2e (recibido "${database}").`,
