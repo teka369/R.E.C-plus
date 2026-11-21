@@ -21,7 +21,8 @@ describe('assertE2eDatabase', () => {
 
   it('rechaza una URL runtime remota aunque el flag esté activo', () => {
     process.env.E2E_DATABASE = '1';
-    const remote = 'postgresql://postgres:postgres@ep-cool.neon.tech/recedu_e2e';
+    const remote =
+      'postgresql://postgres:postgres@ep-cool.neon.tech/recedu_e2e';
     expect(() => assertE2eDatabase(remote)).toThrow(/proveedor remoto/);
   });
 
