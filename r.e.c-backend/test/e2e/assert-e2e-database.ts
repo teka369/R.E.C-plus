@@ -69,7 +69,7 @@ export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
   let directDatabaseUrl: string | undefined;
 
   if (typeof input === 'string' || input === undefined) {
-    databaseUrl = input ?? process.env.DATABASE_URL;
+    databaseUrl = (input as string | undefined) ?? process.env.DATABASE_URL;
     directDatabaseUrl = directUrl ?? process.env.DATABASE_DIRECT_URL;
   } else {
     const opts = input as { databaseUrl?: string; directUrl?: string };
