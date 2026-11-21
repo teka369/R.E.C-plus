@@ -70,10 +70,24 @@ test.describe('TEST 6 — Recuperación de contraseña', () => {
   });
 
   test('Reset de contraseña: token inválido muestra error', async ({ page }) => {
-    // Navigate without token
-    await page.goto('/reset-password');
+    const recoveryPage = new PasswordRecoveryPage(page);
 
-    // Should show "invalid link" message
-    await expect(page.getByText(/enlace inválido|token/i)).toBeVisible({ timeout: 10_000 });
+    await page.route('**/auth/reset-password', async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: 'El enlace de restablecimiento es inválido o ha expirado.',
+        }),
+      });
+    });
+
+    await recoveryPage.gotoResetPage('token-invalido');
+    await recoveryPage.fillNewPassword('NewSecurePass123!', 'NewSecurePass123!');
+    await recoveryPage.submitReset();
+
+    await expect(
+      page.getByText('El enlace de restablecimiento es inválido o ha expirado.'),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });

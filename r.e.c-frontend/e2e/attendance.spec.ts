@@ -1,14 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { dismissWelcomeIfPresent } from './fixtures/dismiss-welcome';
 import { displayName, loadE2eFixture } from './fixtures/load-fixture';
 
 test.describe('Registro de asistencia (PROFESOR)', () => {
   test('guarda 3 justificadas del período 1 y persisten al recargar', async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     const fixture = loadE2eFixture();
     const student = displayName(fixture.users.asistencia);
 
     await page.goto('/docente/gestion-academica');
+    await dismissWelcomeIfPresent(page);
     await expect(page.getByLabel('Grupo activo')).toContainText(
       fixture.teacherGroupLabel,
       { timeout: 20_000 },

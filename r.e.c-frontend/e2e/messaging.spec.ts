@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissWelcomeIfPresent } from './fixtures/dismiss-welcome';
 import { loadE2eFixture } from './fixtures/load-fixture';
 
 test.describe('Feedback (PROFESOR → ESTUDIANTE)', () => {
@@ -10,6 +11,7 @@ test.describe('Feedback (PROFESOR → ESTUDIANTE)', () => {
     const content = 'Observación E2E persistida en el listado del grupo.';
 
     await page.goto('/docente/feedback');
+    await dismissWelcomeIfPresent(page);
     await expect(page.getByRole('button', { name: 'Nuevo feedback' })).toBeVisible({
       timeout: 20_000,
     });

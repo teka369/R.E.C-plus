@@ -39,7 +39,8 @@ export class PasswordRecoveryPage {
   /* ── Reset password form ── */
 
   async gotoResetPage(token: string) {
-    await this.page.goto(`/reset-password?token=${token}`);
+    await this.page.goto('/reset-password');
+    await this.page.fill('#reset-token', token);
   }
 
   async fillNewPassword(password: string, confirm: string) {
