@@ -23,7 +23,9 @@ describe('assertE2eDatabase', () => {
   it('rechaza un host que no es loopback', () => {
     process.env.E2E_DATABASE = '1';
     expect(() =>
-      assertE2eDatabase('postgresql://postgres:postgres@db.internal/recedu_e2e'),
+      assertE2eDatabase(
+        'postgresql://postgres:postgres@db.internal/recedu_e2e',
+      ),
     ).toThrow(/no es loopback/);
   });
 

@@ -6,10 +6,7 @@ import { assertE2eDatabase } from './assert-e2e-database';
 
 const SLUG = 'e2e-recedu';
 const PASSWORD = 'E2e-Password-1';
-const FIXTURE_PATH = resolve(
-  __dirname,
-  '.generated/fixture.json',
-);
+const FIXTURE_PATH = resolve(__dirname, '.generated/fixture.json');
 
 export type E2eFixture = {
   password: string;
@@ -136,8 +133,16 @@ async function main() {
     });
     await prisma.groupSubject.createMany({
       data: [
-        { groupId: group.id, subjectId: subject.id, academicPeriodId: period.id },
-        { groupId: group.id, subjectId: spare.id, academicPeriodId: period.id },
+        {
+          groupId: group.id,
+          subjectId: subject.id,
+          academicPeriodId: period.id,
+        },
+        {
+          groupId: group.id,
+          subjectId: spare.id,
+          academicPeriodId: period.id,
+        },
       ],
     });
     const offering = await prisma.academicOffering.create({
