@@ -273,6 +273,31 @@ describe('Aislamiento multi-tenant: Tenant A NO accede a datos de Tenant B', () 
       const titles = (res.body.data ?? res.body).map((m: any) => m.title);
       expect(titles).not.toContain(tenantB.material.title);
     });
+
+    it('PUT /materials/study/:id de B no modifica el material', async () => {
+      const res = await request(app.getHttpServer())
+        .put(`/materials/study/${tenantB.material.id}`)
+        .set('Authorization', `Bearer ${tenantA.profesorToken}`)
+        .send({ title: 'Modificado por A' });
+      expect([403, 404]).toContain(res.status);
+
+      const material = await prisma.studyMaterial.findUnique({
+        where: { id: tenantB.material.id },
+      });
+      expect(material?.title).toBe(tenantB.material.title);
+    });
+
+    it('DELETE /materials/study/:id de B no elimina el material', async () => {
+      const res = await request(app.getHttpServer())
+        .delete(`/materials/study/${tenantB.material.id}`)
+        .set('Authorization', `Bearer ${tenantA.profesorToken}`);
+      expect([403, 404]).toContain(res.status);
+
+      const material = await prisma.studyMaterial.findUnique({
+        where: { id: tenantB.material.id },
+      });
+      expect(material).not.toBeNull();
+    });
   });
 
   // ─── SCHEDULE ─────────────────────────────────────────────────────
