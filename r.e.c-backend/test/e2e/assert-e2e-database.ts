@@ -21,9 +21,7 @@ function validateE2eUrl(connectionString: string) {
   const lowered = connectionString.toLowerCase();
   const remote = REMOTE_MARKERS.find((marker) => lowered.includes(marker));
   if (remote) {
-    throw new Error(
-      `Se rechazó el E2E: la URL apunta a un proveedor remoto (${remote}).`,
-    );
+    throw new Error('Se rechazo el E2E: la URL apunta a un proveedor remoto (' + remote + ').');
   }
 
   let url: URL;
