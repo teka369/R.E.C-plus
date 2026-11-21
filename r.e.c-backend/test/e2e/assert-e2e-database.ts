@@ -22,7 +22,12 @@ const REMOTE_MARKERS = [
   'fly.io',
 ];
 
-type ParsedE2eUrl = { host: string; port: string; database: string; protocol: string };
+type ParsedE2eUrl = {
+  host: string;
+  port: string;
+  database: string;
+  protocol: string;
+};
 
 function reject(message: string): never {
   throw new Error(message);
@@ -74,10 +79,7 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
   return { host, port, database, protocol };
 }
 
-export function assertE2eDatabase(
-  input?: unknown,
-  directUrl?: string,
-): void {
+export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
   if (process.env.E2E_DATABASE !== '1') {
     reject('E2E_DATABASE=1 es obligatorio antes de crear o borrar datos E2E.');
   }
