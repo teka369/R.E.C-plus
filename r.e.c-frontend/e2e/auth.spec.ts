@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
-import { TEST_USERS, type TestRole } from './fixtures/users';
+import { testUser, type TestRole } from './fixtures/users';
 
 test.describe('TEST 1 — Autenticación P0', () => {
   /* ─────────────────────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ test.describe('TEST 1 — Autenticación P0', () => {
   for (const { role, description } of loginCases) {
     test(description, async ({ page }) => {
       const loginPage = new LoginPage(page);
-      const user = TEST_USERS[role];
+      const user = testUser(role);
 
       if (role === 'SECRETARIA') {
         await loginPage.loginAsSecretaria(user.email, user.password);
@@ -49,7 +49,7 @@ test.describe('TEST 1 — Autenticación P0', () => {
    * 1c. Logout — limpia cookies y redirige
    * ───────────────────────────────────────────────────────────────────────── */
   test('Logout limpia sesión y redirige a página de login', async ({ page }) => {
-    const user = TEST_USERS.PROFESOR;
+    const user = testUser('PROFESOR');
     const loginPage = new LoginPage(page);
 
     // Login first
