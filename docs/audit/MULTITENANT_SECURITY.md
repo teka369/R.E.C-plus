@@ -46,6 +46,7 @@ Se revisaron los 13 controladores del alcance P1:
 
 - Se mantienen las pruebas existentes; no se eliminaron.
 - Se corrigieron nombres de jobs de CI para distinguir las dos guardias.
+- Se añadieron pruebas de actualización y borrado de materiales entre instituciones.
 - Se añadieron scripts de backup/restore probados contra PostgreSQL desechable.
 
 ## Riesgos residuales

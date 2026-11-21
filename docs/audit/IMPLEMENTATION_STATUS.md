@@ -27,8 +27,6 @@ Rama de integración: `work/audit-recovery` (base `fix/audit-2026-11-11-critical
 - Documentación de operación actualizada.
 
 ## Pendiente (bloqueos externos)
-- Purga histórica de secretos (requiere git-filter-repo/python; no disponible).
-- Rotación de credenciales (requiere acceso a proveedores).
-- Integration tests / migraciones (requiere Postgres).
-- E2E Playwright (requiere backend+frontend corriendo).
+- Rotación de credenciales históricas (requiere acceso a proveedores).
+- Referencias internas de GitHub a blobs antiguos (requiere soporte o acción manual).
 - Despliegue real (requiere credenciales y autorización).

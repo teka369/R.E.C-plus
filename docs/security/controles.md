@@ -29,4 +29,4 @@ No hay evidencia en este repositorio de que esas revocaciones ya se hayan hecho.
 
 ## Purga del historial
 
-Se ejecuto con git-filter-repo en la rama de trabajoá hecha. Requiere copia verificable, `git filter-repo` o equivalente, y autorización expresa para reescribir el remoto. No se hace en esta rama.
+Se ejecutó `git-filter-repo` y se reescribió `main` con autorización del propietario. La copia de respaldo quedó fuera del repositorio. El historial accesible ya no contiene los `.env` ni `uploads/`. Las referencias internas de GitHub (PRs, cachés y forks) pueden conservar blobs y requieren solicitud a soporte o acción manual del propietario.
