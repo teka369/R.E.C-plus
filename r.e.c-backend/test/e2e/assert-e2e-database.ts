@@ -21,7 +21,6 @@ const REMOTE_MARKERS = [
   'railway.app',
   'fly.io',
 ];
-
 type ParsedE2eUrl = {
   host: string;
   port: string;
