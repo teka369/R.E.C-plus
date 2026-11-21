@@ -22,12 +22,7 @@ const REMOTE_MARKERS = [
   'fly.io',
 ];
 
-export interface ParsedE2eUrl {
-  host: string;
-  port: string;
-  database: string;
-  protocol: string;
-}
+type ParsedE2eUrl = { host: string; port: string; database: string; protocol: string };
 
 function reject(message: string): never {
   throw new Error(message);
