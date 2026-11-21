@@ -6,6 +6,7 @@ dist/
 !.env.example
 !.env.*.example
 coverage/
+test/e2e/.generated/
 uploads/
 *.log
 firebase-service-account.json

@@ -231,3 +231,88 @@ jobs:
       - name: Run integration tests
         working-directory: r.e.c-backend
         run: npm run test:integration
+
+  # ──────────────────────────────────────────────
+  # Stage 4 — E2E desechable (Nest + Playwright)
+  # ──────────────────────────────────────────────
+  e2e:
+    name: E2E
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: recedu_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      E2E_DATABASE: "1"
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/recedu_e2e?schema=public
+      DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/recedu_e2e?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-jwt-secret-at-least-32-characters-long
+      JWT_ISSUER: recedu-ci
+      JWT_AUDIENCE: recedu-ci
+      JWT_REFRESH_SECRET: ci-refresh-secret-at-least-32-chars
+      RESEND_API_KEY: re_test_dummy_key_for_ci
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            r.e.c-backend/node_modules
+            r.e.c-frontend/node_modules
+          key: ${{ runner.os }}-e2e-${{ hashFiles('r.e.c-backend/package-lock.json', 'r.e.c-frontend/package-lock.json') }}
+
+      - name: Install backend
+        working-directory: r.e.c-backend
+        run: npm ci
+
+      - name: Install frontend
+        working-directory: r.e.c-frontend
+        run: npm ci
+
+      - name: Remove local env files
+        run: rm -f r.e.c-backend/.env r.e.c-backend/.env.test r.e.c-frontend/.env r.e.c-frontend/.env.local
+
+      - name: Install Playwright Chromium
+        working-directory: r.e.c-frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run disposable E2E
+        run: bash scripts/run-disposable-e2e.sh
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e
+          path: |
+            r.e.c-frontend/playwright-report
+            r.e.c-frontend/test-results
+          retention-days: 7

@@ -1,9 +1,12 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "setupFilesAfterEnv": ["<rootDir>/test/ensure-jwt-env-for-tests.ts"],
+  "rootDir": "..",
+  "setupFilesAfterEnv": [
+    "<rootDir>/test/ensure-jwt-env-for-tests.ts",
+    "<rootDir>/test/e2e/setup-e2e.ts"
+  ],
   "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
+  "testRegex": "test/app\\.e2e-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
