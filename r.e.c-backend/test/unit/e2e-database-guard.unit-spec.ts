@@ -15,7 +15,7 @@ describe('assertE2eDatabase', () => {
     process.env.E2E_DATABASE = '1';
     expect(() =>
       assertE2eDatabase(
-        'postgresql://postgres:secret@ep-cool.neon.tech/recedu_e2e',
+        'postgresql://postgres:postgres@ep-cool.neon.tech/recedu_e2e',
       ),
     ).toThrow(/proveedor remoto/);
   });
@@ -23,14 +23,14 @@ describe('assertE2eDatabase', () => {
   it('rechaza un host que no es loopback', () => {
     process.env.E2E_DATABASE = '1';
     expect(() =>
-      assertE2eDatabase('postgresql://postgres:secret@db.internal/recedu_e2e'),
+      assertE2eDatabase('postgresql://postgres:postgres@db.internal/recedu_e2e'),
     ).toThrow(/no es loopback/);
   });
 
   it('rechaza una base local que no es la desechable', () => {
     process.env.E2E_DATABASE = '1';
     expect(() =>
-      assertE2eDatabase('postgresql://postgres:secret@127.0.0.1/recedu'),
+      assertE2eDatabase('postgresql://postgres:postgres@127.0.0.1/recedu'),
     ).toThrow(/recedu_e2e/);
   });
 
@@ -38,7 +38,7 @@ describe('assertE2eDatabase', () => {
     delete process.env.E2E_DATABASE;
     expect(() =>
       assertE2eDatabase(
-        'postgresql://postgres:secret@127.0.0.1:5432/recedu_e2e',
+        'postgresql://postgres:postgres@127.0.0.1:5432/recedu_e2e',
       ),
     ).toThrow(/E2E_DATABASE=1/);
   });
@@ -47,7 +47,7 @@ describe('assertE2eDatabase', () => {
     process.env.E2E_DATABASE = '1';
     expect(() =>
       assertE2eDatabase(
-        'postgresql://postgres:secret@127.0.0.1:5432/recedu_e2e?schema=public',
+        'postgresql://postgres:postgres@127.0.0.1:5432/recedu_e2e?schema=public',
       ),
     ).not.toThrow();
   });
