@@ -12,7 +12,7 @@ git ls-files > "$list"
 
 is_allowed_env() {
   case "$1" in
-    *.example|.env.example|.env.*.example|.env.coolify.example|*/.env.coolify.example) return 0 ;;
+    *.example|.env.example|.env.*.example) return 0 ;;
     *) return 1 ;;
   esac
 }

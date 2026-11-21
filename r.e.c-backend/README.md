@@ -2,7 +2,7 @@
 
 ## Requisitos
 
-- Node.js 20+
+- Node.js 26
 - PostgreSQL 16+
 
 ## Variables de entorno

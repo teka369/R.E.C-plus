@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
       - name: Block tracked secrets and uploads
         run: node scripts/check-tracked-secrets.mjs
 
@@ -49,7 +49,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
 
       - name: Cache node_modules (${{ matrix.app }})
         uses: actions/cache@v4
@@ -71,9 +71,32 @@ jobs:
           DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/dummy
         run: npx prisma generate
 
+      - name: Validate Prisma schema
+        if: matrix.app == 'r.e.c-backend'
+        working-directory: r.e.c-backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dummy
+          DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/dummy
+        run: npx prisma validate
+
       - name: Run linter
         working-directory: ${{ matrix.app }}
         run: npm run ${{ matrix.lint-script }}
+
+      - name: Build
+        working-directory: ${{ matrix.app }}
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dummy
+          DATABASE_DIRECT_URL: postgresql://postgres:postgres@localhost:5432/dummy
+          JWT_SECRET: ci-jwt-secret-at-least-32-characters-long
+          JWT_REFRESH_SECRET: ci-refresh-secret-at-least-32-chars
+          JWT_ISSUER: recedu-ci
+          JWT_AUDIENCE: recedu-ci
+          NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:4000
+          INTERNAL_API_URL: http://127.0.0.1:4000
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          NEXT_PUBLIC_EMAIL_DOMAIN: example.edu.co
+        run: npm run build
 
   # ──────────────────────────────────────────────
   # Stage 2 — Unit Tests (backend)
@@ -90,7 +113,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
 
       - name: Cache node_modules (backend)
         uses: actions/cache@v4
@@ -179,7 +202,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
 
       - name: Cache node_modules (backend)
         uses: actions/cache@v4

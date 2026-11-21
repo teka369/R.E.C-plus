@@ -1,6 +1,6 @@
 # Pruebas
 
-Entorno de referencia del backend: Node 20 en GitHub Actions, PostgreSQL 15 y Redis 7 solo para integración.
+Entorno de referencia: Node.js 26 en GitHub Actions. La integración usa PostgreSQL 15 y Redis 7.
 
 ## Backend
 
@@ -30,10 +30,10 @@ npm run lint
 npm run build
 ```
 
-`npm run test:e2e` exige la aplicación levantada y cuentas de prueba. No se declara ejecutado si no se corrió.
+`npm run test:e2e` no está en el CI. Playwright arranca solo Next. El login real necesita Nest, PostgreSQL migrado y usuarios de prueba creados en esa base. No hay un seed que cree esas cuentas de forma determinista, así que un job de E2E fallaría o dependería de datos externos. Para ejecutarlo a mano: levanta Postgres, aplica migraciones, crea secretaria, profesor y estudiante, exporta `E2E_*_EMAIL` y `E2E_*_PASSWORD`, arranca el backend y corre `npm run test:e2e` en el frontend.
 
 ## CI
 
-`.github/workflows/ci.yml` corre en `work/audit-recovery` y en `main`. Comprueba secretos rastreados, lint, unitarios del backend e integración contra Postgres y Redis temporales. No despliega.
+`.github/workflows/ci.yml` corre en `work/audit-recovery` y en `main` con Node.js 26. Comprueba secretos rastreados, lint, build de backend y frontend, unitarios, `prisma validate` y la integración contra Postgres y Redis temporales. No despliega.
 
 El último resultado aprobado hay que leerlo en GitHub para el SHA que se va a entregar, no en un documento antiguo.

@@ -4,7 +4,7 @@ Esta guía no despliega nada. La ejecuta quien administra el servidor.
 
 ## Obligatorio
 
-- Node.js 20 y npm.
+- Node.js 26 y npm. Es la línea LTS activa. Node 24 sigue recibiendo correcciones, pero el proyecto se prueba en 26.
 - PostgreSQL 15 o superior, con una base vacía para la aplicación.
 - Un proceso para el backend y otro para el frontend, o el equivalente en el supervisor que ya use el servidor.
 - Disco persistente para `r.e.c-backend/uploads`, con permisos de escritura para el usuario del proceso y copia de seguridad. Guardar un archivo en esa carpeta no lo hace persistente si el disco es efímero.
@@ -53,8 +53,13 @@ Si hay un proxy inverso, define `TRUST_PROXY=1` en el backend. En el frontend, `
 
 ## Copias
 
-`scripts/backup.sh` es un script de volcado. Revísalo antes de programarlo: debe apuntar a la base de este servidor y guardar el resultado fuera de la máquina. Los archivos de `uploads/` no entran en un volcado de PostgreSQL.
+El repositorio no incluye un script de respaldo. El administrador debe copiar, fuera de la máquina si es posible:
+
+- la base PostgreSQL (`pg_dump`);
+- el directorio `uploads/` del backend.
+
+Un volcado de la base no incluye los archivos.
 
 ## Qué no hace este repositorio
 
-No crea bases, no compra dominios y no publica la aplicación. `ecosystem.config.cjs` es un ejemplo de PM2 por si el administrador ya usa PM2. No es un requisito.
+No crea bases, no compra dominios y no publica la aplicación. El supervisor de procesos lo elige el administrador.
