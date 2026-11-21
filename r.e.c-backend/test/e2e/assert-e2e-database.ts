@@ -22,11 +22,6 @@ const REMOTE_MARKERS = [
   'fly.io',
 ];
 
-export interface E2eDatabaseOptions {
-  databaseUrl?: string;
-  directUrl?: string;
-}
-
 export interface ParsedE2eUrl {
   host: string;
   port: string;
@@ -84,10 +79,8 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
   return { host, port, database, protocol };
 }
 
-export function assertE2eDatabase(databaseUrl?: string, directUrl?: string): void;
-export function assertE2eDatabase(options?: E2eDatabaseOptions): void;
 export function assertE2eDatabase(
-  input?: string | E2eDatabaseOptions,
+  input?: unknown,
   directUrl?: string,
 ): void {
   if (process.env.E2E_DATABASE !== '1') {
@@ -101,8 +94,9 @@ export function assertE2eDatabase(
     databaseUrl = input ?? process.env.DATABASE_URL;
     directDatabaseUrl = directUrl ?? process.env.DATABASE_DIRECT_URL;
   } else {
-    databaseUrl = input.databaseUrl ?? process.env.DATABASE_URL;
-    directDatabaseUrl = input.directUrl ?? process.env.DATABASE_DIRECT_URL;
+    const opts = input as { databaseUrl?: string; directUrl?: string };
+    databaseUrl = opts.databaseUrl ?? process.env.DATABASE_URL;
+    directDatabaseUrl = opts.directUrl ?? process.env.DATABASE_DIRECT_URL;
   }
 
   if (!databaseUrl) {
