@@ -42,16 +42,15 @@ test.describe('Ingreso de notas (PROFESOR)', () => {
     await expect(page.getByPlaceholder('Nota')).toHaveValue('4.2');
   });
 
-  test('ESTUDIANTE no entra a gestión docente ni asigna materias', async ({
-    browser,
-    baseURL,
-  }) => {
-    test.setTimeout(60_000);
-    const user = testUser('ESTUDIANTE');
-    const context = await browser.newContext({ baseURL });
-    const page = await context.newPage();
+  test.describe('sin sesión de docente', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
 
-    try {
+    test('ESTUDIANTE no entra a gestión docente ni asigna materias', async ({
+      page,
+    }) => {
+      test.setTimeout(60_000);
+      const user = testUser('ESTUDIANTE');
+
       await page.goto('/login');
       await page.fill('#login-email', user.email);
       await page.fill('#login-password', user.password);
@@ -69,8 +68,6 @@ test.describe('Ingreso de notas (PROFESOR)', () => {
         },
       );
       expect(denied.status()).toBe(403);
-    } finally {
-      await context.close();
-    }
+    });
   });
 });
