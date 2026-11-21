@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 const DISPOSABLE_DB = /^recedu_e2e([_-][a-z0-9]+)?$/i;
 const REMOTE_MARKERS = [
