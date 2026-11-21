@@ -2,6 +2,18 @@
 
 El resultado que vale es el de esta sección. Los apartados de abajo son historial de otros SHA.
 
+## CI #87 — SHA `c74c89e7496d331181c1d22d19f85bcc5f899604` (merge PR #2)
+
+- Run: https://github.com/teka369/R.E.C-plus/actions/runs/44948619362 (número 87)
+- SHA evaluado: `c74c89e7496d331181c1d22d19f85bcc5f899604`
+- Conclusión del workflow: `success`
+- Jobs: 7 exitosos.
+- Unitarias: 592/592.
+- Cobertura de líneas: 69,23 %.
+- Integración: 133/133 (10 suites).
+- E2E Nest: 4/4.
+- Playwright: 36/36.
+
 ## CI #60 — Node 26, con E2E desechable
 
 - Run: [`44932319423`](https://github.com/teka369/R.E.C-plus/actions/runs/44932319423) (número 60)

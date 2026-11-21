@@ -2,13 +2,13 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [main, hardening/**, work/audit-recovery]
+    branches: [main, hardening/**, work/audit-recovery, security/**]
   pull_request:
     branches: [main]
 
 jobs:
   secret-guard:
-    name: Secret and upload guard
+    name: Secret guard (Node script)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
   # Stage 0 — Secretos y uploads fuera del índice
   # ──────────────────────────────────────────────
   secrets-and-uploads:
-    name: Secret and upload guard
+    name: Tracked secrets and uploads guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

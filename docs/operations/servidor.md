@@ -53,7 +53,7 @@ Si hay un proxy inverso, define `TRUST_PROXY=1` en el backend. En el frontend, `
 
 ## Copias
 
-El repositorio no incluye un script de respaldo. El administrador debe copiar, fuera de la máquina si es posible:
+El repositorio incluye scripts de respaldo y restauracion en scripts/. El administrador debe copiar, fuera de la máquina si es posible:
 
 - la base PostgreSQL (`pg_dump`);
 - el directorio `uploads/` del backend.
