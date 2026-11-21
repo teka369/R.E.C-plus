@@ -1,6 +1,6 @@
 # Estado real del proyecto Recedu
 
-Nota: el alojamiento descrito más abajo como Render o Vercel quedó retirado. Usa [docs/operations/servidor.md](../operations/servidor.md).
+Histórico, 2026-11-20. No describe el SHA actual. El CI vigente está en [QA_RESULTS.md](QA_RESULTS.md). El alojamiento Render/Vercel de este archivo quedó retirado: usa [docs/operations/servidor.md](../operations/servidor.md).
 
 Fecha de auditoría: 2026-11-20. Rama de trabajo: `work/audit-recovery` (tracking `origin/fix/audit-2026-11-11-critical`, commit `ef89eb2`).
 

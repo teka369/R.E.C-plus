@@ -1,5 +1,7 @@
 # Deuda técnica — Recedu
 
+Nota de recuperación. Si una cifra de aquí contradice [QA_RESULTS.md](QA_RESULTS.md), manda ese archivo.
+
 ## Confirmado
 
 - God services: `performance.service.ts` (~60 KB), `academic.service.ts` (~55 KB).
@@ -13,7 +15,7 @@
 - Dual deploy PM2 + Docker/Coolify legacy.
 - Historial git con secretos previos (purgado no realizado).
 - Vulnerabilidades npm: backend/frontend con advisories (frontend: 45 vulns, 2 critical) — ver `npm audit`.
-- Node 24 usado localmente vs Node 20 en CI; posible divergencia (build OK en ambos hasta ahora, CI usa 20).
+- El runtime de CI es Node 26. El resultado vigente está en QA_RESULTS.md, no en esta nota.
 - Puppeteer postinstall intenta descargar Chrome; bloquea `npm install` sin `PUPPETEER_SKIP_DOWNLOAD`.
 
 ## Potencial / riesgo
@@ -26,6 +28,6 @@
 ## No verificado
 
 - Runtime de `recedu.co` / `api.recedu.co`.
-- Suite de integración (requiere Postgres).
+- Suite de integración en este documento: la evidencia posterior está en QA_RESULTS.md.
 - `npm audit` aplicado con fixes.
 - Coolify en servidor, backups restaurables.
