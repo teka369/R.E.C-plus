@@ -148,6 +148,10 @@ describe('Security Fixes Integration', () => {
       }),
     );
     await app.init();
+    // Supertest cierra el http.Server si fue él quien llamó listen().
+    // beforeEach dispara varios login en paralelo; en Node 26 el primer
+    // response cerraba el servidor y el resto moría con ECONNRESET.
+    await app.listen(0, '127.0.0.1');
   });
 
   beforeEach(async () => {
