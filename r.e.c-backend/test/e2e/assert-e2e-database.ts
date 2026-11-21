@@ -21,18 +21,16 @@ const REMOTE_MARKERS = [
   'railway.app',
   'fly.io',
 ];
-type ParsedE2eUrl = {
-  host: string;
-  port: string;
-  database: string;
-  protocol: string;
-};
-
 function reject(message: string): never {
   throw new Error(message);
 }
 
-function parseE2eUrl(connectionString: string): ParsedE2eUrl {
+function parseE2eUrl(connectionString: string): {
+  host: string;
+  port: string;
+  database: string;
+  protocol: string;
+} {
   if (!connectionString || typeof connectionString !== 'string') {
     reject('DATABASE_URL es obligatorio para E2E.');
   }
