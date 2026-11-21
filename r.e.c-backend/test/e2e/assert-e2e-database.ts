@@ -22,7 +22,10 @@ const REMOTE_MARKERS = [
   'fly.io',
 ];
 
-export type E2eDatabaseInput = string | { databaseUrl?: string; directUrl?: string };
+export interface E2eDatabaseOptions {
+  databaseUrl?: string;
+  directUrl?: string;
+}
 
 export interface ParsedE2eUrl {
   host: string;
@@ -81,8 +84,10 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
   return { host, port, database, protocol };
 }
 
+export function assertE2eDatabase(databaseUrl?: string, directUrl?: string): void;
+export function assertE2eDatabase(options?: E2eDatabaseOptions): void;
 export function assertE2eDatabase(
-  input?: E2eDatabaseInput,
+  input?: string | E2eDatabaseOptions,
   directUrl?: string,
 ): void {
   if (process.env.E2E_DATABASE !== '1') {
