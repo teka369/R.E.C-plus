@@ -20,7 +20,9 @@ function validateE2eUrl(connectionString: string) {
   const lowered = connectionString.toLowerCase();
   const remote = REMOTE_MARKERS.find((marker) => lowered.includes(marker));
   if (remote) {
-    throw new Error(`Se rechazó el E2E: la URL apunta a un proveedor remoto (${remote}).`);
+    throw new Error(
+      `Se rechazó el E2E: la URL apunta a un proveedor remoto (${remote}).`,
+    );
   }
 
   let url: URL;
@@ -57,10 +59,7 @@ function validateE2eUrl(connectionString: string) {
   return { host, port, database };
 }
 
-export function assertE2eDatabase(
-  input?: unknown,
-  directUrl?: string,
-): void {
+export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
   if (process.env.E2E_DATABASE !== '1') {
     throw new Error(
       'E2E_DATABASE=1 es obligatorio antes de crear o borrar datos E2E.',
