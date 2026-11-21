@@ -1,5 +1,7 @@
 # Bloqueos externos
 
+Los advisories vigentes están en [dependencias](../quality/dependencias.md), no en la lista antigua de este archivo.
+
 La lista operativa de rotación y purga también está en [docs/security/controles.md](../security/controles.md).
 
 No se imprimen valores de secretos.

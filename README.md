@@ -10,7 +10,7 @@ Sistema escolar para instituciones: usuarios, grupos, materiales, recuperación 
 
 ## Requisitos locales
 
-- Node.js 20.
+- Node.js 26 (LTS activo). Node 20 está fuera de soporte.
 - PostgreSQL 15 o superior.
 - npm.
 

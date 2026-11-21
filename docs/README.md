@@ -8,6 +8,7 @@ Documentos vivos:
 - [Variables de entorno](operations/entorno.md)
 - [Seguridad y pendientes externos](security/controles.md)
 - [Cómo ejecutar las pruebas](quality/pruebas.md)
+- [Dependencias](quality/dependencias.md)
 
 `docs/audit/` y `docs/audits/` conservan notas de la recuperación. Si contradicen esta carpeta, manda el código y estos documentos.
 

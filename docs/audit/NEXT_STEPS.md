@@ -1,31 +1,14 @@
-# Próximos pasos priorizados — Recedu
+# Próximos pasos
 
-## P0 (bloqueante para producción)
+Documento vigente. Los pasos de Render, Vercel y Neon que figuraban aquí ya no aplican.
 
-1. Rotar secretos que alguna vez estuvieron en `main` (JWT, refresh, DB, Resend, INTERNAL_API_KEY) — fuera de git.
-2. Cerrar `/auth/recover-by-code` (no devolver token; no usar `codigo` como secreto).
-3. Verificar que no queden `.env` ni uploads trackeados (ya OK en rama fix; confirmar en main tras merge).
-4. Apuntar integration tests a la base del job y prohibir truncate contra prod (CI ya lo hace en la rama fix; verificar).
-5. Branch protection en `main`.
+## Fuera del repositorio
 
-## P1 (preparación de despliegue)
+1. Rotar las credenciales que estuvieron en el historial. La lista está en [controles](../security/controles.md).
+2. Autorizar la purga del historial si se quiere borrar esos blobs. Hace falta force push.
+3. En el servidor: base vacía, secretos nuevos, volumen de `uploads/` y, si hay correo, Resend.
 
-6. Configurar Neon (pooled + direct) y Render env vars.
-7. Desplegar backend en Render; verificar `/health` 200.
-8. Desplegar frontend en Vercel; verificar login.
-9. Actualizar CORS/FRONTEND_URL en Render con URL real de Vercel.
-10. Ejecutar migraciones (`prisma migrate deploy`) contra Neon direct.
+## Dentro del repositorio, si se continúa
 
-## P2 (calidad)
-
-11. Ejecutar integration tests con Postgres (local o CI).
-12. Ejecutar `npm audit` y remediar críticos/altos.
-13. Añadir unit tests frontend o al menos smoke e2e en CI.
-14. Reducir god services (performance, academic) incrementalmente.
-
-## P3 (mejoras)
-
-15. Migrar uploads a object storage.
-16. Revalidación de JWT contra DB o acortar expiración.
-17. Móvil: sincronizar con backend actual.
-18. Purgar historial git de secretos.
+- Revisar IDOR método por método más allá de las suites de integración ya verdes.
+- Prisma 7, firebase-admin 14 y el downgrade de exceljs solo con un plan de compatibilidad. Ver [dependencias](../quality/dependencias.md).

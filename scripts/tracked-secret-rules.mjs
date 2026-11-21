@@ -3,7 +3,6 @@ export function isBlockedTrackedPath(path) {
   const allowedExample =
     path.endsWith(".example") ||
     path.endsWith(".env.example") ||
-    path.endsWith(".env.coolify.example") ||
     /\.env\.[^/]+\.example$/.test(path);
   if (
     base === ".env" ||
