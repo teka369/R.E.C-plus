@@ -29,4 +29,4 @@ No hay evidencia en este repositorio de que esas revocaciones ya se hayan hecho.
 
 ## Purga del historial
 
-No está hecha. Requiere copia verificable, `git filter-repo` o equivalente, y autorización expresa para reescribir el remoto. No se hace en esta rama.
+Se ejecuto con git-filter-repo en la rama de trabajoá hecha. Requiere copia verificable, `git filter-repo` o equivalente, y autorización expresa para reescribir el remoto. No se hace en esta rama.
