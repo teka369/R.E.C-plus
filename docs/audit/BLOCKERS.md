@@ -25,7 +25,7 @@ No ejecutada. Requiere `git filter-repo` (o equivalente), backup verificable y a
 
 ## Integración
 
-CI levanta PostgreSQL 15 y Redis 7. La suite de integración no se declara aprobada hasta que el job del SHA correspondiente termine en `success`.
+CI levanta PostgreSQL 15 y Redis 7. La aprobación es por SHA: el job de integración del CI #52 terminó en `success` para `600e4f2`. Un commit posterior no hereda esa aprobación hasta que su propio job termine en `success`.
 
 ## npm restante (no aplicado a propósito)
 
