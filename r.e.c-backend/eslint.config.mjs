@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs', 'test/e2e/assert-e2e-database.ts'],
+    ignores: ['eslint.config.mjs'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -30,6 +30,12 @@ export default tseslint.config(
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
       "prettier/prettier": ["error", { endOfLine: "auto" }],
+    },
+  },
+  {
+    files: ['test/e2e/assert-e2e-database.ts'],
+    rules: {
+      'prettier/prettier': 'off',
     },
   },
   {

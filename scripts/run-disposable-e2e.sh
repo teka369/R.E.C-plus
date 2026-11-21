@@ -14,7 +14,10 @@ if [ -z "${DATABASE_URL:-}" ]; then
   echo "DATABASE_URL es obligatorio y debe apuntar a recedu_e2e en loopback."
   exit 1
 fi
-export DATABASE_DIRECT_URL="${DATABASE_DIRECT_URL:-$DATABASE_URL}"
+if [ -z "${DATABASE_DIRECT_URL:-}" ]; then
+  echo "DATABASE_DIRECT_URL es obligatorio y debe apuntar a recedu_e2e en loopback."
+  exit 1
+fi
 export JWT_SECRET="${JWT_SECRET:-ci-jwt-secret-at-least-32-characters-long}"
 export JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-ci-refresh-secret-at-least-32-chars}"
 export JWT_ISSUER="${JWT_ISSUER:-recedu-ci}"
