@@ -24,10 +24,7 @@ const REMOTE_MARKERS = [
 
 export type E2eDatabaseInput =
   | string
-  | {
-      databaseUrl?: string;
-      directUrl?: string;
-    };
+  | { databaseUrl?: string; directUrl?: string };
 
 export interface ParsedE2eUrl {
   host: string;
@@ -48,7 +45,9 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
   const lowered = connectionString.toLowerCase();
   const remote = REMOTE_MARKERS.find((marker) => lowered.includes(marker));
   if (remote) {
-    reject(`Se rechazó el E2E: la URL apunta a un proveedor remoto (${remote}).`);
+    reject(
+      `Se rechazó el E2E: la URL apunta a un proveedor remoto (${remote}).`,
+    );
   }
 
   let url: URL;
@@ -65,12 +64,18 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
 
   const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   if (!LOOPBACK_HOSTS.has(host)) {
-    reject(`Se rechazó el E2E: el host "${host}" no es loopback. Usa una base local desechable.`);
+    reject(
+      `Se rechazó el E2E: el host "${host}" no es loopback. Usa una base local desechable.`,
+    );
   }
 
-  const database = decodeURIComponent(url.pathname.replace(/^\//, '')).split('/')[0];
+  const database = decodeURIComponent(
+    url.pathname.replace(/^\//, ''),
+  ).split('/')[0];
   if (!DISPOSABLE_DB.test(database)) {
-    reject(`Se rechazó el E2E: la base debe llamarse recedu_e2e (recibido "${database}").`);
+    reject(
+      `Se rechazó el E2E: la base debe llamarse recedu_e2e (recibido "${database}").`,
+    );
   }
 
   const port = url.port || '5432';
@@ -78,7 +83,10 @@ function parseE2eUrl(connectionString: string): ParsedE2eUrl {
   return { host, port, database, protocol };
 }
 
-export function assertE2eDatabase(input?: E2eDatabaseInput, directUrl?: string): void {
+export function assertE2eDatabase(
+  input?: E2eDatabaseInput,
+  directUrl?: string,
+): void {
   if (process.env.E2E_DATABASE !== '1') {
     reject('E2E_DATABASE=1 es obligatorio antes de crear o borrar datos E2E.');
   }
@@ -101,8 +109,8 @@ export function assertE2eDatabase(input?: E2eDatabaseInput, directUrl?: string):
     reject('DATABASE_DIRECT_URL es obligatorio para E2E.');
   }
 
-  const runtime = parseE2eUrl(databaseUrl as string);
-  const direct = parseE2eUrl(directDatabaseUrl as string);
+  const runtime = parseE2eUrl(databaseUrl);
+  const direct = parseE2eUrl(directDatabaseUrl);
 
   if (
     runtime.host !== direct.host ||
