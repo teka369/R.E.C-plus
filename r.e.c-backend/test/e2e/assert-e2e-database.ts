@@ -1,13 +1,3 @@
-/**
- * Impide que un seed o un E2E escriba en una base real o remota.
- * Exige un flag explícito, hosts loopback y un nombre de base desechable.
- *
- * Valida TODAS las conexiones capaces de escribir en la base: DATABASE_URL
- * (runtime) y DATABASE_DIRECT_URL (migraciones). Ambas deben apuntar al
- * mismo destino lógico (host, puerto y base de datos).
- *
- * No imprime usuarios, contraseñas, tokens ni URLs completas.
- */
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 const DISPOSABLE_DB = /^recedu_e2e([_-][a-z0-9]+)?$/i;
 const REMOTE_MARKERS = [
@@ -22,13 +12,7 @@ const REMOTE_MARKERS = [
   'fly.io',
 ];
 
-
-function parseE2eUrl(connectionString: string): {
-  host: string;
-  port: string;
-  database: string;
-  protocol: string;
-} {
+function validateE2eUrl(connectionString: string) {
   if (!connectionString || typeof connectionString !== 'string') {
     throw new Error('DATABASE_URL es obligatorio para E2E.');
   }
@@ -66,17 +50,19 @@ function parseE2eUrl(connectionString: string): {
     '/',
   )[0];
   if (!DISPOSABLE_DB.test(database)) {
-    reject(
+    throw new Error(
       `Se rechazó el E2E: la base debe llamarse recedu_e2e (recibido "${database}").`,
     );
   }
 
   const port = url.port || '5432';
-
-  return { host, port, database, protocol };
+  return { host, port, database };
 }
 
-export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
+export function assertE2eDatabase(
+  input?: unknown,
+  directUrl?: string,
+): void {
   if (process.env.E2E_DATABASE !== '1') {
     throw new Error(
       'E2E_DATABASE=1 es obligatorio antes de crear o borrar datos E2E.',
@@ -102,8 +88,8 @@ export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
     throw new Error('DATABASE_DIRECT_URL es obligatorio para E2E.');
   }
 
-  const runtime = parseE2eUrl(databaseUrl);
-  const direct = parseE2eUrl(directDatabaseUrl);
+  const runtime = validateE2eUrl(databaseUrl);
+  const direct = validateE2eUrl(directDatabaseUrl);
 
   if (
     runtime.host !== direct.host ||
