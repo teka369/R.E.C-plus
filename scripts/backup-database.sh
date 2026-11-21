@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Respaldo de PostgreSQL para R.E.C-plus.
 # Uso:
-#   DATABASE_URL=postgresql://user:pass@host:port/db ./scripts/backup-database.sh [--dest DIR] [--retention DAYS]
+#   DATABASE_URL="<cadena de conexion PostgreSQL>" ./scripts/backup-database.sh [--dest DIR] [--retention DAYS]
 # El archivo se escribe fuera del repositorio. La contrasena se toma de DATABASE_URL
 # y se exporta como PGPASSWORD; no se pasa en la linea de comandos.
 set -euo pipefail
@@ -23,7 +23,7 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
 fi
 
 if ! [[ "$DATABASE_URL" =~ ^postgres(ql)?://([^:/]+):([^@]*)@([^:/]+):?([0-9]*)/(.+)$ ]]; then
-  echo "DATABASE_URL no tiene el formato esperado postgresql://user:pass@host:port/db" >&2
+  echo "DATABASE_URL no tiene el formato esperado de conexion PostgreSQL." >&2
   exit 2
 fi
 

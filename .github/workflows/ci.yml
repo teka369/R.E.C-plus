@@ -8,7 +8,7 @@ on:
 
 jobs:
   secret-guard:
-    name: Secret and upload guard
+    name: Secret guard (Node script)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
