@@ -21,10 +21,6 @@ const REMOTE_MARKERS = [
   'railway.app',
   'fly.io',
 ];
-function reject(message: string): never {
-  throw new Error(message);
-}
-
 function parseE2eUrl(connectionString: string): {
   host: string;
   port: string;
@@ -32,13 +28,13 @@ function parseE2eUrl(connectionString: string): {
   protocol: string;
 } {
   if (!connectionString || typeof connectionString !== 'string') {
-    reject('DATABASE_URL es obligatorio para E2E.');
+    throw new Error('DATABASE_URL es obligatorio para E2E.');
   }
 
   const lowered = connectionString.toLowerCase();
   const remote = REMOTE_MARKERS.find((marker) => lowered.includes(marker));
   if (remote) {
-    reject(
+    throw new Error(
       `Se rechazó el E2E: la URL apunta a un proveedor remoto (${remote}).`,
     );
   }
@@ -47,17 +43,19 @@ function parseE2eUrl(connectionString: string): {
   try {
     url = new URL(connectionString);
   } catch {
-    reject('La URL de base de datos E2E no es válida.');
+    throw new Error('La URL de base de datos E2E no es válida.');
   }
 
   const protocol = url.protocol.toLowerCase();
   if (protocol !== 'postgresql:' && protocol !== 'postgres:') {
-    reject('La URL de base de datos E2E debe usar el protocolo postgresql.');
+    throw new Error(
+      'La URL de base de datos E2E debe usar el protocolo postgresql.',
+    );
   }
 
   const host = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   if (!LOOPBACK_HOSTS.has(host)) {
-    reject(
+    throw new Error(
       `Se rechazó el E2E: el host "${host}" no es loopback. Usa una base local desechable.`,
     );
   }
@@ -78,7 +76,9 @@ function parseE2eUrl(connectionString: string): {
 
 export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
   if (process.env.E2E_DATABASE !== '1') {
-    reject('E2E_DATABASE=1 es obligatorio antes de crear o borrar datos E2E.');
+    throw new Error(
+      'E2E_DATABASE=1 es obligatorio antes de crear o borrar datos E2E.',
+    );
   }
 
   let databaseUrl: string | undefined;
@@ -94,10 +94,10 @@ export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
   }
 
   if (!databaseUrl) {
-    reject('DATABASE_URL es obligatorio para E2E.');
+    throw new Error('DATABASE_URL es obligatorio para E2E.');
   }
   if (!directDatabaseUrl) {
-    reject('DATABASE_DIRECT_URL es obligatorio para E2E.');
+    throw new Error('DATABASE_DIRECT_URL es obligatorio para E2E.');
   }
 
   const runtime = parseE2eUrl(databaseUrl);
@@ -108,7 +108,7 @@ export function assertE2eDatabase(input?: unknown, directUrl?: string): void {
     runtime.port !== direct.port ||
     runtime.database !== direct.database
   ) {
-    reject(
+    throw new Error(
       'DATABASE_URL y DATABASE_DIRECT_URL deben apuntar al mismo host, puerto y base de datos.',
     );
   }
